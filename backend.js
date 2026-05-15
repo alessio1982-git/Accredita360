@@ -63,6 +63,20 @@ const Backend = {
         return session ? JSON.parse(session).user : null;
     },
 
+    async getCurrentStructure() {
+        const user = this.getCurrentUser();
+        if(!user) return null;
+        
+        const { data: struct, error } = await supabase
+            .from('structures')
+            .select('*')
+            .eq('user_email', user.email)
+            .single();
+            
+        if (error || !struct) return null;
+        return struct;
+    },
+
     // --- Motore Requisiti ---
     async saveProfiling(structureType, profilingData) {
         const user = this.getCurrentUser();
