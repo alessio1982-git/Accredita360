@@ -1,43 +1,72 @@
 /**
- * Accredita360 - Backend Data Layer
+ * Accredita360 - Backend Data Layer v2.0
  * Modulo collegato a Supabase per la persistenza reale dei dati in cloud.
+ * 
+ * Architettura:
+ *   - Auth: tabella custom `users` con email+password (migrazione progressiva a Supabase Auth)
+ *   - Session: sessionStorage (più sicuro di localStorage — non persiste tra tab)
+ *   - Strutture: tabella `structures` con profilo JSONB completo
+ *   - Requisiti: tabella `requirements` con mappatura completa NormativaDB
  */
 
 const SUPABASE_URL = 'https://kvthfnkgfbxtjgkqpbwj.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_OoxTUZ8dE9oOBTa27lDquQ_pths83qG';
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-const DB_KEYS = {
-    SESSION: 'accredita360_session'
-};
+const SESSION_KEY = 'accredita360_session_v2';
 
 const Backend = {
-    // --- Inizializzazione ---
+
+    // =========================================================
+    // INIZIALIZZAZIONE
+    // =========================================================
     async init() {
-        console.log("Supabase Backend Initialized.");
+        console.log('%c[Accredita360] Supabase Backend v2.0 inizializzato.', 'color:#3b82f6;font-weight:bold;');
+        console.log(`%c  → Progetto: ${SUPABASE_URL}`, 'color:#64748b;');
     },
 
-    // --- Autenticazione ---
+
+    // =========================================================
+    // AUTENTICAZIONE
+    // =========================================================
+
+    /**
+     * Login tramite tabella `users`.
+     * Restituisce la sessione utente o lancia un errore.
+     */
     async login(email, password) {
-        // Interroghiamo la tabella users creata con schema.sql
         const { data, error } = await supabase
             .from('users')
             .select('*')
-            .eq('email', email)
+            .eq('email', email.trim().toLowerCase())
             .eq('password', password)
             .single();
 
         if (error || !data) {
-            throw new Error("Credenziali non valide");
+            console.warn('[Auth] Login fallito:', error?.message || 'Nessun utente trovato');
+            throw new Error('Credenziali non valide. Verifica email e password.');
         }
 
-        const session = { token: 'jwt_mock_' + Date.now(), user: data };
-        localStorage.setItem(DB_KEYS.SESSION, JSON.stringify(session));
+        const session = {
+            token:     'session_' + Date.now(),
+            createdAt: new Date().toISOString(),
+            user:      data
+        };
+        sessionStorage.setItem(SESSION_KEY, JSON.stringify(session));
         return session;
     },
 
+    /**
+     * Registrazione: crea utente in `users` e avvia la sessione.
+     */
     async register(email, password, name) {
-        const newUser = { email, password, name, role: 'cliente' };
+        const newUser = {
+            email:    email.trim().toLowerCase(),
+            password: password,
+            name:     name,
+            role:     'cliente'
+        };
+
         const { data, error } = await supabase
             .from('users')
             .insert([newUser])
@@ -45,91 +74,127 @@ const Backend = {
             .single();
 
         if (error) {
-            console.error(error);
-            throw new Error("Errore durante la registrazione");
+            console.error('[Auth] Registrazione fallita:', error);
+            if (error.code === '23505') {
+                throw new Error('Email già registrata. Usa un\'altra email o accedi.');
+            }
+            throw new Error('Errore durante la registrazione. Riprova.');
         }
 
-        const session = { token: 'jwt_mock_' + Date.now(), user: data || newUser };
-        localStorage.setItem(DB_KEYS.SESSION, JSON.stringify(session));
+        const session = {
+            token:     'session_' + Date.now(),
+            createdAt: new Date().toISOString(),
+            user:      data || newUser
+        };
+        sessionStorage.setItem(SESSION_KEY, JSON.stringify(session));
         return session;
     },
 
     logout() {
-        localStorage.removeItem(DB_KEYS.SESSION);
+        sessionStorage.removeItem(SESSION_KEY);
+        console.log('[Auth] Sessione terminata.');
     },
 
+    /**
+     * Recupera l'utente dalla sessione attiva.
+     * Ritorna null se non c'è sessione.
+     */
     getCurrentUser() {
-        const session = localStorage.getItem(DB_KEYS.SESSION);
-        return session ? JSON.parse(session).user : null;
+        try {
+            const raw = sessionStorage.getItem(SESSION_KEY);
+            if (!raw) return null;
+            const session = JSON.parse(raw);
+            return session?.user || null;
+        } catch {
+            return null;
+        }
     },
 
+    /**
+     * Recupera il profilo struttura dell'utente corrente da Supabase.
+     */
     async getCurrentStructure() {
         const user = this.getCurrentUser();
-        if(!user) return null;
-        
-        const { data: struct, error } = await supabase
+        if (!user) return null;
+
+        const { data, error } = await supabase
             .from('structures')
             .select('*')
             .eq('user_email', user.email)
             .single();
-            
-        if (error || !struct) return null;
-        return struct;
+
+        if (error) {
+            console.warn('[Backend] Struttura non trovata per:', user.email);
+            return null;
+        }
+        return data;
     },
 
-    // --- Motore Requisiti ---
+
+    // =========================================================
+    // MOTORE REQUISITI
+    // =========================================================
+
+    /**
+     * Salva il profilo e resetta i requisiti per rigenerazione.
+     */
     async saveProfiling(structureType, profilingData) {
         const user = this.getCurrentUser();
-        if(!user) return false;
+        if (!user) return false;
 
-        const { error: err1 } = await supabase
+        // Upsert struttura
+        const { error: errStruct } = await supabase
             .from('structures')
-            .upsert({ user_email: user.email, type: structureType, data: profilingData });
+            .upsert({
+                user_email: user.email,
+                type:       structureType,
+                data:       profilingData,
+                updated_at: new Date().toISOString()
+            }, { onConflict: 'user_email' });
 
-        if (err1) {
-            console.error("Errore salvataggio profilazione:", err1);
+        if (errStruct) {
+            console.error('[Backend] Errore upsert struttura:', errStruct);
             return false;
         }
 
-        // Forza la rigenerazione cancellando i vecchi requisiti
-        await supabase
+        // Elimina requisiti precedenti per rigenerazione
+        const { error: errDel } = await supabase
             .from('requirements')
             .delete()
             .eq('user_email', user.email);
 
+        if (errDel) {
+            console.error('[Backend] Errore cancellazione requisiti:', errDel);
+        }
+
         return true;
     },
 
+    /**
+     * Recupera i requisiti dal DB.
+     * Se non ci sono, li genera da NormativaDB e li persiste.
+     */
     async getRequirements() {
         const user = this.getCurrentUser();
-        if(!user) return [];
+        if (!user) return [];
 
+        // Prova a leggere requisiti esistenti
         const { data: reqs, error } = await supabase
             .from('requirements')
             .select('*')
-            .eq('user_email', user.email);
+            .eq('user_email', user.email)
+            .order('created_at', { ascending: true });
 
-        if (reqs && reqs.length > 0) {
-            // Converte da snake_case (db) a camelCase (frontend)
-            return reqs.map(r => ({
-                id: r.req_id,
-                titolo: r.titolo,
-                norma: r.norma,
-                cat: r.cat,
-                stato: r.stato,
-                file: r.file_name,
-                desc: r.desc_text,
-                compliance: r.compliance,
-                procedura_ota: r.procedura_ota,
-                manuali_ota: r.manuali_ota,
-                nota_compliance: r.nota_compliance,
-                noteConsulente: r.note_consulente,
-                analyzedAt: r.analyzed_at,
-                validatedAt: r.validated_at
-            }));
+        if (error) {
+            console.error('[Backend] Errore lettura requisiti:', error);
+            return [];
         }
 
-        // Se non ci sono requisiti, li generiamo tramite NormativaDB
+        if (reqs && reqs.length > 0) {
+            return this._mapRequirements(reqs);
+        }
+
+        // Se non ci sono requisiti, generali da NormativaDB
         const { data: struct } = await supabase
             .from('structures')
             .select('*')
@@ -138,33 +203,73 @@ const Backend = {
 
         if (!struct) return [];
 
-        const features = struct.data.features || { hasElettromedicali: false, wantsAccreditamento: false };
+        const features = struct.data?.features || {
+            hasElettromedicali: false,
+            wantsAccreditamento: false
+        };
+
         const newReqs = NormativaDB.generateRequirementsList(struct.type, features);
-        
-        // Salviamoli nel db
+
+        // Persistili in batch
         const toInsert = newReqs.map(r => ({
             user_email: user.email,
-            req_id: r.id,
-            titolo: r.titolo,
-            norma: r.norma,
-            cat: r.cat,
-            stato: r.stato || 'red',
-            desc_text: r.desc || ''
+            req_id:     r.id,
+            titolo:     r.titolo,
+            norma:      r.norma,
+            cat:        r.cat,
+            stato:      r.stato || 'red',
+            desc_text:  r.desc || ''
         }));
 
-        const { error: insertErr } = await supabase.from('requirements').insert(toInsert);
-        if (insertErr) console.error("Errore inserimento requisiti:", insertErr);
+        if (toInsert.length > 0) {
+            const { error: insErr } = await supabase
+                .from('requirements')
+                .insert(toInsert);
+            if (insErr) console.error('[Backend] Errore inserimento requisiti generati:', insErr);
+        }
 
         return newReqs;
     },
 
+    /**
+     * Mappa le righe DB (snake_case) al formato atteso dal frontend (camelCase).
+     */
+    _mapRequirements(rows) {
+        return rows.map(r => ({
+            id:               r.req_id,
+            titolo:           r.titolo,
+            norma:            r.norma,
+            cat:              r.cat,
+            stato:            r.stato,
+            percorso:         this._inferPercorso(r.req_id),
+            file:             r.file_name,
+            desc:             r.desc_text || '',
+            compliance:       r.compliance,
+            procedura_ota:    r.procedura_ota,
+            manuali_ota:      r.manuali_ota,
+            nota_compliance:  r.nota_compliance,
+            noteConsulente:   r.note_consulente,
+            analyzedAt:       r.analyzed_at,
+            validatedAt:      r.validated_at
+        }));
+    },
+
+    /**
+     * Inferisce il percorso (asp/ota) dall'ID requisito.
+     * I requisiti OTA iniziano con OTA_
+     */
+    _inferPercorso(reqId) {
+        if (!reqId) return 'asp';
+        return reqId.startsWith('OTA_') ? 'ota' : 'asp';
+    },
+
     async updateRequirementStatus(reqId, newStatus, uploadedFile = null) {
         const user = this.getCurrentUser();
-        if(!user) return false;
+        if (!user) return false;
 
         const updateData = { stato: newStatus };
-        if (uploadedFile) {
-            updateData.file_name = uploadedFile.name; // Simula l'upload
+        if (uploadedFile?.name) {
+            updateData.file_name = uploadedFile.name;
         }
 
         const { error } = await supabase
@@ -173,14 +278,14 @@ const Backend = {
             .eq('user_email', user.email)
             .eq('req_id', reqId);
 
-        if (error) console.error("Errore aggiornamento stato:", error);
+        if (error) console.error('[Backend] Errore aggiornamento stato:', error);
         return !error;
     },
-    
+
     async forceRequirementValidationDate(reqId) {
         const user = this.getCurrentUser();
-        if(!user) return false;
-        
+        if (!user) return false;
+
         await supabase
             .from('requirements')
             .update({ validated_at: new Date().toISOString() })
@@ -188,91 +293,164 @@ const Backend = {
             .eq('req_id', reqId);
     },
 
-    async analyzeDocumentConAI(reqId, fileName) {
-        // Simulazione validazione IA + check reale Normativa
-        return new Promise(async (resolve) => {
-            const compliance = NormativaDB.checkCompliance(reqId);
-            const normaDef = NormativaDB.findById(reqId);
-            const registry = compliance ? NormativaDB.complianceRegistry[normaDef?.norma] : null;
 
-            const baseCheck = Math.random() > 0.25; 
-            
+    // =========================================================
+    // ANALISI AI (simulazione con engine NormativaDB)
+    // =========================================================
+    async analyzeDocumentConAI(reqId, fileName) {
+        return new Promise(async (resolve) => {
+            // Simula latenza AI (1–2 secondi)
+            await new Promise(r => setTimeout(r, 800 + Math.random() * 1200));
+
+            const compliance = NormativaDB.checkCompliance(reqId);
+            const normaDef   = NormativaDB.findById(reqId);
+            const registry   = compliance ? NormativaDB.complianceRegistry[normaDef?.norma] : null;
+            const baseCheck  = Math.random() > 0.25;
+
             let aiResponse;
 
-            if (compliance && compliance.livello === 'critico') {
-                aiResponse = { status: 'red', compliance: 'critico', comment: `❌ NON CONFORME — ${compliance.messaggi[0]}`, nota_compliance: compliance.nota_compliance, procedura_ota: compliance.procedura_ota, manuali_ota: compliance.manuali_ota };
-            } else if (compliance && compliance.livello === 'attenzione' && !baseCheck) {
-                aiResponse = { status: 'yellow', compliance: 'attenzione', comment: `⚠️ ATTENZIONE NORMATIVA — ${compliance.nota_compliance} ${compliance.messaggi.length > 0 ? compliance.messaggi[0] : ''}`, nota_compliance: compliance.nota_compliance, procedura_ota: compliance.procedura_ota, manuali_ota: compliance.manuali_ota };
+            if (compliance?.livello === 'critico') {
+                aiResponse = {
+                    status:          'red',
+                    compliance:      'critico',
+                    comment:         `❌ NON CONFORME — ${compliance.messaggi[0]}`,
+                    nota_compliance: compliance.nota_compliance,
+                    procedura_ota:   compliance.procedura_ota,
+                    manuali_ota:     compliance.manuali_ota
+                };
+            } else if (compliance?.livello === 'attenzione' && !baseCheck) {
+                aiResponse = {
+                    status:          'yellow',
+                    compliance:      'attenzione',
+                    comment:         `⚠️ ATTENZIONE NORMATIVA — ${compliance.nota_compliance} ${compliance.messaggi[0] || ''}`,
+                    nota_compliance: compliance.nota_compliance,
+                    procedura_ota:   compliance.procedura_ota,
+                    manuali_ota:     compliance.manuali_ota
+                };
             } else if (baseCheck) {
-                const normaLabel = registry ? registry.nome_completo : (normaDef?.norma || 'normativa vigente');
-                aiResponse = { status: 'green', compliance: 'ok', comment: `✅ Documento conforme alla ${normaLabel}.${compliance?.nota_compliance ? ' ' + compliance.nota_compliance : ''}`, nota_compliance: compliance?.nota_compliance || '', procedura_ota: compliance?.procedura_ota || null, manuali_ota: compliance?.manuali_ota || [] };
+                const normaLabel = registry?.nome_completo || normaDef?.norma || 'normativa vigente';
+                aiResponse = {
+                    status:          'green',
+                    compliance:      'ok',
+                    comment:         `✅ Documento conforme alla ${normaLabel}.${compliance?.nota_compliance ? ' ' + compliance.nota_compliance : ''}`,
+                    nota_compliance: compliance?.nota_compliance || '',
+                    procedura_ota:   compliance?.procedura_ota || null,
+                    manuali_ota:     compliance?.manuali_ota || []
+                };
             } else {
-                aiResponse = { status: 'red', compliance: 'non_conforme', comment: `❌ Documento non conforme: firma mancante o dati errati.`, nota_compliance: compliance?.nota_compliance || '', procedura_ota: compliance?.procedura_ota || null, manuali_ota: compliance?.manuali_ota || [] };
+                aiResponse = {
+                    status:          'red',
+                    compliance:      'non_conforme',
+                    comment:         `❌ Documento non conforme: firma mancante, dati errati o formato non valido.`,
+                    nota_compliance: compliance?.nota_compliance || '',
+                    procedura_ota:   compliance?.procedura_ota || null,
+                    manuali_ota:     compliance?.manuali_ota || []
+                };
             }
-            
+
+            // Persisti risultato su Supabase
             const user = this.getCurrentUser();
-            if(user) {
+            if (user) {
                 await supabase
                     .from('requirements')
                     .update({
-                        stato: aiResponse.status,
-                        desc_text: aiResponse.comment,
-                        compliance: aiResponse.compliance,
-                        procedura_ota: aiResponse.procedura_ota,
-                        manuali_ota: aiResponse.manuali_ota,
+                        stato:           aiResponse.status,
+                        desc_text:       aiResponse.comment,
+                        compliance:      aiResponse.compliance,
+                        procedura_ota:   aiResponse.procedura_ota,
+                        manuali_ota:     aiResponse.manuali_ota,
                         nota_compliance: aiResponse.nota_compliance,
-                        analyzed_at: new Date().toISOString()
+                        analyzed_at:     new Date().toISOString()
                     })
                     .eq('user_email', user.email)
                     .eq('req_id', reqId);
             }
+
             resolve(aiResponse);
         });
     },
 
-    // --- Funzioni Amministratore ---
+
+    // =========================================================
+    // FUNZIONI AMMINISTRATORE
+    // =========================================================
 
     async getAllStructuresWithRequirements() {
-        const { data: users } = await supabase.from('users').select('*').neq('role', 'admin');
-        const { data: structures } = await supabase.from('structures').select('*');
-        const { data: requirements } = await supabase.from('requirements').select('*');
+        const [{ data: users }, { data: structures }, { data: requirements }] = await Promise.all([
+            supabase.from('users').select('*').neq('role', 'admin'),
+            supabase.from('structures').select('*'),
+            supabase.from('requirements').select('*')
+        ]);
 
-        if(!users || !structures) return [];
+        if (!users || !structures) return [];
 
-        return users.map(u => {
-            const struct = structures.find(s => s.user_email === u.email);
-            if (!struct) return null;
-            
-            const reqs = (requirements || []).filter(r => r.user_email === u.email).map(r => ({
-                id: r.req_id,
-                titolo: r.titolo,
-                norma: r.norma,
-                cat: r.cat,
-                stato: r.stato,
-                file: r.file_name,
-                desc: r.desc_text,
-                compliance: r.compliance,
-                noteConsulente: r.note_consulente,
-                validatedAt: r.validated_at
-            }));
+        return users
+            .map(u => {
+                const struct = structures.find(s => s.user_email === u.email);
+                if (!struct) return null;
 
-            return { user: u, structure: struct, requirements: reqs };
-        }).filter(item => item !== null);
+                const reqs = (requirements || [])
+                    .filter(r => r.user_email === u.email)
+                    .map(r => ({
+                        id:             r.req_id,
+                        titolo:         r.titolo,
+                        norma:          r.norma,
+                        cat:            r.cat,
+                        stato:          r.stato,
+                        percorso:       this._inferPercorso(r.req_id),
+                        file:           r.file_name,
+                        desc:           r.desc_text,
+                        compliance:     r.compliance,
+                        noteConsulente: r.note_consulente,
+                        validatedAt:    r.validated_at
+                    }));
+
+                return { user: u, structure: struct, requirements: reqs };
+            })
+            .filter(Boolean);
     },
 
     async adminValidateRequirement(userEmail, reqId, newStatus, note = '') {
         const { error } = await supabase
             .from('requirements')
             .update({
-                stato: newStatus,
+                stato:           newStatus,
                 note_consulente: note,
-                validated_at: new Date().toISOString()
+                validated_at:    new Date().toISOString()
             })
             .eq('user_email', userEmail)
             .eq('req_id', reqId);
+
+        if (error) console.error('[Admin] Errore validazione:', error);
         return !error;
     },
 
+    async getAdminStats() {
+        const [
+            { count: activeStructures },
+            { data: reqs }
+        ] = await Promise.all([
+            supabase.from('structures').select('*', { count: 'exact', head: true }),
+            supabase.from('requirements').select('stato, validated_at, file_name')
+        ]);
+
+        let pendingDocs   = 0;
+        let validatedDocs = 0;
+        let rejectedDocs  = 0;
+
+        if (reqs) {
+            pendingDocs   = reqs.filter(r => r.stato === 'yellow').length;
+            validatedDocs = reqs.filter(r => r.stato === 'green' && r.validated_at).length;
+            rejectedDocs  = reqs.filter(r => r.stato === 'red' && r.file_name).length;
+        }
+
+        return { activeStructures: activeStructures || 0, pendingDocs, validatedDocs, rejectedDocs };
+    },
+
+
+    // =========================================================
+    // CALENDARIO MANTENIMENTO (client-side, no DB query)
+    // =========================================================
     generateMaintenanceSchedule(reqs) {
         const schedule = [];
         const now = new Date();
@@ -281,10 +459,10 @@ const Backend = {
             if (req.stato !== 'green') return;
 
             const normaDef = NormativaDB.findById(req.id);
-            if (!normaDef || !normaDef.scadenza_mesi) return;
+            if (!normaDef?.scadenza_mesi) return;
 
             const baseDate = req.validatedAt ? new Date(req.validatedAt) : new Date();
-            const expiry = new Date(baseDate);
+            const expiry   = new Date(baseDate);
             expiry.setMonth(expiry.getMonth() + normaDef.scadenza_mesi);
 
             const daysLeft = Math.ceil((expiry - now) / (1000 * 60 * 60 * 24));
@@ -317,20 +495,6 @@ const Backend = {
 
         const order = { scaduto: 0, in_scadenza: 1, valido: 2 };
         return schedule.sort((a, b) => order[a.stato] - order[b.stato]);
-    },
-
-    async getAdminStats() {
-        const { count: activeStructures } = await supabase.from('structures').select('*', { count: 'exact', head: true });
-        const { data: reqs } = await supabase.from('requirements').select('stato, validated_at, file_name');
-        
-        let pendingDocs = 0, validatedDocs = 0, rejectedDocs = 0;
-        if(reqs) {
-            pendingDocs   = reqs.filter(r => r.stato === 'yellow').length;
-            validatedDocs = reqs.filter(r => r.stato === 'green' && r.validated_at).length;
-            rejectedDocs  = reqs.filter(r => r.stato === 'red' && r.file_name).length;
-        }
-
-        return { activeStructures: activeStructures || 0, pendingDocs, validatedDocs, rejectedDocs };
     }
 };
 

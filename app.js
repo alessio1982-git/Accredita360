@@ -1,7 +1,8 @@
 // Stato dell'applicazione
 const appState = {
     selectedType: null,
-    requirements: []
+    requirements: [],
+    structure: null        // profilo struttura corrente
 };
 
 // App Controller
@@ -9,7 +10,7 @@ const app = {
     async init() {
         this.bindEvents();
         this.renderProfilingForm();
-        
+
         // Verifica Autenticazione
         const user = Backend.getCurrentUser();
         if (!user) {
@@ -25,23 +26,48 @@ const app = {
     setupUI(user) {
         document.querySelector('.sidebar').style.display = 'flex';
         document.querySelector('.topbar').style.display = 'flex';
-        document.querySelector('.user-name').textContent = user.name || user.email;
-        document.querySelector('.user-role').textContent = user.role === 'admin' ? 'Amministratore / Consulente' : 'Legale Rappresentante';
-        
-        if(user.role === 'admin') {
+
+        // Mostra subito il dato utente (sarà sovrascritto con il nome struttura dopo loadData)
+        const displayName = user.name || user.email;
+        const initial = displayName.charAt(0).toUpperCase();
+        document.querySelector('.user-name').textContent = displayName;
+        document.querySelector('.user-role').textContent = user.role === 'admin'
+            ? 'Amministratore / Consulente'
+            : 'Legale Rappresentante';
+        const avatarEl = document.querySelector('.avatar');
+        if (avatarEl) avatarEl.textContent = initial;
+
+        if (user.role === 'admin') {
             document.getElementById('nav-consultants').style.display = 'flex';
             document.getElementById('nav-normativa').style.display = 'flex';
             document.getElementById('nav-procedure-ota').style.display = 'flex';
             document.getElementById('nav-panoramica').style.display = 'flex';
             this.renderConsultantsData();
-            this.navigate('consultants'); // Admin va al suo pannello
+            this.navigate('consultants');
         } else {
             document.getElementById('nav-consultants').style.display = 'none';
             document.getElementById('nav-normativa').style.display = 'none';
             document.getElementById('nav-procedure-ota').style.display = 'none';
             document.getElementById('nav-panoramica').style.display = 'none';
-            this.navigate('dashboard'); // Utente va alla sua dashboard
+            this.navigate('dashboard');
         }
+    },
+
+    /**
+     * Aggiorna la topbar con il nome della struttura (chiamata dopo loadData).
+     * Per gli admin mostra il loro nome direttamente.
+     */
+    _updateTopbarWithStructure(structure) {
+        if (!structure) return;
+        const strutturaNome = structure.data?.ragioneSociale
+            || structure.data?.denominazione
+            || null;
+        if (!strutturaNome) return;
+
+        const nameEl   = document.querySelector('.user-name');
+        const avatarEl = document.querySelector('.avatar');
+        if (nameEl)   nameEl.textContent   = strutturaNome;
+        if (avatarEl) avatarEl.textContent = strutturaNome.charAt(0).toUpperCase();
     },
 
     _adminAllDocs: [], // Cache interna per i filtri
@@ -278,7 +304,21 @@ const app = {
     },
 
     async loadData() {
-        appState.requirements = await Backend.getRequirements();
+        // Carica struttura e requisiti in parallelo
+        const [structure, requirements] = await Promise.all([
+            Backend.getCurrentStructure(),
+            Backend.getRequirements()
+        ]);
+
+        appState.structure    = structure;
+        appState.requirements = requirements;
+
+        // Aggiorna topbar con nome struttura reale da Supabase
+        const user = Backend.getCurrentUser();
+        if (user && user.role !== 'admin') {
+            this._updateTopbarWithStructure(structure);
+        }
+
         this.updateStats();
         this.renderSection('asp', 'all');
 
@@ -295,7 +335,7 @@ const app = {
 
         // Mantenimento dinamico
         this.renderMaintenanceView();
-        
+
         // Fascicolo Documentale
         this.renderFascicolo();
     },
