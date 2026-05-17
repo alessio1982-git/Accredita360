@@ -11,12 +11,19 @@ const app = {
         this.bindEvents();
         this.renderProfilingForm();
 
+        // Controlla se è richiesta una vista specifica dalla landing
+        const urlParams = new URLSearchParams(window.location.search);
+        const requestedView = urlParams.get('view');
+
+        // Se l'utente clicca esplicitamente "Accedi" o "Registrati" dalla vetrina,
+        // forziamo la chiusura di eventuali sessioni preesistenti per mostrargli i moduli.
+        if (requestedView === 'register' || requestedView === 'login') {
+            Backend.logout();
+        }
+
         // Verifica Autenticazione
         const user = Backend.getCurrentUser();
         if (!user) {
-            // Controlla se è richiesta la vista registrazione tramite URL param
-            const urlParams = new URLSearchParams(window.location.search);
-            const requestedView = urlParams.get('view');
             if (requestedView === 'register') {
                 this.navigate('register');
             } else {
