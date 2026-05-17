@@ -545,9 +545,11 @@ const app = {
             'normativa': 'Quadro Normativo',
             'procedure-ota': 'Procedure OTA',
             'panoramica': 'Panoramica',
-            'login': 'Accesso'
+            'login': 'Accesso',
+            'register': 'Registrazione'
         };
-        document.getElementById('view-title').textContent = titles[viewId] || viewId;
+        const titleEl = document.getElementById('view-title');
+        if (titleEl) titleEl.textContent = titles[viewId] || viewId;
 
         // Cambia vista
         const views = document.querySelectorAll('.view');
