@@ -290,7 +290,7 @@ const app = {
 
     doLogout() {
         Backend.logout();
-        window.location.href = 'index.html';
+        window.location.href = '/';
     },
 
     // Nuova logica per i pannelli di login
