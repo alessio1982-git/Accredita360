@@ -14,7 +14,14 @@ const app = {
         // Verifica Autenticazione
         const user = Backend.getCurrentUser();
         if (!user) {
-            this.navigate('login');
+            // Controlla se è richiesta la vista registrazione tramite URL param
+            const urlParams = new URLSearchParams(window.location.search);
+            const requestedView = urlParams.get('view');
+            if (requestedView === 'register') {
+                this.navigate('register');
+            } else {
+                this.navigate('login');
+            }
             document.querySelector('.sidebar').style.display = 'none';
             document.querySelector('.topbar').style.display = 'none';
         } else {
@@ -73,16 +80,56 @@ const app = {
     _adminAllDocs: [], // Cache interna per i filtri
 
     async renderConsultantsData() {
-        // Carica statistiche aggregate
-        const stats = await Backend.getAdminStats();
-        const sEl = document.getElementById('admin-stat-structures');
-        const pEl = document.getElementById('admin-stat-pending');
-        const vEl = document.getElementById('admin-stat-validated');
-        const rEl = document.getElementById('admin-stat-rejected');
-        if (sEl) sEl.textContent = stats.activeStructures;
-        if (pEl) pEl.textContent = stats.pendingDocs;
-        if (vEl) vEl.textContent = stats.validatedDocs;
-        if (rEl) rEl.textContent = stats.rejectedDocs;
+        // Carica statistiche aggregate + iscrizioni recenti in parallelo
+        const [stats, recentRegs] = await Promise.all([
+            Backend.getAdminStats(),
+            Backend.getRecentRegistrations()
+        ]);
+
+        const sEl  = document.getElementById('admin-stat-structures');
+        const nrEl = document.getElementById('admin-stat-new-reg');
+        const pEl  = document.getElementById('admin-stat-pending');
+        const vEl  = document.getElementById('admin-stat-validated');
+        const rEl  = document.getElementById('admin-stat-rejected');
+        if (sEl)  sEl.textContent  = stats.activeStructures;
+        if (nrEl) nrEl.textContent = stats.newRegistrations;
+        if (pEl)  pEl.textContent  = stats.pendingDocs;
+        if (vEl)  vEl.textContent  = stats.validatedDocs;
+        if (rEl)  rEl.textContent  = stats.rejectedDocs;
+
+        // Render tabella nuove iscrizioni
+        const regTbody = document.getElementById('admin-new-registrations');
+        if (regTbody) {
+            if (recentRegs.length === 0) {
+                regTbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:20px; color:var(--text-muted); font-size:13px;">
+                    <i class='bx bx-info-circle'></i> Nessuna nuova iscrizione negli ultimi 30 giorni.
+                </td></tr>`;
+            } else {
+                const tipoMap = { persona_fisica: 'Persona Fisica', azienda: 'Azienda / Studio' };
+                regTbody.innerHTML = recentRegs.map(u => {
+                    const data = u.created_at
+                        ? new Date(u.created_at).toLocaleDateString('it-IT', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' })
+                        : '—';
+                    const tipoLabel = tipoMap[u.tipo_registrazione] || 'N/D';
+                    const tipoIcon  = u.tipo_registrazione === 'azienda' ? 'bx-building' : 'bx-user';
+                    return `<tr>
+                        <td style="font-weight:600;">${u.name || '—'}</td>
+                        <td style="font-size:13px; color:var(--text-muted);">${u.email}</td>
+                        <td>
+                            <span style="font-size:12px; padding:3px 10px; border-radius:20px; background:rgba(139,92,246,0.12); color:#8b5cf6; font-weight:600; display:inline-flex; align-items:center; gap:5px;">
+                                <i class='bx ${tipoIcon}'></i> ${tipoLabel}
+                            </span>
+                        </td>
+                        <td style="font-size:12px; color:var(--text-muted);">${data}</td>
+                        <td>
+                            <span class="status-badge status-green" style="font-size:11px;">
+                                <i class='bx bx-check-circle'></i> Attivo
+                            </span>
+                        </td>
+                    </tr>`;
+                }).join('');
+            }
+        }
 
         // Carica tutti i documenti di tutte le strutture
         const allStructures = await Backend.getAllStructuresWithRequirements();
@@ -103,6 +150,7 @@ const app = {
 
         this._renderAdminTable(this._adminAllDocs);
     },
+
 
     _renderAdminTable(docs) {
         const list = document.getElementById('consultant-list');
@@ -283,25 +331,146 @@ const app = {
         formArea.scrollIntoView({ behavior: 'smooth', block: 'center' });
     },
 
-    async doRegister() {
-        const name = document.getElementById('reg-name').value;
-        const email = document.getElementById('reg-email').value;
-        const pwd = document.getElementById('reg-pwd').value;
+    // ── Tipo registrazione toggle ──────────────────────────────
+    switchRegType(tipo) {
+        const fisicaLabel   = document.getElementById('reg-type-fisica-label');
+        const aziendaLabel  = document.getElementById('reg-type-azienda-label');
+        const fisicaFields  = document.getElementById('reg-fields-fisica');
+        const aziendaFields = document.getElementById('reg-fields-azienda');
+        const fisicaIcon    = fisicaLabel?.querySelector('i');
+        const aziendaIcon   = aziendaLabel?.querySelector('i');
 
-        if(!name || !email || !pwd) {
-            alert("Compila tutti i campi");
-            return;
-        }
-
-        try {
-            const session = await Backend.register(email, pwd, name);
-            alert("Registrazione completata con successo!");
-            this.setupUI(session.user);
-            await this.loadData();
-        } catch (e) {
-            alert("Errore durante la registrazione");
+        if (tipo === 'fisica') {
+            document.getElementById('reg-tipo-fisica').checked = true;
+            fisicaLabel.style.border  = '2px solid var(--primary)';
+            fisicaLabel.style.background = 'rgba(2,132,199,0.08)';
+            aziendaLabel.style.border = '2px solid var(--glass-border)';
+            aziendaLabel.style.background = 'transparent';
+            if (fisicaIcon)  fisicaIcon.style.color  = 'var(--primary)';
+            if (aziendaIcon) aziendaIcon.style.color = 'var(--text-muted)';
+            fisicaFields.style.display  = 'block';
+            aziendaFields.style.display = 'none';
+        } else {
+            document.getElementById('reg-tipo-azienda').checked = true;
+            aziendaLabel.style.border  = '2px solid var(--primary)';
+            aziendaLabel.style.background = 'rgba(2,132,199,0.08)';
+            fisicaLabel.style.border   = '2px solid var(--glass-border)';
+            fisicaLabel.style.background = 'transparent';
+            if (aziendaIcon) aziendaIcon.style.color = 'var(--primary)';
+            if (fisicaIcon)  fisicaIcon.style.color  = 'var(--text-muted)';
+            aziendaFields.style.display = 'block';
+            fisicaFields.style.display  = 'none';
         }
     },
+
+    _showRegError(msg) {
+        const el = document.getElementById('reg-error');
+        if (!el) return;
+        el.textContent = msg;
+        el.style.display = 'block';
+    },
+    _hideRegError() {
+        const el = document.getElementById('reg-error');
+        if (el) el.style.display = 'none';
+    },
+    _setRegLoading(loading) {
+        const btn     = document.getElementById('reg-submit-btn');
+        const txtSpan = document.getElementById('reg-btn-text');
+        const ldSpan  = document.getElementById('reg-btn-loading');
+        if (!btn) return;
+        btn.disabled = loading;
+        if (txtSpan) txtSpan.style.display = loading ? 'none'  : 'inline-flex';
+        if (ldSpan)  ldSpan.style.display  = loading ? 'inline-flex' : 'none';
+    },
+
+    async doRegister() {
+        this._hideRegError();
+
+        const tipo = document.querySelector('input[name="reg-tipo"]:checked')?.value || 'fisica';
+        const email   = document.getElementById('reg-email')?.value?.trim() || '';
+        const pwd     = document.getElementById('reg-pwd')?.value || '';
+        const pwdConf = document.getElementById('reg-pwd-confirm')?.value || '';
+        const terms   = document.getElementById('reg-terms')?.checked;
+
+        // Campi in base al tipo
+        let nome = '', cognome = '', ragioneSociale = '';
+        if (tipo === 'fisica') {
+            nome    = document.getElementById('reg-nome')?.value?.trim() || '';
+            cognome = document.getElementById('reg-cognome')?.value?.trim() || '';
+        } else {
+            ragioneSociale = document.getElementById('reg-ragione-sociale')?.value?.trim() || '';
+        }
+
+        // Validazione
+        if (tipo === 'fisica' && (!nome || !cognome)) {
+            return this._showRegError('Inserisci nome e cognome.');
+        }
+        if (tipo === 'azienda' && !ragioneSociale) {
+            return this._showRegError('Inserisci la ragione sociale.');
+        }
+        if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+            return this._showRegError('Inserisci un indirizzo email valido.');
+        }
+        if (pwd.length < 8) {
+            return this._showRegError('La password deve essere di almeno 8 caratteri.');
+        }
+        if (pwd !== pwdConf) {
+            return this._showRegError('Le password non coincidono.');
+        }
+        if (!terms) {
+            return this._showRegError('Devi accettare i Termini di Servizio per procedere.');
+        }
+
+        this._setRegLoading(true);
+        try {
+            const session = await Backend.register(
+                email, pwd,
+                nome, cognome, ragioneSociale,
+                tipo === 'fisica' ? 'persona_fisica' : 'azienda'
+            );
+
+            // Mostra messaggio di successo prima di entrare nella app
+            const displayName = session.user.name;
+            this._setRegLoading(false);
+
+            // Piccolo toast di successo
+            this._showSuccessToast(`Benvenuto, ${displayName}! Email di conferma inviata.`);
+
+            // Entra nella dashboard dopo 1.5s
+            setTimeout(() => {
+                this.setupUI(session.user);
+                this.loadData();
+            }, 1500);
+
+        } catch (e) {
+            this._setRegLoading(false);
+            this._showRegError(e.message || 'Errore durante la registrazione. Riprova.');
+        }
+    },
+
+    _showSuccessToast(msg) {
+        // Crea toast temporaneo
+        let toast = document.getElementById('reg-success-toast');
+        if (!toast) {
+            toast = document.createElement('div');
+            toast.id = 'reg-success-toast';
+            toast.style.cssText = `
+                position:fixed; bottom:32px; left:50%; transform:translateX(-50%);
+                background:linear-gradient(135deg,#059669,#0284c7);
+                color:#fff; font-size:14px; font-weight:600;
+                padding:14px 28px; border-radius:12px;
+                box-shadow:0 8px 24px rgba(5,150,105,0.4);
+                z-index:9999; display:flex; align-items:center; gap:10px;
+                animation:slideUp 0.3s ease;
+            `;
+            document.body.appendChild(toast);
+        }
+        toast.innerHTML = `<i class='bx bx-check-circle' style="font-size:20px;"></i> ${msg}`;
+        toast.style.display = 'flex';
+        setTimeout(() => { toast.style.display = 'none'; }, 4000);
+    },
+
+
 
     async loadData() {
         // Carica struttura e requisiti in parallelo

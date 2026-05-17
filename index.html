@@ -126,30 +126,116 @@
 
 
                 <!-- VIEW: Register -->
-                <div id="view-register" class="view">
-                    <div class="wizard-container glass-card" style="max-width: 400px;">
-                        <div class="wizard-header text-center">
-                            <h3>Registrazione Struttura</h3>
-                            <p>Crea un account per iniziare l'iter di autorizzazione.</p>
-                        </div>
-                        <div class="wizard-form">
-                            <div class="form-group">
-                                <label>Ragione Sociale</label>
-                                <input type="text" id="reg-name" class="input-box" placeholder="Es. Poliambulatorio X">
+                <div id="view-register" class="view" style="display:flex; align-items:center; justify-content:center; min-height:100vh; padding:20px;">
+                    <div style="width:100%; max-width:520px;">
+
+                        <!-- Logo Header -->
+                        <div style="text-align:center; margin-bottom:32px;">
+                            <div style="width:60px; height:60px; border-radius:16px; background:linear-gradient(135deg,#0f172a,#0284c7); display:inline-flex; align-items:center; justify-content:center; margin-bottom:12px; box-shadow:0 8px 24px rgba(2,132,199,0.3);">
+                                <i class='bx bx-user-plus' style="font-size:28px; color:#fff;"></i>
                             </div>
+                            <h2 style="font-size:26px; font-weight:800; color:var(--text-main); margin:0 0 6px;">Crea il tuo Account</h2>
+                            <p style="color:var(--text-muted); font-size:14px; margin:0;">Inizia il percorso di accreditamento sanitario</p>
+                        </div>
+
+                        <!-- Card -->
+                        <div class="glass-card" style="padding:36px; border-radius:20px; border:1px solid var(--glass-border);">
+
+                            <!-- Tipo Registrazione -->
+                            <div style="margin-bottom:24px;">
+                                <label style="font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:1px; color:var(--text-muted); display:block; margin-bottom:10px;">Tipo di Registrazione</label>
+                                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                                    <label id="reg-type-fisica-label" onclick="app.switchRegType('fisica')" style="cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:8px; padding:14px; border-radius:12px; border:2px solid var(--primary); background:rgba(2,132,199,0.08); transition:all 0.2s;">
+                                        <i class='bx bx-user' style="font-size:22px; color:var(--primary);"></i>
+                                        <span style="font-size:13px; font-weight:600; color:var(--text-main);">Persona Fisica</span>
+                                        <input type="radio" name="reg-tipo" id="reg-tipo-fisica" value="fisica" checked style="display:none;">
+                                    </label>
+                                    <label id="reg-type-azienda-label" onclick="app.switchRegType('azienda')" style="cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:8px; padding:14px; border-radius:12px; border:2px solid var(--glass-border); background:transparent; transition:all 0.2s;">
+                                        <i class='bx bx-building' style="font-size:22px; color:var(--text-muted);"></i>
+                                        <span style="font-size:13px; font-weight:600; color:var(--text-main);">Azienda / Studio</span>
+                                        <input type="radio" name="reg-tipo" id="reg-tipo-azienda" value="azienda" style="display:none;">
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- Campi Persona Fisica -->
+                            <div id="reg-fields-fisica">
+                                <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:16px;">
+                                    <div class="form-group" style="margin-bottom:0;">
+                                        <label>Nome <span style="color:var(--danger);">*</span></label>
+                                        <input type="text" id="reg-nome" class="input-box" placeholder="Es. Mario">
+                                    </div>
+                                    <div class="form-group" style="margin-bottom:0;">
+                                        <label>Cognome <span style="color:var(--danger);">*</span></label>
+                                        <input type="text" id="reg-cognome" class="input-box" placeholder="Es. Rossi">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Campi Azienda -->
+                            <div id="reg-fields-azienda" style="display:none; margin-bottom:16px;">
+                                <div class="form-group" style="margin-bottom:0;">
+                                    <label>Ragione Sociale / Denominazione <span style="color:var(--danger);">*</span></label>
+                                    <input type="text" id="reg-ragione-sociale" class="input-box" placeholder="Es. Poliambulatorio Santa Lucia Srl">
+                                </div>
+                            </div>
+
+                            <!-- Email -->
                             <div class="form-group">
-                                <label>Email Legale Rappresentante</label>
+                                <label>Email <span style="color:var(--danger);">*</span></label>
                                 <input type="email" id="reg-email" class="input-box" placeholder="email@struttura.it">
                             </div>
-                            <div class="form-group">
-                                <label>Password</label>
-                                <input type="password" id="reg-pwd" class="input-box" placeholder="Crea una password">
+
+                            <!-- Password -->
+                            <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:16px;">
+                                <div class="form-group" style="margin-bottom:0;">
+                                    <label>Password <span style="color:var(--danger);">*</span></label>
+                                    <input type="password" id="reg-pwd" class="input-box" placeholder="Min. 8 caratteri">
+                                </div>
+                                <div class="form-group" style="margin-bottom:0;">
+                                    <label>Conferma Password <span style="color:var(--danger);">*</span></label>
+                                    <input type="password" id="reg-pwd-confirm" class="input-box" placeholder="Ripeti password">
+                                </div>
                             </div>
-                            <button class="btn btn-primary" style="width: 100%; margin-bottom: 12px;" onclick="app.doRegister()">Registrati</button>
-                            <p style="text-align: center; color: var(--text-muted); font-size: 14px;">Hai già un account? <a href="#" style="color: var(--primary);" onclick="app.navigate('login')">Accedi</a></p>
+
+                            <!-- T&C -->
+                            <div style="margin-bottom:24px;">
+                                <label style="display:flex; align-items:flex-start; gap:10px; cursor:pointer;">
+                                    <input type="checkbox" id="reg-terms" style="width:16px; height:16px; margin-top:2px; accent-color:var(--primary); flex-shrink:0;">
+                                    <span style="font-size:13px; color:var(--text-muted); line-height:1.5;">
+                                        Accetto i <a href="#" style="color:var(--primary); font-weight:600;">Termini di Servizio</a> e la 
+                                        <a href="#" style="color:var(--primary); font-weight:600;">Privacy Policy</a> di Accredita360.
+                                    </span>
+                                </label>
+                            </div>
+
+                            <!-- Error message -->
+                            <div id="reg-error" style="display:none; background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.3); border-radius:8px; padding:10px 14px; margin-bottom:16px; font-size:13px; color:var(--danger);"></div>
+
+                            <!-- Submit Button -->
+                            <button id="reg-submit-btn" class="btn btn-primary" style="width:100%; margin-bottom:14px; position:relative;" onclick="app.doRegister()">
+                                <span id="reg-btn-text"><i class='bx bx-user-plus'></i> Crea Account</span>
+                                <span id="reg-btn-loading" style="display:none;"><i class='bx bx-loader-alt' style="animation:spin 1s linear infinite;"></i> Registrazione in corso...</span>
+                            </button>
+
+                            <p style="text-align:center; color:var(--text-muted); font-size:14px; margin:0;">
+                                Hai già un account? <a href="#" style="color:var(--primary); font-weight:600;" onclick="app.navigate('login')">Accedi</a>
+                            </p>
+                        </div>
+
+                        <!-- Info box -->
+                        <div style="margin-top:20px; background:rgba(2,132,199,0.06); border:1px solid rgba(2,132,199,0.15); border-radius:12px; padding:14px 18px; display:flex; gap:12px; align-items:flex-start;">
+                            <i class='bx bx-envelope' style="font-size:18px; color:var(--primary); margin-top:1px; flex-shrink:0;"></i>
+                            <p style="margin:0; font-size:12px; color:var(--text-muted); line-height:1.6;">
+                                Dopo la registrazione riceverai una <strong style="color:var(--text-main);">email di conferma</strong> da <strong style="color:var(--primary);">info@accredita360s.com</strong>. Controlla anche la cartella spam.
+                            </p>
                         </div>
                     </div>
                 </div>
+
+                <style>
+                @keyframes spin { to { transform: rotate(360deg); } }
+                </style>
 
                 <!-- VIEW: Dashboard -->
                 <div id="view-dashboard" class="view active-view">
@@ -751,6 +837,10 @@
                             <div class="stat-info"><h4>Strutture Attive</h4><span class="stat-value" id="admin-stat-structures">-</span></div>
                         </div>
                         <div class="stat-card glass-card">
+                            <div class="stat-icon" style="background:rgba(139,92,246,0.15); color:#8b5cf6;"><i class='bx bx-user-plus'></i></div>
+                            <div class="stat-info"><h4>Nuove Iscrizioni</h4><span class="stat-value" id="admin-stat-new-reg" style="color:#8b5cf6;">-</span></div>
+                        </div>
+                        <div class="stat-card glass-card">
                             <div class="stat-icon warning"><i class='bx bx-time-five'></i></div>
                             <div class="stat-info"><h4>In Attesa Validazione</h4><span class="stat-value warning" id="admin-stat-pending">-</span></div>
                         </div>
@@ -763,10 +853,40 @@
                             <div class="stat-info"><h4>Documenti Rifiutati</h4><span class="stat-value danger" id="admin-stat-rejected">-</span></div>
                         </div>
                     </div>
+
+                    <!-- NUOVE ISCRIZIONI -->
+                    <div class="checklist-container glass-card" style="margin-bottom:24px; border-left:4px solid #8b5cf6;">
+                        <div class="gap-header" style="margin-bottom:16px; padding:20px 20px 0;">
+                            <h4 style="display:flex; align-items:center; gap:8px;">
+                                <span style="width:28px; height:28px; border-radius:8px; background:rgba(139,92,246,0.15); color:#8b5cf6; display:inline-flex; align-items:center; justify-content:center; font-size:14px;">
+                                    <i class='bx bx-user-plus'></i>
+                                </span>
+                                Nuove Iscrizioni
+                            </h4>
+                            <span style="font-size:12px; color:var(--text-muted);">Ultimi 30 giorni</span>
+                        </div>
+                        <div class="checklist-table-wrapper" style="padding:0 0 8px;">
+                            <table class="checklist-table">
+                                <thead>
+                                    <tr>
+                                        <th>Utente</th>
+                                        <th>Email</th>
+                                        <th>Tipo</th>
+                                        <th>Data Iscrizione</th>
+                                        <th>Stato</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="admin-new-registrations">
+                                    <tr><td colspan="5" style="text-align:center; padding:20px; color:var(--text-muted); font-size:13px;"><i class='bx bx-loader-alt'></i> Caricamento...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
                     <!-- Filtri Admin -->
                     <div class="checklist-container glass-card" style="margin-bottom:20px; padding:16px 20px;">
                         <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
-                            <span style="font-weight:600; color:var(--text-muted); font-size:13px;"><i class='bx bx-filter'></i> Filtra:</span>
+                            <span style="font-weight:600; color:var(--text-muted); font-size:13px;"><i class='bx bx-filter'></i> Filtra Documenti:</span>
                             <button class="filter-btn admin-filter active" data-filter="all" onclick="app.filterAdminDocs('all', this)">Tutti</button>
                             <button class="filter-btn admin-filter warning" data-filter="yellow" onclick="app.filterAdminDocs('yellow', this)">In Attesa</button>
                             <button class="filter-btn admin-filter success" data-filter="green" onclick="app.filterAdminDocs('green', this)">Validati</button>

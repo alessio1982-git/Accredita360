@@ -58,13 +58,21 @@ const Backend = {
 
     /**
      * Registrazione: crea utente in `users` e avvia la sessione.
+     * Poi chiama la Edge Function per inviare la email di benvenuto.
      */
-    async register(email, password, name) {
+    async register(email, password, nome, cognome, ragioneSociale, tipoRegistrazione) {
+        const displayName = tipoRegistrazione === 'azienda'
+            ? ragioneSociale
+            : `${nome} ${cognome}`.trim();
+
         const newUser = {
-            email:    email.trim().toLowerCase(),
-            password: password,
-            name:     name,
-            role:     'cliente'
+            email:                 email.trim().toLowerCase(),
+            password:              password,
+            name:                  displayName,
+            role:                  'cliente',
+            tipo_registrazione:    tipoRegistrazione || 'persona_fisica',
+            registration_status:   'active',
+            created_at:            new Date().toISOString()
         };
 
         const { data, error } = await supabase
@@ -87,7 +95,32 @@ const Backend = {
             user:      data || newUser
         };
         sessionStorage.setItem(SESSION_KEY, JSON.stringify(session));
+
+        // Invia email di benvenuto (non bloccante — in background)
+        this.sendWelcomeEmail(displayName, email.trim().toLowerCase(), tipoRegistrazione)
+            .catch(err => console.warn('[Email] Invio benvenuto fallito (non critico):', err));
+
         return session;
+    },
+
+    /**
+     * Chiama la Supabase Edge Function "send-welcome-email"
+     * per inviare l'email di benvenuto da info@accredita360s.com via Resend.
+     */
+    async sendWelcomeEmail(nome, email, tipoRegistrazione) {
+        try {
+            const { data, error } = await supabase.functions.invoke('send-welcome-email', {
+                body: { nome, email, tipoRegistrazione }
+            });
+
+            if (error) {
+                console.error('[Email] Edge Function error:', error);
+            } else {
+                console.log('%c[Email] ✅ Email di benvenuto inviata a ' + email, 'color:#059669;font-weight:bold;');
+            }
+        } catch (err) {
+            console.warn('[Email] Invio fallito:', err);
+        }
     },
 
     logout() {
@@ -426,12 +459,20 @@ const Backend = {
     },
 
     async getAdminStats() {
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
         const [
             { count: activeStructures },
-            { data: reqs }
+            { data: reqs },
+            { count: newRegistrations }
         ] = await Promise.all([
             supabase.from('structures').select('*', { count: 'exact', head: true }),
-            supabase.from('requirements').select('stato, validated_at, file_name')
+            supabase.from('requirements').select('stato, validated_at, file_name'),
+            supabase.from('users')
+                .select('*', { count: 'exact', head: true })
+                .neq('role', 'admin')
+                .gte('created_at', thirtyDaysAgo.toISOString())
         ]);
 
         let pendingDocs   = 0;
@@ -444,7 +485,35 @@ const Backend = {
             rejectedDocs  = reqs.filter(r => r.stato === 'red' && r.file_name).length;
         }
 
-        return { activeStructures: activeStructures || 0, pendingDocs, validatedDocs, rejectedDocs };
+        return {
+            activeStructures:  activeStructures || 0,
+            newRegistrations:  newRegistrations || 0,
+            pendingDocs,
+            validatedDocs,
+            rejectedDocs
+        };
+    },
+
+    /**
+     * Restituisce gli utenti registrati negli ultimi 30 giorni (esclusi admin).
+     */
+    async getRecentRegistrations() {
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+        const { data, error } = await supabase
+            .from('users')
+            .select('name, email, role, tipo_registrazione, registration_status, created_at')
+            .neq('role', 'admin')
+            .gte('created_at', thirtyDaysAgo.toISOString())
+            .order('created_at', { ascending: false })
+            .limit(20);
+
+        if (error) {
+            console.error('[Admin] Errore lettura iscrizioni recenti:', error);
+            return [];
+        }
+        return data || [];
     },
 
 
