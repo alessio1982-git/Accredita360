@@ -283,9 +283,7 @@ const app = {
 
     doLogout() {
         Backend.logout();
-        document.querySelector('.sidebar').style.display = 'none';
-        document.querySelector('.topbar').style.display = 'none';
-        this.navigate('login');
+        window.location.href = 'index.html';
     },
 
     // Nuova logica per i pannelli di login
