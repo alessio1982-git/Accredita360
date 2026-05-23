@@ -3,599 +3,1680 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Accredita360 - Eccellenza nella Compliance Sanitaria</title>
-    <!-- Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;800&family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <title>Accredita360 - SanitàReg Sicilia</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <!-- Boxicons -->
     <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
-    <style>
-        :root {
-            /* Palette Futuristica Chiara */
-            --bg-deep: #ffffff;
-            --bg-accent: #f8fafc;
-            --primary: #0284c7; /* Blu forte */
-            --primary-glow: #38bdf8;
-            --secondary: #059669; /* Verde forte */
-            --text-main: #0f172a;
-            --text-muted: #475569;
-            --glass-bg: rgba(255, 255, 255, 0.85);
-            --glass-border: rgba(2, 132, 199, 0.15);
-            --glass-shadow: rgba(2, 132, 199, 0.1);
-        }
-
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        
-        html, body {
-            overflow-x: hidden;
-        }
-        body {
-            background-color: var(--bg-deep);
-            color: var(--text-main);
-            font-family: 'Inter', sans-serif;
-            overflow-y: auto;
-            line-height: 1.6;
-        }
-
-        h1, h2, h3, h4 {
-            font-family: 'Playfair Display', serif;
-            color: #0f172a;
-        }
-
-        /* Canvas Background */
-        #bg-canvas {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            z-index: -1;
-            pointer-events: none;
-            background: radial-gradient(circle at center, #ffffff 0%, #e0f2fe 100%);
-        }
-
-        /* Navbar */
-        nav {
-            display: flex;
-            align-items: center;
-            gap: 32px;
-            padding: 15px 1% 15px 2%;
-            background: rgba(255, 255, 255, 0.9);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border-bottom: 1px solid var(--glass-border);
-            position: fixed;
-            top: 0;
-            width: 100%;
-            z-index: 1000;
-            box-shadow: 0 4px 30px var(--glass-shadow);
-        }
-
-        .logo { 
-            display: flex; 
-            align-items: center; 
-            gap: 12px; 
-            font-family: 'Playfair Display', serif;
-            font-size: 24px;
-            font-weight: 800;
-            color: var(--primary);
-        }
-        .logo img { 
-            height: 74px; 
-            border-radius: 10px; 
-            filter: drop-shadow(0 0 12px rgba(2, 132, 199, 0.4));
-            animation: logoGlow 3s ease-in-out infinite alternate;
-        }
-        @keyframes logoGlow {
-            0% { filter: drop-shadow(0 0 8px rgba(2, 132, 199, 0.3)); }
-            100% { filter: drop-shadow(0 0 20px rgba(6, 182, 212, 0.6)); }
-        }
-        
-        .nav-links { display: flex; gap: 40px; align-items: center; }
-        .nav-links a { color: var(--text-main); text-decoration: none; font-weight: 600; font-size: 14px; transition: color 0.3s; }
-        .nav-links a:hover { color: var(--primary); }
-
-        .btn { 
-            padding: 14px 32px; 
-            border-radius: 12px; 
-            text-decoration: none; 
-            font-weight: 600; 
-            font-size: 15px;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        .btn-outline { 
-            border: 2px solid var(--primary); 
-            color: var(--primary); 
-            background: transparent;
-        }
-        .btn-outline:hover { 
-            background: rgba(2, 132, 199, 0.05); 
-            transform: translateY(-2px);
-        }
-        .btn-primary { 
-            background: linear-gradient(135deg, var(--primary), var(--secondary)); 
-            color: white; 
-            border: none; 
-            box-shadow: 0 10px 25px -5px rgba(2, 132, 199, 0.4);
-        }
-        .btn-primary:hover { 
-            transform: translateY(-3px) scale(1.02); 
-            box-shadow: 0 20px 35px -5px rgba(2, 132, 199, 0.5);
-        }
-
-        /* Hero Section */
-        .hero {
-            min-height: auto;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            text-align: center;
-            padding: 100px 8% 40px;
-            position: relative;
-        }
-
-        .hero h1 { 
-            font-size: 72px; 
-            line-height: 1.1; 
-            margin-bottom: 24px; 
-            font-weight: 800; 
-            max-width: 1000px;
-        }
-        .hero h1 span { 
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            position: relative;
-        }
-        
-        .hero p { 
-            font-size: 22px; 
-            color: var(--text-muted); 
-            margin-bottom: 50px; 
-            max-width: 700px; 
-            font-weight: 400;
-        }
-        
-        .hero-cta { display: flex; gap: 24px; justify-content: center; }
-
-        /* Container */
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 60px 8%;
-        }
-
-        .section-header {
-            text-align: center;
-            margin-bottom: 40px;
-        }
-        .section-header h2 {
-            font-size: 48px;
-            margin-bottom: 20px;
-            color: var(--primary);
-        }
-        .section-header p {
-            color: var(--text-muted);
-            font-size: 18px;
-            max-width: 600px;
-            margin: 0 auto;
-        }
-
-        /* Il Metodo (Steps) */
-        .method-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 25px;
-        }
-
-        .method-step {
-            background: var(--glass-bg);
-            border: 1px solid var(--glass-border);
-            padding: 35px 25px;
-            border-radius: 20px;
-            backdrop-filter: blur(20px);
-            box-shadow: 0 20px 40px var(--glass-shadow);
-            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-            text-align: center;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .method-step::before {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 6px;
-            background: linear-gradient(90deg, #0f172a, #0284c7, #06b6d4);
-            transform: scaleX(0);
-            transform-origin: left;
-            transition: transform 0.5s ease;
-        }
-
-        .method-step:hover {
-            transform: translateY(-15px);
-            box-shadow: 0 30px 60px rgba(2, 132, 199, 0.15);
-        }
-        .method-step:hover::before { transform: scaleX(1); }
-
-        .step-icon-wrapper {
-            width: 90px;
-            height: 90px;
-            border-radius: 24px;
-            background: rgba(255,255,255,0.5);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 15px;
-            font-size: 40px;
-            color: var(--primary);
-            transition: all 0.4s;
-            box-shadow: 0 0 15px rgba(0,0,0,0.05);
-        }
-        .method-step:hover .step-icon-wrapper {
-            background: linear-gradient(135deg, #0f172a, #0284c7);
-            color: white;
-            transform: scale(1.1) rotate(5deg);
-            box-shadow: 0 15px 30px rgba(2, 132, 199, 0.4);
-        }
-
-        .method-step h3 { font-size: 26px; margin-bottom: 16px; }
-        .method-step p { color: var(--text-muted); font-size: 15px; margin-bottom: 24px;}
-        .method-step ul { list-style: none; text-align: left; border-top: 1px solid rgba(0,0,0,0.05); padding-top: 20px;}
-        .method-step ul li { margin-bottom: 12px; font-size: 14px; color: var(--text-main); font-weight: 600; display: flex; align-items: center; gap: 10px;}
-        .method-step ul li i { color: var(--secondary); font-size: 18px; }
-
-        /* Pricing */
-        .pricing-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 25px; }
-        .price-card {
-            background: var(--glass-bg);
-            border: 1px solid var(--glass-border);
-            border-radius: 20px;
-            padding: 35px 25px;
-            box-shadow: 0 10px 30px var(--glass-shadow);
-            transition: all 0.4s;
-        }
-        .price-card:hover { transform: translateY(-10px); box-shadow: 0 20px 40px rgba(2, 132, 199, 0.15); }
-        .price-card.premium {
-            background: #0f172a;
-            color: white;
-            transform: scale(1.05);
-        }
-        .price-card.premium:hover { transform: scale(1.05) translateY(-10px); }
-        .price-card.premium h3 { color: white; }
-        .price-card.premium .desc { color: #94a3b8; }
-        
-        .price-val { font-size: 48px; font-weight: 800; font-family: 'Playfair Display', serif; margin: 15px 0; }
-        .price-features li { margin-bottom: 16px; font-weight: 600; display: flex; align-items: center; gap: 10px; font-size: 15px; }
-        .price-features li i { color: var(--secondary); font-size: 22px; }
-
-        /* Responsive */
-        @media (max-width: 1024px) {
-            .method-grid, .pricing-grid { grid-template-columns: repeat(2, 1fr); }
-            .price-card.premium { transform: none; }
-            .price-card.premium:hover { transform: translateY(-10px); }
-        }
-        @media (max-width: 768px) {
-            .nav-links { display: none; }
-            .hero h1 { font-size: 48px; }
-            .method-grid, .pricing-grid { grid-template-columns: 1fr; }
-            .hero-cta { flex-direction: column; }
-        }
-    </style>
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-
-    <canvas id="bg-canvas"></canvas>
-
-    <nav>
-        <div class="logo">
-            <img src="logo.png" alt="Accredita360 Logo">
-            <div style="display:flex; flex-direction:column; line-height:1.2;">
-                <span>Accredita360</span>
-                <span style="font-size:12px; font-weight:500; color:var(--text-muted); letter-spacing:2px; text-transform:uppercase;">Sicilia</span>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <nav class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <i class='bx bx-plus-medical logo-icon'></i>
+                    <span>Accredita360</span>
+                </div>
             </div>
-        </div>
-        <div class="nav-links">
-            <a href="#chi-siamo">Chi Siamo</a>
-            <a href="#metodo">Il Metodo</a>
-            <a href="#sicurezza">Sicurezza & Normative</a>
-            <a href="#servizi">Modelli B2B</a>
-            <a href="#contatti">Contatti</a>
-        </div>
-        <div style="margin-left:auto; display:flex; gap:12px; align-items:center;">
-            <a href="login.html" class="btn btn-outline" style="padding:10px 22px; font-size:13px;">
-                <i class='bx bx-log-in'></i> Accedi
-            </a>
-            <a href="register.html" class="btn btn-primary" style="padding:10px 22px; font-size:13px;">
-                <i class='bx bx-user-plus'></i> Inizia Ora
-            </a>
-        </div>
-    </nav>
+            <ul class="nav-links">
+                <li class="active" data-view="dashboard">
+                    <a href="#"><i class='bx bx-grid-alt'></i><span>Dashboard</span></a>
+                </li>
+                <li data-view="anagrafica">
+                    <a href="#"><i class='bx bx-id-card'></i><span>Anagrafica Struttura</span></a>
+                </li>
+                <li data-view="profiling">
+                    <a href="#"><i class='bx bx-user-circle'></i><span>Profilazione Struttura</span></a>
+                </li>
+                <li data-view="gap-analysis">
+                    <a href="#"><i class='bx bx-check-shield'></i><span>Gap Analysis OTA</span></a>
+                </li>
+                <li data-view="documents">
+                    <a href="#"><i class='bx bx-folder-open'></i><span>Fascicolo Documentale</span></a>
+                </li>
+                <li data-view="maintenance">
+                    <a href="#"><i class='bx bx-calendar-event'></i><span>Mantenimento</span></a>
+                </li>
+                <li data-view="consultants" id="nav-consultants" style="display: none;">
+                    <a href="#"><i class='bx bx-group'></i><span>Area Consulenti</span></a>
+                </li>
+                <li data-view="normativa" id="nav-normativa" style="display: none;">
+                    <a href="#"><i class='bx bx-book-open'></i><span>Quadro Normativo</span></a>
+                </li>
+                <li data-view="procedure-ota" id="nav-procedure-ota" style="display: none;">
+                    <a href="#"><i class='bx bx-clipboard'></i><span>Procedure OTA</span></a>
+                </li>
+                <li data-view="panoramica" id="nav-panoramica" style="display: none;">
+                    <a href="#"><i class='bx bx-map-alt'></i><span>Panoramica</span></a>
+                </li>
+            </ul>
+        </nav>
 
-    <section class="hero">
-        <h1 style="margin-top:0;">Accredita360<br><span>Piattaforma All-in-One.</span></h1>
-        <p>Progettata per semplificare l'iter di autorizzazione e l'accreditamento OTA. Un ecosistema completo per guidare Direttori Sanitari e Management attraverso le complessità normative.</p>
-    </section>
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="topbar">
+                <h2 id="view-title">Dashboard</h2>
+                <div class="user-profile">
+                    <div class="user-info">
+                        <span class="user-name">Dr. Rossi</span>
+                        <span class="user-role">Legale Rappresentante</span>
+                    </div>
+                    <div class="avatar">R</div>
+                </div>
+            </header>
 
-    <!-- Sezione Chi Siamo -->
-    <section id="chi-siamo" class="container" style="display: flex; flex-wrap: wrap; align-items: stretch; gap: 60px; padding-top: 40px; padding-bottom: 60px;">
-        <div style="flex: 1.2; min-width: 400px; display: flex;">
-            <img src="uploaded_hero.jpg" alt="Accredita360 Hero" style="width: 100%; height: 100%; object-fit: cover; border-radius: 24px; box-shadow: 0 20px 50px rgba(2, 132, 199, 0.2); border: 1px solid var(--glass-border);">
-        </div>
-        <div style="flex: 1; min-width: 400px; display: flex; flex-direction: column; justify-content: center;">
-            <h2 style="margin-bottom: 20px; font-size: 42px; color: var(--primary); text-align: left;">Chi Siamo</h2>
-            <p style="text-align: justify; margin-bottom: 15px; font-size: 16px; line-height: 1.7;">
-                La nostra storia nasce da una profonda consapevolezza: il mondo sanitario richiede un livello di eccellenza che non ammette compromessi. 
-                Siamo un team multidisciplinare di figure professionali altamente specializzate, uniti dalla vocazione per l'innovazione e la conformità nel settore della salute. 
-                In sinergia operano <strong style="color: var(--primary);">ingegneri clinici, avvocati, informatici e consulenti aziendali</strong>, 
-                guidando le strutture verso i più alti standard qualitativi.
-            </p>
-            <p style="text-align: justify; margin-bottom: 15px; font-size: 16px; line-height: 1.7;">
-                Conosciamo la complessità normativa moderna — dalle autorizzazioni ASP all'accreditamento OTA — e sappiamo quanto ogni dettaglio incida sull'affidabilità dei servizi. 
-                Il nostro metodo spazia dalla progettazione di percorsi sicuri alla compliance legale, fino alla <strong style="color: var(--secondary);">sicurezza dei dati sensibili</strong>.
-            </p>
-            <p style="text-align: justify; font-size: 16px; line-height: 1.7; margin: 0;">
-                Ci poniamo come partner strategici al fianco di Direttori Sanitari e Top Management per trasformare i requisiti normativi in opportunità di crescita, assicurando efficienza e massima affidabilità.
-            </p>
-        </div>
-    </section>
+            <div class="content-area">
+                <!-- VIEW: Login -->
+                <div id="view-login" class="view">
+                    <div class="wizard-container glass-card" style="max-width: 400px;">
+                        <div class="wizard-header text-center">
+                            <h3>Accesso Area Riservata</h3>
+                            <p>Inserisci le tue credenziali per accedere ai fascicoli.</p>
+                        </div>
+                        <div class="wizard-form">
+                            <div class="form-group">
+                                <label>Email</label>
+                                <input type="email" id="login-email" class="input-box" value="admin@accredita360.it">
+                            </div>
+                            <div class="form-group">
+                                <label>Password</label>
+                                <input type="password" id="login-pwd" class="input-box" value="admin">
+                            </div>
+                            <button class="btn btn-primary" style="width: 100%; margin-bottom: 12px;" onclick="app.doLogin()">Accedi</button>
+                            <p style="text-align: center; color: var(--text-muted); font-size: 14px;">Non hai un account? <a href="#" style="color: var(--primary);" onclick="app.navigate('register')">Registra la tua Struttura</a></p>
+                        </div>
+                    </div>
+                </div>
 
-    <!-- Sezione Il Metodo -->
-    <section id="metodo" class="container" style="padding-top: 60px; padding-bottom: 60px;">
-        <div style="display: flex; flex-wrap: wrap; align-items: stretch; gap: 60px; margin-bottom: 60px; flex-direction: row-reverse;">
-            <div style="flex: 1.2; min-width: 400px; display: flex;">
-                <img src="uploaded_method.jpg" alt="Metodo Accredita360" style="width: 100%; height: 100%; object-fit: cover; border-radius: 24px; box-shadow: 0 20px 50px rgba(2, 132, 199, 0.2); border: 1px solid var(--glass-border);">
-            </div>
-            <div style="flex: 1; min-width: 400px; display: flex; flex-direction: column; justify-content: center;">
-                <h2 style="margin-bottom: 20px; font-size: 42px; color: var(--primary); text-align: left;">L'Infrastruttura del Procedimento</h2>
-                <p style="text-align: justify; font-size: 17px; line-height: 1.8; color: var(--text-muted); margin: 0;">
-                    Non forniamo un semplice software gestionale, ma un'impalcatura metodologica rigorosa e completa, progettata per sollevare il management sanitario dal peso della burocrazia. 
-                    Il nostro approccio ingegnerizza l'intero iter di compliance, trasformando normative complesse in flussi di lavoro chiari, tracciabili e sicuri. 
-                    Dall'ottenimento dell'autorizzazione sanitaria fino all'accreditamento istituzionale, applichiamo protocolli di altissima affidabilità blindando i risultati contro ogni rischio ispettivo.
-                </p>
-            </div>
-        </div>
-        
-        <div class="method-grid">
-            <div class="method-step">
-                <div class="step-icon-wrapper"><i class='bx bx-building-house'></i></div>
-                <h3 style="font-size: 22px; margin-bottom: 10px;">1. Autorizzazione Sanitaria</h3>
-                <p style="text-align: left; font-size: 15px; line-height: 1.5; margin-bottom: 15px; color: var(--text-muted);">
-                    Il fondamento imprescindibile per l'operatività. Gestiamo rigorosamente i requisiti strutturali, impiantistici e tecnologici imposti dal D.A. 890/2002, assicurando la totale conformità in fase di rilascio dell'autorizzazione da parte dell'ASP competente.
-                </p>
-                <ul style="border-top: 1px solid rgba(0,0,0,0.1); padding-top: 15px;">
-                    <li><i class='bx bx-check'></i> Verifica conformità urbanistica</li>
-                    <li><i class='bx bx-check'></i> Istruzione pratiche SUAP</li>
-                    <li><i class='bx bx-check'></i> Assistenza sopralluogo ASP</li>
-                </ul>
-            </div>
-            
-            <div class="method-step">
-                <div class="step-icon-wrapper"><i class='bx bx-medal'></i></div>
-                <h3 style="font-size: 22px; margin-bottom: 10px;">2. Accreditamento OTA</h3>
-                <p style="text-align: left; font-size: 15px; line-height: 1.5; margin-bottom: 15px; color: var(--text-muted);">
-                    Il salto di qualità verso l'eccellenza clinica. Implementiamo architetture organizzative conformi al D.A. 20/2024, elevando gli standard della struttura per superare con autorevolezza le ispezioni dell'Organismo Tecnicamente Accreditante regionale.
-                </p>
-                <ul style="border-top: 1px solid rgba(0,0,0,0.1); padding-top: 15px;">
-                    <li><i class='bx bx-check'></i> Progettazione Sistema Qualità</li>
-                    <li><i class='bx bx-check'></i> Gestione Rischio Clinico</li>
-                    <li><i class='bx bx-check'></i> Affiancamento Audit OTA</li>
-                </ul>
-            </div>
+                <!-- VIEW: Register -->
+                <div id="view-register" class="view">
+                    <div class="wizard-container glass-card" style="max-width: 400px;">
+                        <div class="wizard-header text-center">
+                            <h3>Registrazione Struttura</h3>
+                            <p>Crea un account per iniziare l'iter di autorizzazione.</p>
+                        </div>
+                        <div class="wizard-form">
+                            <div class="form-group">
+                                <label>Ragione Sociale</label>
+                                <input type="text" id="reg-name" class="input-box" placeholder="Es. Poliambulatorio X">
+                            </div>
+                            <div class="form-group">
+                                <label>Email Legale Rappresentante</label>
+                                <input type="email" id="reg-email" class="input-box" placeholder="email@struttura.it">
+                            </div>
+                            <div class="form-group">
+                                <label>Password</label>
+                                <input type="password" id="reg-pwd" class="input-box" placeholder="Crea una password">
+                            </div>
+                            <button class="btn btn-primary" style="width: 100%; margin-bottom: 12px;" onclick="app.doRegister()">Registrati</button>
+                            <p style="text-align: center; color: var(--text-muted); font-size: 14px;">Hai già un account? <a href="#" style="color: var(--primary);" onclick="app.navigate('login')">Accedi</a></p>
+                        </div>
+                    </div>
+                </div>
 
-            <div class="method-step">
-                <div class="step-icon-wrapper"><i class='bx bx-briefcase-alt-2'></i></div>
-                <h3 style="font-size: 22px; margin-bottom: 10px;">3. Convenzionamento</h3>
-                <p style="text-align: left; font-size: 15px; line-height: 1.5; margin-bottom: 15px; color: var(--text-muted);">
-                    Il consolidamento del modello di business. Forniamo consulenza strategica di alto profilo per la fase di contrattualizzazione con il Servizio Sanitario Regionale, tutelando gli interessi della struttura nell'assegnazione dei budget e tetti di spesa.
-                </p>
-                <ul style="border-top: 1px solid rgba(0,0,0,0.1); padding-top: 15px;">
-                    <li><i class='bx bx-check'></i> Negoziazione Budget SSR</li>
-                    <li><i class='bx bx-check'></i> Tutela legale contratti ASP</li>
-                    <li><i class='bx bx-check'></i> Programmazione Sanitaria</li>
-                </ul>
-            </div>
-        </div>
-    </section>
+                <!-- VIEW: Dashboard -->
+                <div id="view-dashboard" class="view active-view">
+                    <div class="welcome-card glass-card">
+                        <h3>Benvenuto in Accredita360</h3>
+                        <p>Inizia configurando la tua struttura sanitaria o sociosanitaria per ottenere l'autorizzazione o l'accreditamento con la Regione Siciliana.</p>
+                        <button class="btn btn-primary" onclick="app.navigate('profiling')">Inizia Profilazione</button>
+                    </div>
+                    
+                    <div class="stats-grid">
+                        <div class="stat-card glass-card">
+                            <div class="stat-icon"><i class='bx bx-file'></i></div>
+                            <div class="stat-info">
+                                <h4>Requisiti Totali</h4>
+                                <span class="stat-value" id="stat-total">-</span>
+                            </div>
+                        </div>
+                        <div class="stat-card glass-card">
+                            <div class="stat-icon success"><i class='bx bx-check'></i></div>
+                            <div class="stat-info">
+                                <h4>Conformi</h4>
+                                <span class="stat-value success" id="stat-ok">-</span>
+                            </div>
+                        </div>
+                        <div class="stat-card glass-card">
+                            <div class="stat-icon warning"><i class='bx bx-error'></i></div>
+                            <div class="stat-info">
+                                <h4>Da Integrare</h4>
+                                <span class="stat-value warning" id="stat-warn">-</span>
+                            </div>
+                        </div>
+                        <div class="stat-card glass-card">
+                            <div class="stat-icon danger"><i class='bx bx-x'></i></div>
+                            <div class="stat-info">
+                                <h4>Critici</h4>
+                                <span class="stat-value danger" id="stat-crit">-</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
-    <!-- Sezione Sicurezza -->
-    <section id="sicurezza" class="container" style="display: flex; flex-wrap: wrap; align-items: stretch; gap: 60px; padding-top: 60px; padding-bottom: 60px;">
-        <div style="flex: 1.2; min-width: 400px; text-align: left; display: flex; flex-direction: column; justify-content: center;">
-            <h2 style="margin-bottom: 25px; font-size: 42px; color: var(--primary);">Sicurezza & Normative</h2>
-            <p style="text-align: justify; font-size: 17px; line-height: 1.8; margin-bottom: 20px;">
-                La protezione del dato è l'architrave su cui poggia l'intera affidabilità di Accredita360. In un settore delicato come quello sanitario, la sicurezza non è un'opzione, ma un prerequisito fondamentale. La nostra infrastruttura è progettata secondo il principio della <strong>Security by Design</strong> per garantire l'integrità e la riservatezza di ogni informazione.
-            </p>
-            <p style="text-align: justify; font-size: 17px; line-height: 1.8; margin-bottom: 20px;">
-                Adottiamo protocolli di <strong>crittografia avanzata</strong> e sistemi di protezione del dato sanitario pienamente conformi al <strong>GDPR</strong>. Ogni fascicolo documentale e ogni Gap Analysis sono blindati e pronti per superare con successo i rigorosi audit delle commissioni ispettive ASP e OTA, garantendo al Management la massima serenità operativa.
-            </p>
-            <p style="text-align: justify; font-size: 17px; line-height: 1.8; margin: 0;">
-                Garantiamo la <strong>tracciabilità totale</strong> di ogni operazione e il backup ridondato su infrastrutture sicure in territorio UE, offrendo un ecosistema digitale impenetrabile che tutela il valore e la privacy della tua struttura sanitaria.
-            </p>
-        </div>
-        <div style="flex: 0.8; min-width: 300px; display: flex;">
-            <img src="uploaded_security.jpg" alt="Sicurezza Accredita360" style="width: 100%; height: 100%; object-fit: cover; border-radius: 24px; box-shadow: 0 20px 50px rgba(2, 132, 199, 0.2); border: 1px solid var(--glass-border);">
-        </div>
-    </section>
+                <!-- VIEW: Profiling -->
+                <div id="view-profiling" class="view">
+                    <div class="wizard-container glass-card">
+                        <div class="wizard-header">
+                            <h3>Inquadramento Normativo Automatico</h3>
+                            <p>Rispondi a queste domande per generare i requisiti previsti dal D.A. 890/2002 e D.A. 20/2024 per la tua struttura.</p>
+                        </div>
+                        <div class="wizard-form" id="profiling-form">
+                            <!-- Injected via JS -->
+                        </div>
+                    </div>
+                </div>
 
-    <section id="servizi" class="container" style="margin-bottom: 50px;">
-        <div class="section-header">
-            <h2>Modelli B2B su Misura</h2>
-        </div>
-        <div class="pricing-grid">
-            <div class="price-card">
-                <h3>SaaS "Do It Yourself"</h3>
-                <p class="desc">Per cliniche con team Qualità interno.</p>
-                <div class="price-val">Licenza</div>
-                <ul class="price-features">
-                    <li><i class='bx bx-check'></i> Accesso alla piattaforma</li>
-                    <li><i class='bx bx-check'></i> Motore normativo</li>
-                </ul>
-                <a href="#" class="btn btn-outline" style="width: 100%; justify-content: center;">Richiedi Demo</a>
-            </div>
+                <!-- VIEW: Anagrafica -->
+                <div id="view-anagrafica" class="view">
+                    <div class="gap-header" style="margin-bottom: 24px;">
+                        <h3>Anagrafica e Struttura</h3>
+                        <button class="btn btn-primary" onclick="app.salvaAnagrafica()"><i class='bx bx-save'></i> Salva Dati</button>
+                    </div>
 
-            <div class="price-card premium">
-                <h3>Consulenza "Chiavi in Mano"</h3>
-                <p class="desc">Il nostro team guida l'intero iter per te.</p>
-                <div class="price-val">Custom</div>
-                <ul class="price-features">
-                    <li><i class='bx bx-check'></i> Gestione completa piattaforma</li>
-                    <li><i class='bx bx-check'></i> Sopralluogo e Gap Analysis fisica</li>
-                    <li><i class='bx bx-check'></i> Affiancamento durante visita OTA</li>
-                </ul>
-                <a href="#" class="btn btn-primary" style="width: 100%; justify-content: center;">Parla con un Consulente</a>
-            </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: start;">
+                        <!-- Anagrafica Titolare -->
+                        <div class="glass-card">
+                            <h4 style="margin-bottom: 20px; color: var(--primary); font-size: 18px;"><i class='bx bx-user-pin'></i> Dati Titolare</h4>
+                            
+                            <div class="form-group">
+                                <label>Natura Giuridica</label>
+                                <select class="input-box" id="titolare-tipo" onchange="app.toggleTitolareType(this.value)">
+                                    <option value="societa">Società (Srl, Spa, Sas, Snc)</option>
+                                    <option value="fisica">Persona Fisica</option>
+                                </select>
+                            </div>
 
-            <div class="price-card">
-                <h3>Mantenimento Compliance</h3>
-                <p class="desc">Per strutture già accreditate da tutelare.</p>
-                <div class="price-val">Retainer</div>
-                <ul class="price-features">
-                    <li><i class='bx bx-check'></i> Monitoraggio continuo indicatori</li>
-                    <li><i class='bx bx-check'></i> Audit interno simulato pre-OTA</li>
-                </ul>
-                <a href="#" class="btn btn-outline" style="width: 100%; justify-content: center;">Scopri il Servizio</a>
-            </div>
-        </div>
-        </div>
-    </section>
+                            <!-- Campi Società -->
+                            <div id="titolare-societa">
+                                <div class="form-group">
+                                    <label>Ragione Sociale</label>
+                                    <input type="text" class="input-box" placeholder="Es. Medica Srl">
+                                </div>
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                                    <div class="form-group">
+                                        <label>Partita IVA</label>
+                                        <input type="text" class="input-box" placeholder="Es. 01234567890">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Codice Fiscale Struttura</label>
+                                        <input type="text" class="input-box">
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label>Sede Legale (Indirizzo Completo)</label>
+                                    <input type="text" class="input-box" placeholder="Es. Via Roma 1, 90100 Palermo (PA)">
+                                </div>
+                                <h5 style="margin: 16px 0 8px; color: var(--text-muted);">Dati Legale Rappresentante</h5>
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                                    <div class="form-group">
+                                        <label>Nome e Cognome</label>
+                                        <input type="text" class="input-box" placeholder="Es. Mario Rossi">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Codice Fiscale L.R.</label>
+                                        <input type="text" class="input-box" placeholder="Es. RSSMRA80A01H501A">
+                                    </div>
+                                </div>
+                            </div>
 
-    <!-- Sezione Contatti -->
-    <section id="contatti" class="container" style="margin-bottom: 100px; text-align: center;">
-        <div class="section-header">
-            <h2>Contattaci</h2>
-            <p>Richiedi un Audit esplorativo gratuito o prenota una demo del software.</p>
-        </div>
-        <a href="mailto:info@accredita360.it" class="btn btn-primary" style="display:inline-flex; align-items:center; gap:10px;">
-            <i class='bx bx-envelope'></i> Parla con un Consulente
-        </a>
-    </section>
+                            <!-- Campi Persona Fisica -->
+                            <div id="titolare-fisica" style="display: none;">
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                                    <div class="form-group">
+                                        <label>Nome</label>
+                                        <input type="text" class="input-box" placeholder="Es. Mario">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Cognome</label>
+                                        <input type="text" class="input-box" placeholder="Es. Rossi">
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label>Codice Fiscale</label>
+                                    <input type="text" class="input-box" placeholder="Es. RSSMRA80A01H501A">
+                                </div>
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                                    <div class="form-group">
+                                        <label>Luogo di Nascita</label>
+                                        <input type="text" class="input-box" placeholder="Es. Palermo">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Data di Nascita</label>
+                                        <input type="date" class="input-box">
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label>Residenza</label>
+                                    <input type="text" class="input-box" placeholder="Es. Via Garibaldi 2, 90100 Palermo (PA)">
+                                </div>
+                            </div>
 
-    <!-- Footer -->
-    <footer style="background: rgba(255,255,255,0.9); border-top: 1px solid var(--glass-border); padding: 40px 8%; text-align: center; position: relative; z-index: 10; backdrop-filter: blur(10px);">
-        <div style="max-width: 1200px; margin: 0 auto;">
-            <p style="font-weight: 600; color: var(--text-main); margin-bottom: 12px;">&copy; 2026 Accredita360. Tutti i diritti riservati.</p>
-            <p style="font-size: 12px; color: var(--text-muted); line-height: 1.6; max-width: 800px; margin: 0 auto 20px;">
-                Piattaforma B2B ad uso esclusivo di consulenti e strutture sanitarie per la gestione dell'iter autorizzativo (ASP) e accreditamento istituzionale (OTA). Le informazioni riportate hanno valore di supporto procedurale.
-            </p>
-            <div style="display: flex; gap: 24px; justify-content: center;">
-                <a href="#" style="color: var(--primary); text-decoration: none; font-size: 13px; font-weight: 600;">Privacy Policy</a>
-                <a href="#" style="color: var(--primary); text-decoration: none; font-size: 13px; font-weight: 600;">Termini di Servizio</a>
-                <a href="#" style="color: var(--primary); text-decoration: none; font-size: 13px; font-weight: 600;">Assistenza Legale</a>
-            </div>
-        </div>
-    </footer>
+                            <h5 style="margin: 16px 0 8px; color: var(--text-muted);">Contatti Titolare</h5>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                                <div class="form-group">
+                                    <label>PEC</label>
+                                    <input type="email" class="input-box" placeholder="es. struttura@pec.it">
+                                </div>
+                                <div class="form-group">
+                                    <label>Recapito Telefonico</label>
+                                    <input type="tel" class="input-box" placeholder="es. 333 1234567">
+                                </div>
+                            </div>
+                        </div>
 
-    <script>
-        const canvas = document.getElementById('bg-canvas');
-        const ctx = canvas.getContext('2d');
-        
-        let width, height;
-        let particles = [];
-        
-        // Colori istituzionali: Navy, Primary Blue, Cyan
-        const colors = ['#0f172a', '#0284c7', '#06b6d4'];
+                        <!-- Anagrafica Azienda/Struttura -->
+                        <div class="glass-card">
+                            <h4 style="margin-bottom: 20px; color: var(--primary); font-size: 18px;"><i class='bx bx-clinic'></i> Anagrafica Azienda (Sede Operativa)</h4>
+                            
+                            <div class="form-group">
+                                <label>Denominazione / Insegna Struttura</label>
+                                <input type="text" class="input-box" placeholder="Es. Centro Medico Salute">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>Indirizzo Sede Operativa (dove si erogano le prestazioni)</label>
+                                <input type="text" class="input-box" placeholder="Es. Viale Libertà 10, 90100 Palermo (PA)">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>Tipologia Struttura</label>
+                                <select class="input-box">
+                                    <option>Poliambulatorio Specialistico</option>
+                                    <option>Casa di Cura</option>
+                                    <option>RSA</option>
+                                    <option>Laboratorio di Analisi</option>
+                                    <option>Centro Odontoiatrico</option>
+                                    <option>Altro</option>
+                                </select>
+                            </div>
 
-        function init() {
-            width = canvas.width = window.innerWidth;
-            height = canvas.height = window.innerHeight;
-            particles = [];
-            
-            // Densità moderata per un look pulito e non caotico
-            const particleCount = Math.floor((width * height) / 9000); 
-            
-            for (let i = 0; i < particleCount; i++) {
-                particles.push(new Particle());
-            }
-        }
+                            <h5 style="margin: 16px 0 8px; color: var(--text-muted);">Direttore Sanitario</h5>
+                            <div class="form-group">
+                                <label>Nome e Cognome Direttore</label>
+                                <input type="text" class="input-box" placeholder="Es. Dr. Luigi Bianchi">
+                            </div>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                                <div class="form-group">
+                                    <label>Ordine Professionale</label>
+                                    <input type="text" class="input-box" placeholder="Es. Medici Chirurghi">
+                                </div>
+                                <div class="form-group">
+                                    <label>N. Iscrizione e Provincia</label>
+                                    <input type="text" class="input-box" placeholder="Es. 1234 - PA">
+                                </div>
+                            </div>
+                            
+                            <h5 style="margin: 16px 0 8px; color: var(--text-muted);">Contatti Pubblici Struttura</h5>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                                <div class="form-group">
+                                    <label>Email Pubblica</label>
+                                    <input type="email" class="input-box" placeholder="es. info@centromedico.it">
+                                </div>
+                                <div class="form-group">
+                                    <label>Telefono Segreteria</label>
+                                    <input type="tel" class="input-box" placeholder="es. 091 123456">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Sito Web</label>
+                                <input type="url" class="input-box" placeholder="es. www.centromedico.it">
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
-        class Particle {
-            constructor() {
-                this.x = Math.random() * width;
-                this.y = Math.random() * height;
-                this.vx = (Math.random() - 0.5) * 0.8; // Movimento lento e regolare
-                this.vy = (Math.random() - 0.5) * 0.8;
-                this.radius = Math.random() * 2 + 1.5;
-                this.color = colors[Math.floor(Math.random() * colors.length)];
-            }
+                <!-- VIEW: Gap Analysis (Semaforo) -->
+                <div id="view-gap-analysis" class="view">
+                    <div class="gap-header">
+                        <h3>Percorso Documentale Autorizzativo</h3>
+                        <button class="btn btn-outline" onclick="app.esportaReport()"><i class='bx bx-download'></i> Esporta Report Completo</button>
+                    </div>
 
-            update() {
-                this.x += this.vx;
-                this.y += this.vy;
+                    <!-- TAB NAVIGATION -->
+                    <div class="gap-tab-nav glass-card">
+                        <button class="gap-tab-btn active" id="tab-btn-asp" onclick="app.switchGapTab('asp')">
+                            <i class='bx bx-building-house'></i>
+                            <span>Autorizzazione Sanitaria ASP</span>
+                            <small>D.A. 890/2002</small>
+                        </button>
+                        <button class="gap-tab-btn" id="tab-btn-ota" onclick="app.switchGapTab('ota')">
+                            <i class='bx bx-medal'></i>
+                            <span>Accreditamento Istituzionale OTA</span>
+                            <small>D.A. 20/2024</small>
+                        </button>
+                        <button class="gap-tab-btn" id="tab-btn-infrastruttura" onclick="app.switchGapTab('infrastruttura')">
+                            <i class='bx bx-sitemap'></i>
+                            <span>Infrastruttura Procedimento</span>
+                            <small>Guide & Workflow</small>
+                        </button>
+                    </div>
 
-                // Bounce
-                if (this.x < 0 || this.x > width) this.vx = -this.vx;
-                if (this.y < 0 || this.y > height) this.vy = -this.vy;
-            }
+                    <!-- PAGINA ESCLUSIVA: AUTORIZZAZIONE ASP -->
+                    <div id="gap-page-asp" class="gap-page">
+                        <div class="gap-section glass-card">
+                            <div class="gap-section-header gap-section-asp">
+                                <div class="gap-section-title-block">
+                                    <div class="gap-section-icon-asp"><i class='bx bx-building-house'></i></div>
+                                    <div>
+                                        <div class="gap-section-label">Sezione 1</div>
+                                        <div class="gap-section-name">Autorizzazione Sanitaria ASP</div>
+                                        <div class="gap-section-sub">D.A. 890/2002 · Requisiti minimi strutturali, tecnologici e organizzativi</div>
+                                    </div>
+                                </div>
+                                <div class="gap-section-stats-row">
+                                    <div class="gap-mini-stat"><span id="asp-stat-total" class="gap-mini-val">-</span><span class="gap-mini-label">Totali</span></div>
+                                    <div class="gap-mini-stat success"><span id="asp-stat-ok" class="gap-mini-val">-</span><span class="gap-mini-label">Conformi</span></div>
+                                    <div class="gap-mini-stat warning"><span id="asp-stat-warn" class="gap-mini-val">-</span><span class="gap-mini-label">Da Integrare</span></div>
+                                    <div class="gap-mini-stat danger"><span id="asp-stat-crit" class="gap-mini-val">-</span><span class="gap-mini-label">Critici</span></div>
+                                </div>
+                            </div>
+                            <div class="gap-section-filters">
+                                <button class="filter-btn active" onclick="app.filterSection('asp','all',this)">Tutti</button>
+                                <button class="filter-btn success" onclick="app.filterSection('asp','green',this)">Conformi</button>
+                                <button class="filter-btn warning" onclick="app.filterSection('asp','yellow',this)">Da Integrare</button>
+                                <button class="filter-btn danger" onclick="app.filterSection('asp','red',this)">Critici</button>
+                            </div>
+                            <div class="checklist-table-wrapper" style="padding: 0 24px 24px;">
+                                <table class="checklist-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Stato</th><th>Requisito</th><th>Categoria</th>
+                                            <th>Norma di Riferimento</th><th>Azione Correttiva</th>
+                                            <th>Carica File</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="asp-requirements-list"><!-- Injected via JS --></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
 
-            draw() {
-                ctx.beginPath();
-                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-                ctx.fillStyle = this.color;
-                ctx.fill();
-            }
-        }
+                    <!-- PAGINA ESCLUSIVA: ACCREDITAMENTO OTA -->
+                    <div id="gap-page-ota" class="gap-page" style="display:none;">
+                        <div class="gap-section glass-card" id="ota-section-wrapper">
+                            <div class="gap-section-header gap-section-ota">
+                                <div class="gap-section-title-block">
+                                    <div class="gap-section-icon-ota"><i class='bx bx-medal'></i></div>
+                                    <div>
+                                        <div class="gap-section-label">Sezione 2</div>
+                                        <div class="gap-section-name">Accreditamento Istituzionale OTA</div>
+                                        <div class="gap-section-sub">D.A. 20/2024 · Sistema Qualità, Risk Management e Trasparenza</div>
+                                    </div>
+                                </div>
+                                <div class="gap-section-stats-row">
+                                    <div class="gap-mini-stat"><span id="ota-stat-total" class="gap-mini-val">-</span><span class="gap-mini-label">Totali</span></div>
+                                    <div class="gap-mini-stat success"><span id="ota-stat-ok" class="gap-mini-val">-</span><span class="gap-mini-label">Conformi</span></div>
+                                    <div class="gap-mini-stat warning"><span id="ota-stat-warn" class="gap-mini-val">-</span><span class="gap-mini-label">Da Integrare</span></div>
+                                    <div class="gap-mini-stat danger"><span id="ota-stat-crit" class="gap-mini-val">-</span><span class="gap-mini-label">Critici</span></div>
+                                </div>
+                            </div>
+                            <div class="gap-section-filters">
+                                <button class="filter-btn active" onclick="app.filterSection('ota','all',this)">Tutti</button>
+                                <button class="filter-btn success" onclick="app.filterSection('ota','green',this)">Conformi</button>
+                                <button class="filter-btn warning" onclick="app.filterSection('ota','yellow',this)">Da Integrare</button>
+                                <button class="filter-btn danger" onclick="app.filterSection('ota','red',this)">Critici</button>
+                            </div>
+                            <div class="checklist-table-wrapper" style="padding: 0 24px 24px;">
+                                <table class="checklist-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Stato</th><th>Requisito</th><th>Categoria</th>
+                                            <th>Norma di Riferimento</th><th>Azione Correttiva</th>
+                                            <th>Carica File</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="ota-requirements-list"><!-- Injected via JS --></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
 
-        let mouse = { x: null, y: null, radius: 150 };
-        
-        window.addEventListener('mousemove', (e) => {
-            mouse.x = e.x;
-            mouse.y = e.y;
-        });
-        window.addEventListener('mouseout', () => { mouse.x = null; mouse.y = null; });
-
-        function animate() {
-            requestAnimationFrame(animate);
-            ctx.clearRect(0, 0, width, height);
-
-            for (let i = 0; i < particles.length; i++) {
-                let p = particles[i];
-                p.update();
-                p.draw();
-
-                // Connessioni "Neurale" tra particelle
-                for (let j = i + 1; j < particles.length; j++) {
-                    const dx = p.x - particles[j].x;
-                    const dy = p.y - particles[j].y;
-                    const distance = Math.sqrt(dx * dx + dy * dy);
-
-                    if (distance < 120) {
-                        ctx.beginPath();
-                        ctx.strokeStyle = `rgba(2, 132, 199, ${0.15 - distance/800})`;
-                        ctx.lineWidth = 0.8;
-                        ctx.moveTo(p.x, p.y);
-                        ctx.lineTo(particles[j].x, particles[j].y);
-                        ctx.stroke();
-                    }
-                }
-
-                // Connessione morbida al mouse (senza esplosioni)
-                if (mouse.x != null) {
-                    const dx = p.x - mouse.x;
-                    const dy = p.y - mouse.y;
-                    const distance = Math.sqrt(dx * dx + dy * dy);
-                    if (distance < mouse.radius) {
-                        ctx.beginPath();
-                        ctx.strokeStyle = `rgba(6, 182, 212, ${0.25 - distance/(mouse.radius*4)})`;
-                        ctx.lineWidth = 1;
-                        ctx.moveTo(p.x, p.y);
-                        ctx.lineTo(mouse.x, mouse.y);
-                        ctx.stroke();
+                    <!-- PAGINA ESCLUSIVA: INFRASTRUTTURA PROCEDIMENTO -->
+                    <div id="gap-page-infrastruttura" class="gap-page" style="display:none;">
                         
-                        // Leggera attrazione per un effetto magnetico elegante
-                        p.x -= dx * 0.005;
-                        p.y -= dy * 0.005;
-                    }
-                }
-            }
-        }
+                        <div class="glass-card" style="padding:0; overflow:hidden; border:1px solid rgba(59,130,246,0.3); margin-bottom:24px;">
+                            <div style="background:linear-gradient(135deg, rgba(59,130,246,0.18), rgba(139,92,246,0.12)); padding:24px 28px; border-bottom:1px solid rgba(59,130,246,0.2);">
+                                <h1 style="margin:0; font-size:22px; color:var(--text-main); margin-bottom:8px;">STRUTTURA COMPLETA DEL PROCEDIMENTO</h1>
+                                <h2 style="margin:0; font-size:16px; color:var(--primary); font-weight:600;">AUTORIZZAZIONE SANITARIA → ACCREDITAMENTO → OTA → CONVENZIONAMENTO</h2>
+                                <p style="margin:4px 0 0; font-size:13px; color:var(--text-muted);">(Sistema Regione Sicilia)</p>
+                            </div>
 
-        window.addEventListener('resize', init);
-        init();
-        animate();
-    </script>
+                            <div style="padding:28px;">
+                                <p style="font-size:14px; color:var(--text-muted); font-style:italic; border-left:3px solid var(--primary); padding-left:12px; margin-bottom:32px;">
+                                    Ti faccio una struttura professionale, pratica e "da consulente senior", utile anche per costruire davvero una piattaforma tipo "Accredita360".
+                                </p>
+
+                                <!-- SEZIONE 1 -->
+                                <h3 style="color:var(--text-main); font-size:18px; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:8px; margin-bottom:16px;">
+                                    <span style="color:var(--primary); margin-right:8px;">1.</span> DIFFERENZA FONDAMENTALE: AUTORIZZAZIONE ≠ ACCREDITAMENTO ≠ CONVENZIONAMENTO
+                                </h3>
+                                <div class="checklist-table-wrapper" style="margin-bottom:32px;">
+                                    <table class="checklist-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Fase</th>
+                                                <th>Cosa significa</th>
+                                                <th>Chi interviene</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td><strong>Autorizzazione sanitaria</strong></td>
+                                                <td>Ti permette di APRIRE</td>
+                                                <td>ASP + Comune/SUAP</td>
+                                            </tr>
+                                            <tr>
+                                                <td><strong>Accreditamento istituzionale</strong></td>
+                                                <td>Ti riconosce IDONEO per SSR</td>
+                                                <td>Regione + OTA</td>
+                                            </tr>
+                                            <tr>
+                                                <td><strong>Convenzionamento/Contratto</strong></td>
+                                                <td>Ti assegna budget e prestazioni SSR</td>
+                                                <td>Regione / ASP</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                <!-- SEZIONE 2 -->
+                                <h3 style="color:var(--text-main); font-size:18px; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:8px; margin-bottom:16px;">
+                                    <span style="color:var(--primary); margin-right:8px;">2.</span> FLOW REALE DEL PROCEDIMENTO
+                                </h3>
+
+                                <!-- Fase A -->
+                                <div style="background:rgba(255,255,255,0.03); border-radius:12px; padding:20px; margin-bottom:16px; border:1px solid rgba(255,255,255,0.05);">
+                                    <h4 style="color:#3b82f6; font-size:16px; margin:0 0 12px;">FASE A — STUDIO PRELIMINARE</h4>
+                                    <p style="font-size:13px; color:var(--text-muted); margin-bottom:12px;">Qui nasce tutto.</p>
+                                    
+                                    <div style="display:flex; gap:24px; flex-wrap:wrap;">
+                                        <div style="flex:1; min-width:250px;">
+                                            <strong style="font-size:13px; color:var(--text-main); display:block; margin-bottom:8px;">Attività consulenziale:</strong>
+                                            <ul style="font-size:13px; color:var(--text-muted); padding-left:20px; margin:0 0 16px;">
+                                                <li>verifica urbanistica;</li>
+                                                <li>destinazione d'uso;</li>
+                                                <li>conformità catastale;</li>
+                                                <li>barriere architettoniche;</li>
+                                                <li>impianti;</li>
+                                                <li>antincendio;</li>
+                                                <li>layout sanitario;</li>
+                                                <li>requisiti branca.</li>
+                                            </ul>
+                                        </div>
+                                        <div style="flex:1; min-width:250px; background:rgba(59,130,246,0.1); padding:16px; border-radius:8px; border-left:3px solid #3b82f6;">
+                                            <strong style="font-size:14px; color:#3b82f6; display:block; margin-bottom:8px;">Output finale: "Studio di fattibilità sanitaria"</strong>
+                                            <ul style="font-size:13px; color:var(--text-muted); padding-left:20px; margin:0;">
+                                                <li>tipologia struttura;</li>
+                                                <li>branca sanitaria;</li>
+                                                <li>requisiti applicabili;</li>
+                                                <li>criticità;</li>
+                                                <li>costi adeguamento;</li>
+                                                <li>iter amministrativo.</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Fase B -->
+                                <div style="background:rgba(255,255,255,0.03); border-radius:12px; padding:20px; margin-bottom:16px; border:1px solid rgba(255,255,255,0.05);">
+                                    <h4 style="color:#8b5cf6; font-size:16px; margin:0 0 12px;">FASE B — PROGETTAZIONE</h4>
+                                    
+                                    <div style="display:flex; gap:24px; flex-wrap:wrap;">
+                                        <div style="flex:1; min-width:200px;">
+                                            <strong style="font-size:13px; color:var(--text-main); display:block; margin-bottom:8px;">Figure coinvolte:</strong>
+                                            <ul style="font-size:13px; color:var(--text-muted); padding-left:20px; margin:0;">
+                                                <li>avvocato;</li>
+                                                <li>consulente sanitario;</li>
+                                                <li>ingegnere;</li>
+                                                <li>architetto;</li>
+                                                <li>tecnico impiantista;</li>
+                                                <li>esperto qualità;</li>
+                                                <li>privacy/DPO;</li>
+                                                <li>sicurezza lavoro.</li>
+                                            </ul>
+                                        </div>
+                                        <div style="flex:2; min-width:300px;">
+                                            <strong style="font-size:13px; color:var(--text-main); display:block; margin-bottom:8px;">Documenti tecnici principali:</strong>
+                                            <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px;">
+                                                <div>
+                                                    <span style="font-size:12px; font-weight:600; color:#8b5cf6;">Urbanistica</span>
+                                                    <ul style="font-size:12px; color:var(--text-muted); padding-left:16px; margin-top:4px;">
+                                                        <li>destinazione d'uso</li><li>agibilità</li><li>conformità edilizia</li>
+                                                    </ul>
+                                                </div>
+                                                <div>
+                                                    <span style="font-size:12px; font-weight:600; color:#8b5cf6;">Sicurezza</span>
+                                                    <ul style="font-size:12px; color:var(--text-muted); padding-left:16px; margin-top:4px;">
+                                                        <li>DVR</li><li>antincendio</li><li>impianti</li><li>evacuazione</li>
+                                                    </ul>
+                                                </div>
+                                                <div>
+                                                    <span style="font-size:12px; font-weight:600; color:#8b5cf6;">Sanitario</span>
+                                                    <ul style="font-size:12px; color:var(--text-muted); padding-left:16px; margin-top:4px;">
+                                                        <li>organigramma</li><li>procedure cliniche</li><li>gestione farmaci</li><li>rischio clinico</li>
+                                                    </ul>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Fase C -->
+                                <div style="background:rgba(255,255,255,0.03); border-radius:12px; padding:20px; margin-bottom:16px; border:1px solid rgba(255,255,255,0.05);">
+                                    <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                                        <h4 style="color:#10b981; font-size:16px; margin:0 0 12px;">FASE C — AUTORIZZAZIONE SANITARIA</h4>
+                                        <span class="badge" style="background:rgba(16,185,129,0.1); color:#10b981; padding:4px 8px; border-radius:4px; font-size:11px; font-weight:600;">Competenza: ASP + SUAP Comunale</span>
+                                    </div>
+                                    
+                                    <strong style="font-size:13px; color:var(--text-main); display:block; margin-bottom:12px;">Procedura pratica:</strong>
+                                    <ol style="font-size:13px; color:var(--text-muted); padding-left:20px; margin:0; line-height:1.6;">
+                                        <li><strong>Presentazione pratica SUAP:</strong> Con planimetrie, relazioni tecniche, impianti, titoli professionali, doc. sanitaria.</li>
+                                        <li><strong>Istruttoria amministrativa:</strong> Verificano completezza, conformità urbanistica e compatibilità sanitaria.</li>
+                                        <li><strong>Sopralluogo ASP (Controllo vero):</strong> Verificano locali, percorsi sporco/pulito, sterilizzazione, sicurezza, accessibilità, attrezzature, personale.</li>
+                                        <li><strong>Verbale ASP:</strong> Favorevole (Ok), Favorevole con prescrizioni (Devi adeguarti), Negativo (Rigetto).</li>
+                                        <li><strong>Rilascio autorizzazione:</strong> La struttura può aprire ed esercitare. <br><span style="color:var(--warning);">⚠️ MA NON può ancora lavorare col SSR.</span></li>
+                                    </ol>
+                                </div>
+
+                                <!-- Fase D -->
+                                <div style="background:rgba(255,255,255,0.03); border-radius:12px; padding:20px; margin-bottom:32px; border:1px solid rgba(255,255,255,0.05);">
+                                    <h4 style="color:#f59e0b; font-size:16px; margin:0 0 12px;">FASE D — PREPARAZIONE ACCREDITAMENTO</h4>
+                                    <p style="font-size:13px; color:var(--text-muted); margin-bottom:12px;">Qui cambia completamente livello. Non basta più "essere aperti". Devi dimostrare:</p>
+                                    <div style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:16px;">
+                                        <span style="background:rgba(255,255,255,0.05); padding:4px 10px; border-radius:16px; font-size:12px;">✅ qualità</span>
+                                        <span style="background:rgba(255,255,255,0.05); padding:4px 10px; border-radius:16px; font-size:12px;">✅ governance</span>
+                                        <span style="background:rgba(255,255,255,0.05); padding:4px 10px; border-radius:16px; font-size:12px;">✅ organizzazione</span>
+                                        <span style="background:rgba(255,255,255,0.05); padding:4px 10px; border-radius:16px; font-size:12px;">✅ appropriatezza</span>
+                                        <span style="background:rgba(255,255,255,0.05); padding:4px 10px; border-radius:16px; font-size:12px;">✅ tracciabilità</span>
+                                        <span style="background:rgba(255,255,255,0.05); padding:4px 10px; border-radius:16px; font-size:12px;">✅ audit interno</span>
+                                    </div>
+                                    <p style="font-size:14px; color:#f59e0b; font-weight:600; margin:0;">Qui entrano: OTA + requisiti accreditamento</p>
+                                </div>
+
+                                <!-- SEZIONE 3 -->
+                                <h3 style="color:var(--text-main); font-size:18px; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:8px; margin-bottom:16px;">
+                                    <span style="color:var(--primary); margin-right:8px;">3.</span> REQUISITI ACCREDITAMENTO OTA
+                                </h3>
+                                
+                                <div style="display:flex; gap:24px; flex-wrap:wrap; margin-bottom:32px;">
+                                    <div style="flex:1; min-width:300px;">
+                                        <strong style="font-size:14px; color:var(--text-main); display:block; margin-bottom:12px;">Aree Principali</strong>
+                                        <div class="checklist-table-wrapper">
+                                            <table class="checklist-table" style="font-size:12px;">
+                                                <thead><tr><th>Area</th><th>Controllo</th></tr></thead>
+                                                <tbody>
+                                                    <tr><td>Governance</td><td>organizzazione aziendale</td></tr>
+                                                    <tr><td>Qualità</td><td>procedure e audit</td></tr>
+                                                    <tr><td>Clinica</td><td>protocolli sanitari</td></tr>
+                                                    <tr><td>Personale</td><td>qualifiche e formazione</td></tr>
+                                                    <tr><td>Sicurezza</td><td>rischio clinico</td></tr>
+                                                    <tr><td>Privacy</td><td>GDPR sanitario</td></tr>
+                                                    <tr><td>Tecnologie</td><td>manutenzioni</td></tr>
+                                                    <tr><td>Appropriatezza</td><td>corretto uso prestazioni</td></tr>
+                                                    <tr><td>Indicatori</td><td>monitoraggio qualità</td></tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                    <div style="flex:1; min-width:300px;">
+                                        <strong style="font-size:14px; color:var(--text-main); display:block; margin-bottom:12px;">Documenti Chiave OTA</strong>
+                                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+                                            <div style="background:rgba(255,255,255,0.03); padding:12px; border-radius:8px;">
+                                                <div style="font-size:12px; font-weight:600; color:#3b82f6; margin-bottom:4px;">Area organizzativa</div>
+                                                <div style="font-size:11px; color:var(--text-muted);">organigramma; funzionigramma; mansionari; deleghe; sistema qualità.</div>
+                                            </div>
+                                            <div style="background:rgba(255,255,255,0.03); padding:12px; border-radius:8px;">
+                                                <div style="font-size:12px; font-weight:600; color:#10b981; margin-bottom:4px;">Area sanitaria</div>
+                                                <div style="font-size:11px; color:var(--text-muted);">protocolli; procedure operative; linee guida; gestione emergenze; gestione infezioni.</div>
+                                            </div>
+                                            <div style="background:rgba(255,255,255,0.03); padding:12px; border-radius:8px;">
+                                                <div style="font-size:12px; font-weight:600; color:#f59e0b; margin-bottom:4px;">Area tecnica</div>
+                                                <div style="font-size:11px; color:var(--text-muted);">manutenzioni; verifiche impianti; controlli apparecchiature; tarature.</div>
+                                            </div>
+                                            <div style="background:rgba(255,255,255,0.03); padding:12px; border-radius:8px;">
+                                                <div style="font-size:12px; font-weight:600; color:#ec4899; margin-bottom:4px;">Area rischio clinico</div>
+                                                <div style="font-size:11px; color:var(--text-muted);">incident reporting; eventi avversi; audit; gestione non conformità.</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- SEZIONE 4, 5, 6, 7, 8 -->
+                                <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:24px; margin-bottom:32px;">
+                                    <!-- S4: Sopralluogo OTA -->
+                                    <div>
+                                        <h3 style="color:var(--text-main); font-size:16px; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:8px; margin-bottom:12px;">
+                                            <span style="color:var(--primary); margin-right:8px;">4.</span> SOPRALLUOGO OTA
+                                        </h3>
+                                        <p style="font-size:12px; color:var(--text-muted); margin-bottom:8px;">Qui il livello ispettivo diventa molto elevato. I verificatori controllano documenti, intervistano personale, verificano procedure e tracciabilità.</p>
+                                        <strong style="font-size:12px; color:var(--text-main);">Controlli tipici OTA (esempi reali):</strong>
+                                        <ul style="font-size:12px; color:var(--text-muted); padding-left:16px; margin-top:4px;">
+                                            <li>il personale conosce le procedure?</li>
+                                            <li>le emergenze sono simulate?</li>
+                                            <li>esiste audit annuale?</li>
+                                            <li>cartelle cliniche corrette?</li>
+                                            <li>gestione farmaci tracciata?</li>
+                                            <li>privacy sanitaria rispettata?</li>
+                                        </ul>
+                                    </div>
+
+                                    <!-- S5 e S6: Esiti -->
+                                    <div>
+                                        <h3 style="color:var(--text-main); font-size:16px; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:8px; margin-bottom:12px;">
+                                            <span style="color:var(--primary); margin-right:8px;">5-6.</span> NON CONFORMITÀ & ESITO OTA
+                                        </h3>
+                                        <table class="checklist-table" style="font-size:12px; margin-bottom:12px;">
+                                            <thead><tr><th>Tipo NC</th><th>Effetto</th></tr></thead>
+                                            <tbody>
+                                                <tr><td>Minore</td><td>Adeguamento</td></tr>
+                                                <tr><td>Maggiore</td><td>Rischio sospensione</td></tr>
+                                                <tr><td>Critica</td><td style="color:var(--danger);">Diniego/revoca</td></tr>
+                                            </tbody>
+                                        </table>
+                                        <table class="checklist-table" style="font-size:12px;">
+                                            <thead><tr><th>Esito</th><th>Conseguenza</th></tr></thead>
+                                            <tbody>
+                                                <tr><td>Positivo</td><td style="color:var(--success);">Accreditamento</td></tr>
+                                                <tr><td>Con prescrizioni</td><td style="color:var(--warning);">Adeguamenti obbligatori</td></tr>
+                                                <tr><td>Negativo</td><td style="color:var(--danger);">Stop procedura</td></tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+
+                                    <!-- S7 e S8: Contratto -->
+                                    <div>
+                                        <h3 style="color:var(--text-main); font-size:16px; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:8px; margin-bottom:12px;">
+                                            <span style="color:var(--primary); margin-right:8px;">7-8.</span> ACCREDITAMENTO & BUDGET
+                                        </h3>
+                                        <p style="font-size:12px; color:var(--text-muted); margin-bottom:8px;">La Regione emette decreto e iscrizione elenco. Ora la struttura ✅ è accreditata. <span style="color:var(--warning);">⚠️ Ma non necessariamente ha budget.</span></p>
+                                        <strong style="font-size:12px; color:var(--text-main);">CONTRATTO / BUDGET SSR:</strong>
+                                        <p style="font-size:12px; color:var(--text-muted); margin-bottom:8px;">Intervengono Regione e ASP. Si decide tetto di spesa, branche, volumi e budget annuale.</p>
+                                        <p style="font-size:11px; color:#ef4444; background:rgba(239,68,68,0.1); padding:8px; border-radius:6px; margin:0;">È qui che nascono contenziosi, TAR, richieste revisione budget. Tema molto forte in Sicilia oggi.</p>
+                                    </div>
+                                </div>
+
+                                <!-- SEZIONE 9 -->
+                                <h3 style="color:var(--text-main); font-size:18px; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:8px; margin-bottom:16px;">
+                                    <span style="color:var(--primary); margin-right:8px;">9.</span> CHECKLIST PROFESSIONALE COMPLETA
+                                </h3>
+                                <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:16px; margin-bottom:32px;">
+                                    <div style="background:rgba(255,255,255,0.03); padding:16px; border-radius:8px; border-left:3px solid #6366f1;">
+                                        <strong style="font-size:13px; color:#6366f1; display:block; margin-bottom:8px;">AREA GIURIDICA</strong>
+                                        <div style="font-size:12px; color:var(--text-muted); line-height:1.8;">✅ autorizzazioni<br>✅ privacy<br>✅ contratti<br>✅ responsabilità sanitaria<br>✅ risk management</div>
+                                    </div>
+                                    <div style="background:rgba(255,255,255,0.03); padding:16px; border-radius:8px; border-left:3px solid #14b8a6;">
+                                        <strong style="font-size:13px; color:#14b8a6; display:block; margin-bottom:8px;">AREA TECNICA</strong>
+                                        <div style="font-size:12px; color:var(--text-muted); line-height:1.8;">✅ impianti<br>✅ antincendio<br>✅ barriere architettoniche<br>✅ manutenzioni</div>
+                                    </div>
+                                    <div style="background:rgba(255,255,255,0.03); padding:16px; border-radius:8px; border-left:3px solid #8b5cf6;">
+                                        <strong style="font-size:13px; color:#8b5cf6; display:block; margin-bottom:8px;">AREA SANITARIA</strong>
+                                        <div style="font-size:12px; color:var(--text-muted); line-height:1.8;">✅ protocolli<br>✅ procedure<br>✅ emergenze<br>✅ formazione</div>
+                                    </div>
+                                    <div style="background:rgba(255,255,255,0.03); padding:16px; border-radius:8px; border-left:3px solid #f59e0b;">
+                                        <strong style="font-size:13px; color:#f59e0b; display:block; margin-bottom:8px;">AREA OTA</strong>
+                                        <div style="font-size:12px; color:var(--text-muted); line-height:1.8;">✅ audit<br>✅ indicatori<br>✅ qualità<br>✅ non conformità</div>
+                                    </div>
+                                </div>
+
+                                <!-- SEZIONE 10 & 11 -->
+                                <div style="display:flex; gap:24px; flex-wrap:wrap;">
+                                    <div style="flex:2; min-width:350px;">
+                                        <h3 style="color:var(--text-main); font-size:18px; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:8px; margin-bottom:16px;">
+                                            <span style="color:var(--primary); margin-right:8px;">10.</span> COME DIVENTA UN BUSINESS "ACCREDITA360"
+                                        </h3>
+                                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+                                            <div style="background:rgba(59,130,246,0.05); padding:12px; border-radius:8px;">
+                                                <strong style="font-size:12px; color:#3b82f6;">AREA 1 — SOFTWARE</strong>
+                                                <div style="font-size:11px; color:var(--text-muted); margin-top:4px;">Piattaforma SaaS.</div>
+                                            </div>
+                                            <div style="background:rgba(59,130,246,0.05); padding:12px; border-radius:8px;">
+                                                <strong style="font-size:12px; color:#3b82f6;">AREA 2 — CONSULENZA</strong>
+                                                <div style="font-size:11px; color:var(--text-muted); margin-top:4px;">Team multidisciplinare: legale, sanitario, tecnico, qualità, ingegneria.</div>
+                                            </div>
+                                            <div style="background:rgba(59,130,246,0.05); padding:12px; border-radius:8px;">
+                                                <strong style="font-size:12px; color:#3b82f6;">AREA 3 — DOC AUTOMATICA</strong>
+                                                <div style="font-size:11px; color:var(--text-muted); margin-top:4px;">Generazione AI: procedure, manuali, audit, DVR, check-list.</div>
+                                            </div>
+                                            <div style="background:rgba(59,130,246,0.05); padding:12px; border-radius:8px;">
+                                                <strong style="font-size:12px; color:#3b82f6;">AREA 4 — CONTROLLO CONTINUO</strong>
+                                                <div style="font-size:11px; color:var(--text-muted); margin-top:4px;">Dashboard: scadenze, audit, verifiche, alert OTA.</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div style="flex:1; min-width:250px; background:linear-gradient(135deg, rgba(16,185,129,0.1), rgba(16,185,129,0.02)); border:1px solid rgba(16,185,129,0.2); padding:20px; border-radius:12px;">
+                                        <h3 style="color:var(--success); font-size:16px; margin:0 0 12px;">
+                                            11. IL VERO PUNTO DI FORZA
+                                        </h3>
+                                        <p style="font-size:13px; color:var(--text-main); margin-bottom:12px;">Il mercato sanitario privato ha una paura enorme di perdere autorizzazione, accreditamento e budget.</p>
+                                        <p style="font-size:12px; color:var(--text-muted); margin-bottom:12px;">Quindi chi offre: <strong>sicurezza normativa, continuità OTA e gestione compliance</strong>, diventa strategico per cliniche, RSA, laboratori, poliambulatori e radiologie.</p>
+                                        <div style="background:rgba(16,185,129,0.15); color:#10b981; padding:8px 12px; border-radius:6px; font-size:12px; font-weight:600; text-align:center;">
+                                            Il settore "compliance sanitaria accreditamento" vale moltissimo.
+                                        </div>
+                                    </div>
+                                </div>
+
+                            </div>
+                        </div>
+
+                    </div>
+
+                </div>
+                <!-- VIEW: Documents (Fascicolo) -->
+                <div id="view-documents" class="view">
+                    <div class="gap-header">
+                        <h3>Fascicolo Autorizzativo &amp; Accreditamento</h3>
+                        <button class="btn btn-primary" onclick="alert('Generazione ZIP in corso...')"><i class='bx bx-archive-in'></i> Scarica Fascicolo Completo</button>
+                    </div>
+                    <div class="welcome-card glass-card" style="margin-bottom: 24px;">
+                        <p>Questo modulo aggrega tutti i documenti conformi caricati nella Gap Analysis e genera le Istanze pre-compilate da inviare all'ASP o all'Assessorato (OTA).</p>
+                    </div>
+                    <div class="stats-grid" style="margin-bottom:24px;">
+                        <div class="stat-card glass-card" style="flex-direction: column; align-items: flex-start; gap: 10px;">
+                            <h4 style="color: var(--primary);"><i class='bx bx-file-blank'></i> Istanza Autorizzazione ASP</h4>
+                            <p style="font-size: 13px; color: var(--text-muted);">Modulo standard generato in base al D.A. 890/2002.</p>
+                            <button class="btn btn-outline" style="width: 100%">Genera PDF</button>
+                        </div>
+                        <div class="stat-card glass-card" style="flex-direction: column; align-items: flex-start; gap: 10px;">
+                            <h4 style="color: var(--success);"><i class='bx bx-file-blank'></i> Istanza Accreditamento OTA</h4>
+                            <p style="font-size: 13px; color: var(--text-muted);">Modulo precompilato D.A. 20/2024.</p>
+                            <button class="btn btn-outline" style="width: 100%">Genera PDF</button>
+                        </div>
+                    </div>
+
+                    <!-- SCHEDA ACCORDO CONTRATTUALE SSN (visibile solo se OTA attivo) -->
+                    <div id="accordo-contrattuale-card" class="glass-card" style="display:none; padding:0; overflow:hidden; border:1px solid rgba(16,185,129,0.3); margin-bottom:24px;">
+                        <div style="background:linear-gradient(135deg, rgba(16,185,129,0.15), rgba(59,130,246,0.08)); padding:20px 24px; border-bottom:1px solid rgba(16,185,129,0.2);">
+                            <div style="display:flex; align-items:center; gap:14px;">
+                                <div style="width:44px; height:44px; border-radius:12px; background:linear-gradient(135deg,#10b981,#3b82f6); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                                    <i class='bx bx-file-find' style="font-size:22px; color:#fff;"></i>
+                                </div>
+                                <div>
+                                    <div style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:1.5px; color:var(--success); margin-bottom:2px;">Fase 3 — Post Accreditamento OTA</div>
+                                    <h4 style="margin:0; font-size:16px;">Accordo Contrattuale con l'Assessorato Regionale alla Salute</h4>
+                                    <p style="margin:2px 0 0; font-size:12px; color:var(--text-muted);">D.P.Reg. n. 12/2019 · Necessario per erogare prestazioni a carico del SSN</p>
+                                </div>
+                                <span class="status-badge status-yellow" style="flex-shrink:0; margin-left:auto;"><i class='bx bx-time'></i> Da Avviare</span>
+                            </div>
+                        </div>
+                        <div style="padding:24px;">
+                            <p style="font-size:13px; color:var(--text-muted); margin:0 0 20px;">Dopo aver ottenuto l'accreditamento OTA, la struttura deve stipulare un <strong>Accordo Contrattuale</strong> con la Regione Siciliana per essere abilitata all'erogazione di prestazioni a carico del Fondo Sanitario Regionale.</p>
+
+                            <!-- Timeline 3 fasi -->
+                            <div style="display:flex; gap:0; margin-bottom:24px; position:relative;">
+                                <div style="position:absolute; top:22px; left:calc(16.6% + 22px); right:calc(16.6% + 22px); height:2px; background:rgba(255,255,255,0.1); z-index:0;"></div>
+                                <div style="flex:1; text-align:center; position:relative; z-index:1;">
+                                    <div style="width:44px; height:44px; border-radius:50%; background:var(--success); display:inline-flex; align-items:center; justify-content:center; margin-bottom:8px; box-shadow:0 0 0 4px rgba(16,185,129,0.2);">
+                                        <i class='bx bx-check' style="font-size:20px; color:#fff;"></i>
+                                    </div>
+                                    <div style="font-size:12px; font-weight:600; color:var(--success);">1. Accreditamento OTA</div>
+                                    <div style="font-size:11px; color:var(--text-muted); margin-top:2px;">Ottenuto tramite Accredita360</div>
+                                </div>
+                                <div style="flex:1; text-align:center; position:relative; z-index:1;">
+                                    <div style="width:44px; height:44px; border-radius:50%; background:rgba(245,158,11,0.2); border:2px dashed var(--warning); display:inline-flex; align-items:center; justify-content:center; margin-bottom:8px;">
+                                        <i class='bx bx-send' style="font-size:20px; color:var(--warning);"></i>
+                                    </div>
+                                    <div style="font-size:12px; font-weight:600; color:var(--warning);">2. Richiesta Accordo</div>
+                                    <div style="font-size:11px; color:var(--text-muted); margin-top:2px;">Istanza all'Assessorato</div>
+                                </div>
+                                <div style="flex:1; text-align:center; position:relative; z-index:1;">
+                                    <div style="width:44px; height:44px; border-radius:50%; background:rgba(100,116,139,0.2); border:2px dashed rgba(100,116,139,0.4); display:inline-flex; align-items:center; justify-content:center; margin-bottom:8px;">
+                                        <i class='bx bx-badge-check' style="font-size:20px; color:var(--text-muted);"></i>
+                                    </div>
+                                    <div style="font-size:12px; font-weight:600; color:var(--text-muted);">3. Firma &amp; Attivazione</div>
+                                    <div style="font-size:11px; color:var(--text-muted); margin-top:2px;">Budget SSN attivo</div>
+                                </div>
+                            </div>
+
+                            <button class="btn btn-primary" onclick="app.generaIstanzaAccordo()">
+                                <i class='bx bx-file-blank'></i> Genera Istanza Accordo Contrattuale
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- VIEW: Maintenance -->
+                <div id="view-maintenance" class="view">
+                    <div class="gap-header">
+                        <h3>Monitoraggio Mantenimento Requisiti</h3>
+                        <span style="font-size:12px; color:var(--text-muted);"><i class='bx bx-info-circle'></i> Le scadenze sono generate automaticamente dai requisiti validati nella Gap Analysis</span>
+                    </div>
+
+                    <!-- Stats Mantenimento -->
+                    <div class="stats-grid" style="margin-bottom:20px;">
+                        <div class="stat-card glass-card">
+                            <div class="stat-icon danger"><i class='bx bx-alarm-exclamation'></i></div>
+                            <div class="stat-info"><h4>Scaduti</h4><span class="stat-value danger" id="maint-stat-scaduti">0</span></div>
+                        </div>
+                        <div class="stat-card glass-card">
+                            <div class="stat-icon warning"><i class='bx bx-time-five'></i></div>
+                            <div class="stat-info"><h4>In Scadenza (30gg)</h4><span class="stat-value warning" id="maint-stat-inscadenza">0</span></div>
+                        </div>
+                        <div class="stat-card glass-card">
+                            <div class="stat-icon success"><i class='bx bx-check-shield'></i></div>
+                            <div class="stat-info"><h4>Validi</h4><span class="stat-value success" id="maint-stat-validi">0</span></div>
+                        </div>
+                    </div>
+
+                    <!-- Tabella Dinamica -->
+                    <div class="checklist-container glass-card">
+                        <div class="checklist-table-wrapper">
+                            <table class="checklist-table">
+                                <thead>
+                                    <tr>
+                                        <th>Stato</th>
+                                        <th>Requisito</th>
+                                        <th>Cadenza</th>
+                                        <th>Scade il</th>
+                                        <th>Azione</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="maintenance-list">
+                                    <!-- Popolato dinamicamente da app.js -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- VIEW: Consultants Area (PANNELLO AMMINISTRATORE) -->
+                <div id="view-consultants" class="view">
+                    <div class="gap-header">
+                        <h3><i class='bx bx-shield-check' style="color:var(--success);"></i> Pannello Amministratore &amp; Consulenti</h3>
+                        <span class="status-badge status-green"><i class='bx bx-lock-alt'></i> Accesso Riservato</span>
+                    </div>
+                    <!-- Statistiche Admin -->
+                    <div class="stats-grid" id="admin-stats-grid" style="margin-bottom:24px;">
+                        <div class="stat-card glass-card">
+                            <div class="stat-icon"><i class='bx bx-buildings'></i></div>
+                            <div class="stat-info"><h4>Strutture Attive</h4><span class="stat-value" id="admin-stat-structures">-</span></div>
+                        </div>
+                        <div class="stat-card glass-card">
+                            <div class="stat-icon warning"><i class='bx bx-time-five'></i></div>
+                            <div class="stat-info"><h4>In Attesa Validazione</h4><span class="stat-value warning" id="admin-stat-pending">-</span></div>
+                        </div>
+                        <div class="stat-card glass-card">
+                            <div class="stat-icon success"><i class='bx bx-check-double'></i></div>
+                            <div class="stat-info"><h4>Documenti Validati</h4><span class="stat-value success" id="admin-stat-validated">-</span></div>
+                        </div>
+                        <div class="stat-card glass-card">
+                            <div class="stat-icon danger"><i class='bx bx-x-circle'></i></div>
+                            <div class="stat-info"><h4>Documenti Rifiutati</h4><span class="stat-value danger" id="admin-stat-rejected">-</span></div>
+                        </div>
+                    </div>
+                    <!-- Filtri Admin -->
+                    <div class="checklist-container glass-card" style="margin-bottom:20px; padding:16px 20px;">
+                        <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
+                            <span style="font-weight:600; color:var(--text-muted); font-size:13px;"><i class='bx bx-filter'></i> Filtra:</span>
+                            <button class="filter-btn admin-filter active" data-filter="all" onclick="app.filterAdminDocs('all', this)">Tutti</button>
+                            <button class="filter-btn admin-filter warning" data-filter="yellow" onclick="app.filterAdminDocs('yellow', this)">In Attesa</button>
+                            <button class="filter-btn admin-filter success" data-filter="green" onclick="app.filterAdminDocs('green', this)">Validati</button>
+                            <button class="filter-btn admin-filter danger" data-filter="red" onclick="app.filterAdminDocs('red', this)">Critici</button>
+                            <div style="margin-left:auto;">
+                                <input type="text" id="admin-search" class="input-box" style="padding:8px 14px; font-size:13px; width:220px;" placeholder="Cerca struttura..." oninput="app.filterAdminDocs(null, null, this.value)">
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Tabella Documenti -->
+                    <div class="checklist-container glass-card">
+                        <div class="checklist-table-wrapper">
+                            <table class="checklist-table">
+                                <thead>
+                                    <tr>
+                                        <th>Struttura</th>
+                                        <th>Tipologia</th>
+                                        <th>Requisito</th>
+                                        <th>File Caricato</th>
+                                        <th>Stato</th>
+                                        <th>Note Consulente</th>
+                                        <th>Azioni Consulente</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="consultant-list">
+                                    <!-- Injected via JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- VIEW: Quadro Normativo -->
+                <div id="view-normativa" class="view">
+                    <div class="gap-header">
+                        <h3><i class='bx bx-book-open' style="color:var(--primary);"></i> Quadro Normativo di Riferimento</h3>
+                        <span class="status-badge status-green"><i class='bx bx-check-shield'></i> Verificato</span>
+                    </div>
+
+                    <!-- Intro -->
+                    <div class="welcome-card glass-card" style="margin-bottom:24px;">
+                        <div style="display:flex; align-items:center; gap:16px; margin-bottom:12px;">
+                            <div style="width:52px; height:52px; border-radius:14px; background:linear-gradient(135deg,#3b82f6,#8b5cf6); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                                <i class='bx bx-scale' style="font-size:26px; color:#fff;"></i>
+                            </div>
+                            <div>
+                                <h3 style="margin:0; font-size:18px;">Normativa Siciliana sull'Accreditamento Sanitario</h3>
+                                <p style="margin:4px 0 0; color:var(--text-muted); font-size:13px;">Riepilogo delle norme che governano i percorsi supportati da Accredita360, con analisi di coerenza rispetto a quanto implementato.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Submenu Tab Navigation -->
+                    <div class="proc-tab-nav glass-card" style="margin-bottom: 24px;">
+                        <button class="proc-tab-btn active" id="norm-tab-coerenza" onclick="app.switchNormTab('coerenza')">
+                            <i class='bx bx-check-shield'></i>
+                            <span>Analisi Coerenza OTA</span>
+                        </button>
+                        <button class="proc-tab-btn" id="norm-tab-legislazione" onclick="app.switchNormTab('legislazione')">
+                            <i class='bx bx-book'></i>
+                            <span>Legislazione</span>
+                        </button>
+                    </div>
+
+                    <!-- TAB 1: Analisi Coerenza -->
+                    <div id="norm-page-coerenza" class="proc-page">
+
+                    <!-- SCHEDA PRINCIPALE: D.P.Reg. n. 12/2019 -->
+                    <div class="glass-card" style="margin-bottom:24px; padding:0; overflow:hidden; border: 1px solid rgba(59,130,246,0.3);">
+                        <!-- Header scheda -->
+                        <div style="background:linear-gradient(135deg, rgba(59,130,246,0.18), rgba(139,92,246,0.12)); padding:24px 28px; border-bottom:1px solid rgba(59,130,246,0.2);">
+                            <div style="display:flex; align-items:flex-start; gap:16px;">
+                                <div style="width:48px; height:48px; border-radius:12px; background:linear-gradient(135deg,#3b82f6,#6366f1); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                                    <i class='bx bx-institution' style="font-size:24px; color:#fff;"></i>
+                                </div>
+                                <div style="flex:1;">
+                                    <div style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:1.5px; color:var(--primary); margin-bottom:4px;">Fonte Normativa Primaria — OTA</div>
+                                    <h4 style="margin:0 0 6px; font-size:17px; color:var(--text);">Decreto del Presidente della Regione Siciliana 27 giugno 2019, n. 12</h4>
+                                    <p style="margin:0; font-size:13px; color:var(--text-muted);">Istituzione dell'<strong style="color:var(--text);">Organismo Tecnicamente Accreditante (OTA)</strong> della Regione Siciliana — Struttura, competenze e procedura di accreditamento istituzionale.</p>
+                                </div>
+                                <span class="status-badge status-green" style="flex-shrink:0;"><i class='bx bx-check-double'></i> Coerente</span>
+                            </div>
+                        </div>
+
+                        <div style="padding:28px;">
+
+                            <!-- DESCRIZIONE SEMPLICE -->
+                            <div style="margin-bottom:28px;">
+                                <div style="font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:1px; color:var(--primary); margin-bottom:14px; display:flex; align-items:center; gap:8px;">
+                                    <i class='bx bx-info-circle'></i> Cos'è e cosa fa l'OTA — Spiegazione semplice
+                                </div>
+                                <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap:14px;">
+                                    <div class="normativa-card" style="background:rgba(59,130,246,0.07); border:1px solid rgba(59,130,246,0.2); border-radius:12px; padding:16px;">
+                                        <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
+                                            <i class='bx bx-buildings' style="font-size:22px; color:#3b82f6;"></i>
+                                            <strong style="font-size:14px;">Che cos'è l'OTA?</strong>
+                                        </div>
+                                        <p style="font-size:13px; color:var(--text-muted); margin:0; line-height:1.6;">L'OTA è un organismo <strong>istituito dalla Regione Siciliana</strong> con il D.P.Reg. n. 12/2019. È l'ente che verifica se una struttura sanitaria rispetta tutti i requisiti di qualità necessari per ottenere l'<em>accreditamento istituzionale</em>, cioè il riconoscimento ufficiale per lavorare con il Servizio Sanitario Nazionale (SSN).</p>
+                                    </div>
+                                    <div class="normativa-card" style="background:rgba(139,92,246,0.07); border:1px solid rgba(139,92,246,0.2); border-radius:12px; padding:16px;">
+                                        <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
+                                            <i class='bx bx-user-check' style="font-size:22px; color:#8b5cf6;"></i>
+                                            <strong style="font-size:14px;">A chi serve?</strong>
+                                        </div>
+                                        <p style="font-size:13px; color:var(--text-muted); margin:0; line-height:1.6;">A tutte le strutture private (poliambulatori, RSA, laboratori, ecc.) che già hanno l'autorizzazione sanitaria (ASP) e vogliono <strong>fare il salto successivo</strong>: essere accreditate dalla Regione per erogare prestazioni al SSN ed essere rimborsate dal Sistema Pubblico.</p>
+                                    </div>
+                                    <div class="normativa-card" style="background:rgba(16,185,129,0.07); border:1px solid rgba(16,185,129,0.2); border-radius:12px; padding:16px;">
+                                        <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
+                                            <i class='bx bx-list-check' style="font-size:22px; color:#10b981;"></i>
+                                            <strong style="font-size:14px;">Come funziona il processo?</strong>
+                                        </div>
+                                        <p style="font-size:13px; color:var(--text-muted); margin:0; line-height:1.6;">La struttura raccoglie tutta la documentazione richiesta, poi l'OTA invia i propri ispettori per una <strong>visita di verifica</strong> in loco. Se tutto è in ordine, l'Assessorato Regionale alla Salute emette il provvedimento di accreditamento. Accredita360 ti prepara a questo processo.</p>
+                                    </div>
+                                    <div class="normativa-card" style="background:rgba(245,158,11,0.07); border:1px solid rgba(245,158,11,0.2); border-radius:12px; padding:16px;">
+                                        <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
+                                            <i class='bx bx-time' style="font-size:22px; color:#f59e0b;"></i>
+                                            <strong style="font-size:14px;">Differenza rispetto all'ASP</strong>
+                                        </div>
+                                        <p style="font-size:13px; color:var(--text-muted); margin:0; line-height:1.6;">L'autorizzazione ASP (D.A. 890/2002) è il <strong>permesso di aprire</strong>: dice che i locali e le attrezzature sono idonei. L'accreditamento OTA è il <strong>riconoscimento di qualità</strong>: dimostra che la struttura lavora bene, con processi, controlli e risultati misurabili.</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- ANALISI DI COERENZA -->
+                            <div style="margin-bottom:24px;">
+                                <div style="font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:1px; color:var(--primary); margin-bottom:14px; display:flex; align-items:center; gap:8px;">
+                                    <i class='bx bx-check-shield'></i> Analisi di Coerenza — Accredita360 vs D.P.Reg. n. 12/2019
+                                </div>
+                                <div class="checklist-container glass-card" style="padding:0; background: rgba(255,255,255,0.03);">
+                                    <div class="checklist-table-wrapper">
+                                        <table class="checklist-table">
+                                            <thead>
+                                                <tr>
+                                                    <th style="width:40px;">✓</th>
+                                                    <th>Requisito/Funzione prevista dall'OTA</th>
+                                                    <th>Come è implementato in Accredita360</th>
+                                                    <th style="width:120px;">Stato</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr>
+                                                    <td><i class='bx bx-check-circle' style="color:var(--success); font-size:18px;"></i></td>
+                                                    <td>
+                                                        <div class="req-title">Mappatura dei requisiti di qualità</div>
+                                                        <div class="req-desc">L'OTA verifica il possesso di requisiti strutturali, organizzativi e di qualità secondo D.A. 20/2024</div>
+                                                    </td>
+                                                    <td style="font-size:13px; color:var(--text-muted);">Il modulo <strong>Gap Analysis OTA</strong> (tab D.A. 20/2024) contiene 11 requisiti trasversali + requisiti specifici per tipologia, allineati con i criteri ispettivi OTA.</td>
+                                                    <td><span class="status-badge status-green"><i class='bx bx-check'></i> Coerente</span></td>
+                                                </tr>
+                                                <tr>
+                                                    <td><i class='bx bx-check-circle' style="color:var(--success); font-size:18px;"></i></td>
+                                                    <td>
+                                                        <div class="req-title">Separazione Autorizzazione / Accreditamento</div>
+                                                        <div class="req-desc">Il D.P.Reg. n. 12/2019 definisce un percorso distinto dall'autorizzazione ASP: prima si ottiene l'autorizzazione, poi si chiede l'accreditamento all'OTA</div>
+                                                    </td>
+                                                    <td style="font-size:13px; color:var(--text-muted);">La profilazione chiede esplicitamente se la struttura ha già l'autorizzazione ASP. Il sistema attiva il percorso OTA <strong>solo dopo</strong> il percorso ASP, rispettando la sequenza normativa.</td>
+                                                    <td><span class="status-badge status-green"><i class='bx bx-check'></i> Coerente</span></td>
+                                                </tr>
+                                                <tr>
+                                                    <td><i class='bx bx-check-circle' style="color:var(--success); font-size:18px;"></i></td>
+                                                    <td>
+                                                        <div class="req-title">Visita ispettiva e validazione documentale</div>
+                                                        <div class="req-desc">L'OTA invia ispettori che verificano la documentazione e lo stato dei requisiti in loco</div>
+                                                    </td>
+                                                    <td style="font-size:13px; color:var(--text-muted);">Il <strong>Pannello Consulenti/Admin</strong> riproduce questo meccanismo: il consulente rivede ogni documento caricato dalla struttura, può validarlo (verde) o rifiutarlo (rosso) con motivazione — simulando il flusso ispettivo OTA.</td>
+                                                    <td><span class="status-badge status-green"><i class='bx bx-check'></i> Coerente</span></td>
+                                                </tr>
+                                                <tr>
+                                                    <td><i class='bx bx-check-circle' style="color:var(--success); font-size:18px;"></i></td>
+                                                    <td>
+                                                        <div class="req-title">Sistema di Qualità (SGQ) come requisito centrale</div>
+                                                        <div class="req-desc">Il D.A. 20/2024 (applicato dall'OTA) richiede Manuale della Qualità, audit interni, incident reporting e customer satisfaction</div>
+                                                    </td>
+                                                    <td style="font-size:13px; color:var(--text-muted);">I requisiti OTA_01÷OTA_11 nella Gap Analysis coprono esattamente: SGQ (OTA_01), Formazione ECM (OTA_02), Incident Reporting (OTA_03), Customer Satisfaction (OTA_04), Audit (OTA_05), Indicatori (OTA_07), Risk Management (OTA_11).</td>
+                                                    <td><span class="status-badge status-green"><i class='bx bx-check'></i> Coerente</span></td>
+                                                </tr>
+                                                <tr>
+                                                    <td><i class='bx bx-check-circle' style="color:var(--success); font-size:18px;"></i></td>
+                                                    <td>
+                                                        <div class="req-title">Trasparenza e accesso alle informazioni</div>
+                                                        <div class="req-desc">Il D.P.Reg. n. 12/2019 e D.A. 20/2024 richiedono pubblicazione di liste d'attesa, tariffe e Carta dei Servizi</div>
+                                                    </td>
+                                                    <td style="font-size:13px; color:var(--text-muted);">Requisito <strong>OTA_06</strong> (Pubblicazione Liste d'Attesa e Tariffe) e <strong>GEN_REG_05</strong> (Carta dei Servizi) sono presenti nel database normativo e tracciati nella Gap Analysis.</td>
+                                                    <td><span class="status-badge status-green"><i class='bx bx-check'></i> Coerente</span></td>
+                                                </tr>
+                                                <tr>
+                                                    <td><i class='bx bx-check-circle' style="color:var(--success); font-size:18px;"></i></td>
+                                                    <td>
+                                                        <div class="req-title">Gestione del rischio clinico</div>
+                                                        <div class="req-desc">L'OTA verifica l'adozione di un sistema di Risk Management (L. 24/2017 Gelli-Bianco + D.A. 20/2024)</div>
+                                                    </td>
+                                                    <td style="font-size:13px; color:var(--text-muted);">Coperti da: <strong>OTA_03</strong> (Incident Reporting), <strong>OTA_07</strong> (Indicatori di Esito), <strong>OTA_11</strong> (Piano Risk Management), <strong>GEN_NAZ_05</strong> (Polizza RC L. 24/2017).</td>
+                                                    <td><span class="status-badge status-green"><i class='bx bx-check'></i> Coerente</span></td>
+                                                </tr>
+                                                <tr>
+                                                    <td><i class='bx bx-check-circle' style="color:var(--success); font-size:18px;"></i></td>
+                                                    <td>
+                                                        <div class="req-title">Accordo Contrattuale con l'Assessorato (post-accreditamento)</div>
+                                                        <div class="req-desc">Dopo la verifica OTA, la struttura deve stipulare un Accordo Contrattuale con l'Assessorato Regionale per l'erogazione di prestazioni SSN a carico del Fondo Sanitario</div>
+                                                    </td>
+                                                    <td style="font-size:13px; color:var(--text-muted);">Scheda <strong>"Accordo Contrattuale SSN"</strong> aggiunta nel Fascicolo Documentale: timeline visiva in 3 fasi, pulsante <em>Genera Istanza</em> con documento Word pre-compilato (D.P.Reg. n. 12/2019). Visibile automaticamente dopo il primo requisito OTA validato.</td>
+                                                    <td><span class="status-badge status-green"><i class='bx bx-check'></i> Coerente</span></td>
+                                                </tr>
+                                                <tr>
+                                                    <td><i class='bx bx-check-circle' style="color:var(--success); font-size:18px;"></i></td>
+                                                    <td>
+                                                        <div class="req-title">Verifica mantenimento (rinnovo accreditamento)</div>
+                                                        <div class="req-desc">L'OTA prevede verifiche periodiche di mantenimento dei requisiti per il rinnovo dell'accreditamento</div>
+                                                    </td>
+                                                    <td style="font-size:13px; color:var(--text-muted);">Il modulo <strong>Mantenimento</strong> è ora alimentato con scadenze reali calcolate automaticamente dai requisiti validati (CPI ogni 5 anni, Polizza RC annuale, Impianto messa a terra biennale, ECM annuale, Audit annuale, Risk Management annuale, Manutenzione apparecchiature semestrale). Badge cromatici e pulsante <em>Rinnova</em> per ogni voce.</td>
+                                                    <td><span class="status-badge status-green"><i class='bx bx-check'></i> Coerente</span></td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- RIEPILOGO NORMATIVO -->
+                            <div style="background: rgba(59,130,246,0.06); border:1px solid rgba(59,130,246,0.2); border-radius:12px; padding:18px; margin-top:8px;">
+                                <div style="font-size:13px; font-weight:700; color:var(--primary); margin-bottom:12px; display:flex; align-items:center; gap:8px;">
+                                    <i class='bx bx-library'></i> Gerarchia Normativa Applicata in Accredita360
+                                </div>
+                                <div style="display:flex; flex-direction:column; gap:8px;">
+                                    <div style="display:flex; align-items:center; gap:10px; font-size:13px;">
+                                        <span style="background:rgba(59,130,246,0.2); color:var(--primary); padding:2px 8px; border-radius:4px; font-size:11px; font-weight:600; flex-shrink:0;">EU</span>
+                                        <span style="color:var(--text-muted);">GDPR (Reg. UE 2016/679) — MDR (Reg. UE 2017/745) — Reg. UE 2017/852 (Amalgama)</span>
+                                    </div>
+                                    <div style="display:flex; align-items:center; gap:10px; font-size:13px;">
+                                        <span style="background:rgba(139,92,246,0.2); color:#8b5cf6; padding:2px 8px; border-radius:4px; font-size:11px; font-weight:600; flex-shrink:0;">NAZ</span>
+                                        <span style="color:var(--text-muted);">D.Lgs 81/08 · D.Lgs 101/2020 · L. 24/2017 (Gelli-Bianco) · D.M. 37/08 · D.P.R. 151/2011</span>
+                                    </div>
+                                    <div style="display:flex; align-items:center; gap:10px; font-size:13px;">
+                                        <span style="background:rgba(16,185,129,0.2); color:var(--success); padding:2px 8px; border-radius:4px; font-size:11px; font-weight:600; flex-shrink:0;">REG</span>
+                                        <span style="color:var(--text-muted);">D.A. 890/2002 (Autorizzazione ASP) · <strong style="color:var(--text);">D.P.Reg. n. 12/2019 (Istituzione OTA)</strong> · D.A. 20/2024 (Accreditamento Istituzionale)</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+
+                    </div> <!-- Chiude norm-page-coerenza -->
+
+                    <!-- TAB 2: Legislazione -->
+                    <div id="norm-page-legislazione" class="proc-page" style="display:none;">
+                        <div class="glass-card" style="padding:0; overflow:hidden; border:1px solid rgba(16,185,129,0.3); margin-bottom:24px;">
+                            <div style="background:linear-gradient(135deg, rgba(16,185,129,0.18), rgba(59,130,246,0.08)); padding:20px 24px; border-bottom:1px solid rgba(16,185,129,0.2);">
+                                <div style="display:flex; align-items:center; gap:14px;">
+                                    <div style="width:44px; height:44px; border-radius:12px; background:linear-gradient(135deg,#10b981,#3b82f6); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                                        <i class='bx bx-book-bookmark' style="font-size:22px; color:#fff;"></i>
+                                    </div>
+                                    <div>
+                                        <div style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:1.5px; color:var(--success); margin-bottom:2px;">Glossario Normativo</div>
+                                        <h4 style="margin:0; font-size:16px;">Legislazione e Decreti di Riferimento</h4>
+                                        <p style="margin:2px 0 0; font-size:12px; color:var(--text-muted);">Spiegazione semplice e intuitiva delle principali normative</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div style="padding:24px;">
+                                <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap:16px;">
+                                    
+                                    <!-- D.A. 890/2002 -->
+                                    <div class="normativa-card" style="background:rgba(59,130,246,0.05); border:1px solid rgba(59,130,246,0.2); border-radius:12px; padding:18px;">
+                                        <div style="display:flex; align-items:center; gap:12px; margin-bottom:12px;">
+                                            <i class='bx bx-building-house' style="font-size:24px; color:#3b82f6;"></i>
+                                            <div>
+                                                <div style="font-size:14px; font-weight:700; color:var(--text-main);">D.A. 890 del 17.06.2002</div>
+                                                <div style="font-size:11px; color:var(--primary); font-weight:600;">AUTORIZZAZIONE BASE</div>
+                                            </div>
+                                        </div>
+                                        <p style="font-size:13px; color:var(--text-muted); margin:0 0 10px; line-height:1.6;"><strong>Cos'è:</strong> È la norma base per poter aprire una struttura.</p>
+                                        <p style="font-size:13px; color:var(--text-muted); margin:0; line-height:1.6;"><strong>Cosa definisce:</strong> Stabilisce i requisiti minimi (strutturali, tecnologici e organizzativi) necessari per ottenere l'<strong>Autorizzazione all'esercizio</strong> delle attività sanitarie e socio-sanitarie in Sicilia.</p>
+                                    </div>
+
+                                    <!-- DECRETO 16 SETTEMBRE 2009 -->
+                                    <div class="normativa-card" style="background:rgba(236,72,153,0.05); border:1px solid rgba(236,72,153,0.2); border-radius:12px; padding:18px;">
+                                        <div style="display:flex; align-items:center; gap:12px; margin-bottom:12px;">
+                                            <i class='bx bx-network-chart' style="font-size:24px; color:#ec4899;"></i>
+                                            <div>
+                                                <div style="font-size:14px; font-weight:700; color:var(--text-main);">Decreto 16 Settembre 2009</div>
+                                                <div style="font-size:11px; color:#ec4899; font-weight:600;">RIORGANIZZAZIONE RETE</div>
+                                            </div>
+                                        </div>
+                                        <p style="font-size:13px; color:var(--text-muted); margin:0 0 10px; line-height:1.6;"><strong>Cos'è:</strong> Il piano di riorganizzazione delle strutture private accreditate e ss.mm.ii.</p>
+                                        <p style="font-size:13px; color:var(--text-muted); margin:0; line-height:1.6;"><strong>Cosa definisce:</strong> Stabilisce i criteri e le regole per riorganizzare la rete dei laboratori e delle strutture private che operano in accreditamento con il Servizio Sanitario, introducendo anche aggregazioni tra strutture per ottimizzare i servizi.</p>
+                                    </div>
+
+                                    <!-- DECRETO 18 NOVEMBRE 2009 -->
+                                    <div class="normativa-card" style="background:rgba(245,158,11,0.05); border:1px solid rgba(245,158,11,0.2); border-radius:12px; padding:18px;">
+                                        <div style="display:flex; align-items:center; gap:12px; margin-bottom:12px;">
+                                            <i class='bx bx-list-plus' style="font-size:24px; color:#f59e0b;"></i>
+                                            <div>
+                                                <div style="font-size:14px; font-weight:700; color:var(--text-main);">Decreto 18 Novembre 2009</div>
+                                                <div style="font-size:11px; color:#f59e0b; font-weight:600;">AGGIORNAMENTO REQUISITI</div>
+                                            </div>
+                                        </div>
+                                        <p style="font-size:13px; color:var(--text-muted); margin:0 0 10px; line-height:1.6;"><strong>Cos'è:</strong> Un aggiornamento e approfondimento dei requisiti minimi.</p>
+                                        <p style="font-size:13px; color:var(--text-muted); margin:0; line-height:1.6;"><strong>Cosa definisce:</strong> Fornisce ulteriori linee guida e specifiche sui requisiti strutturali, tecnologici e organizzativi introdotti in precedenza, per garantire standard minimi di qualità e sicurezza nelle strutture.</p>
+                                    </div>
+
+                                    <!-- D.P.Reg. n. 12/2019 -->
+                                    <div class="normativa-card" style="background:rgba(139,92,246,0.05); border:1px solid rgba(139,92,246,0.2); border-radius:12px; padding:18px;">
+                                        <div style="display:flex; align-items:center; gap:12px; margin-bottom:12px;">
+                                            <i class='bx bx-institution' style="font-size:24px; color:#8b5cf6;"></i>
+                                            <div>
+                                                <div style="font-size:14px; font-weight:700; color:var(--text-main);">D.P.Reg. n. 12/2019</div>
+                                                <div style="font-size:11px; color:#8b5cf6; font-weight:600;">ACCREDITAMENTO & OTA</div>
+                                            </div>
+                                        </div>
+                                        <p style="font-size:13px; color:var(--text-muted); margin:0 0 10px; line-height:1.6;"><strong>Cos'è:</strong> Il regolamento principale per l'Accreditamento.</p>
+                                        <p style="font-size:13px; color:var(--text-muted); margin:0; line-height:1.6;"><strong>Cosa definisce:</strong> Disciplina l'intero iter per l'autorizzazione e, soprattutto, per l'<strong>Accreditamento Istituzionale</strong> delle strutture sanitarie e socio-sanitarie nella Regione Siciliana, stabilendo le regole per operare con il SSR e istituendo l'OTA.</p>
+                                    </div>
+
+                                    <!-- D.A. 436/2021 -->
+                                    <div class="normativa-card" style="background:rgba(16,185,129,0.05); border:1px solid rgba(16,185,129,0.2); border-radius:12px; padding:18px;">
+                                        <div style="display:flex; align-items:center; gap:12px; margin-bottom:12px;">
+                                            <i class='bx bx-book-open' style="font-size:24px; color:#10b981;"></i>
+                                            <div>
+                                                <div style="font-size:14px; font-weight:700; color:var(--text-main);">D.A. 436 del 17.05.2021</div>
+                                                <div style="font-size:11px; color:var(--success); font-weight:600;">MANUALE OPERATIVO</div>
+                                            </div>
+                                        </div>
+                                        <p style="font-size:13px; color:var(--text-muted); margin:0 0 10px; line-height:1.6;"><strong>Cos'è:</strong> Il manuale pratico per l'accreditamento.</p>
+                                        <p style="font-size:13px; color:var(--text-muted); margin:0; line-height:1.6;"><strong>Cosa definisce:</strong> Approva il "Manuale Operativo" (OTA) che le strutture devono seguire passo dopo passo per dimostrare di possedere gli standard di qualità richiesti per mantenere l'Accreditamento.</p>
+                                    </div>
+
+                                    <!-- D.Lgs 81/08 -->
+                                    <div class="normativa-card" style="background:rgba(239,68,68,0.05); border:1px solid rgba(239,68,68,0.2); border-radius:12px; padding:18px;">
+                                        <div style="display:flex; align-items:center; gap:12px; margin-bottom:12px;">
+                                            <i class='bx bx-shield-quarter' style="font-size:24px; color:#ef4444;"></i>
+                                            <div>
+                                                <div style="font-size:14px; font-weight:700; color:var(--text-main);">D.Lgs 81/08</div>
+                                                <div style="font-size:11px; color:#ef4444; font-weight:600;">SICUREZZA SUL LAVORO</div>
+                                            </div>
+                                        </div>
+                                        <p style="font-size:13px; color:var(--text-muted); margin:0 0 10px; line-height:1.6;"><strong>Cos'è:</strong> Il Testo Unico sulla Sicurezza.</p>
+                                        <p style="font-size:13px; color:var(--text-muted); margin:0; line-height:1.6;"><strong>Cosa definisce:</strong> La normativa fondamentale che stabilisce le regole, gli obblighi (es. valutazione dei rischi, Medico Competente) e le misure di prevenzione per garantire la salute e la sicurezza dei lavoratori nei luoghi di lavoro.</p>
+                                    </div>
+
+                                    <!-- D.Lgs 196/03 -->
+                                    <div class="normativa-card" style="background:rgba(14,165,233,0.05); border:1px solid rgba(14,165,233,0.2); border-radius:12px; padding:18px;">
+                                        <div style="display:flex; align-items:center; gap:12px; margin-bottom:12px;">
+                                            <i class='bx bx-lock-alt' style="font-size:24px; color:#0ea5e9;"></i>
+                                            <div>
+                                                <div style="font-size:14px; font-weight:700; color:var(--text-main);">D.Lgs 196/03</div>
+                                                <div style="font-size:11px; color:#0ea5e9; font-weight:600;">PRIVACY E DATI</div>
+                                            </div>
+                                        </div>
+                                        <p style="font-size:13px; color:var(--text-muted); margin:0 0 10px; line-height:1.6;"><strong>Cos'è:</strong> Il Codice della Privacy (integrato dal GDPR).</p>
+                                        <p style="font-size:13px; color:var(--text-muted); margin:0; line-height:1.6;"><strong>Cosa definisce:</strong> Regola come devono essere raccolti, gestiti e protetti i dati personali, con particolare attenzione ai dati sensibili come quelli legati alla salute dei pazienti, garantendo il rispetto della privacy.</p>
+                                    </div>
+
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- VIEW: Procedure OTA -->
+                <div id="view-procedure-ota" class="view">
+                    <div class="gap-header">
+                        <h3><i class='bx bx-clipboard' style="color:var(--primary);"></i> Procedure OTA — Organismo Tecnicamente Accreditante</h3>
+                        <a href="https://www.regione.sicilia.it/istituzioni/regione/strutture-regionali/assessorato-salute/dipartimento-attivita-sanitarie-osservatorio-epidemiologico/organismo/accreditamento/accreditante" target="_blank" class="btn btn-outline" style="text-decoration:none;">
+                            <i class='bx bx-link-external'></i> Sito Ufficiale OTA
+                        </a>
+                    </div>
+
+                    <!-- Submenu Tab Navigation -->
+                    <div class="proc-tab-nav glass-card">
+                        <button class="proc-tab-btn active" id="proc-tab-normativa" onclick="app.switchProcTab('normativa')">
+                            <i class='bx bx-book-open'></i>
+                            <span>Normativa &amp; Organigramma</span>
+                        </button>
+                        <button class="proc-tab-btn" id="proc-tab-procedure" onclick="app.switchProcTab('procedure')">
+                            <i class='bx bx-folder-open'></i>
+                            <span>Procedure e Manuali in Vigore</span>
+                        </button>
+                    </div>
+
+                    <!-- TAB 1: Normativa & Organigramma -->
+                    <div id="proc-page-normativa" class="proc-page">
+
+                        <!-- Cos'è l'OTA -->
+                        <div class="glass-card" style="padding:0; overflow:hidden; border:1px solid rgba(59,130,246,0.3); margin-bottom:24px;">
+                            <div style="background:linear-gradient(135deg, rgba(59,130,246,0.18), rgba(139,92,246,0.12)); padding:20px 24px; border-bottom:1px solid rgba(59,130,246,0.2);">
+                                <div style="display:flex; align-items:center; gap:14px;">
+                                    <div style="width:44px; height:44px; border-radius:12px; background:linear-gradient(135deg,#3b82f6,#6366f1); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                                        <i class='bx bx-institution' style="font-size:22px; color:#fff;"></i>
+                                    </div>
+                                    <div>
+                                        <div style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:1.5px; color:var(--primary); margin-bottom:2px;">Fonte Normativa</div>
+                                        <h4 style="margin:0; font-size:16px;">D.P.Reg. 27 giugno 2019, n. 12 — Istituzione dell'OTA</h4>
+                                        <p style="margin:2px 0 0; font-size:12px; color:var(--text-muted);">GURS n. 33 del 17 luglio 2019 · Operativo dal 1° agosto 2019</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div style="padding:24px;">
+                                <p style="font-size:13px; color:var(--text-muted); line-height:1.7; margin:0 0 16px;">
+                                    L'<strong style="color:var(--text-main);">Organismo Tecnicamente Accreditante (OTA)</strong> della Regione Siciliana è un'organizzazione di professionisti specificatamente formati, impegnati a garantire che il processo di verifica dei requisiti per l'autorizzazione e l'accreditamento delle strutture sanitarie si svolga secondo principi di <strong style="color:var(--primary);">indipendenza, imparzialità, riproducibilità e trasparenza</strong>.
+                                </p>
+                                <p style="font-size:13px; color:var(--text-muted); line-height:1.7; margin:0 0 20px;">
+                                    È la struttura deputata alla verifica tecnica dei requisiti necessari per l'accreditamento istituzionale e al rilascio del giudizio tecnico di accreditabilità. Opera conformemente all'<em>Intesa Stato-Regioni del 19 febbraio 2015</em> (Rep. Atti n. 32/CSR).
+                                </p>
+                                <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:12px;">
+                                    <div style="background:rgba(59,130,246,0.08); border:1px solid rgba(59,130,246,0.2); border-radius:10px; padding:14px; text-align:center;">
+                                        <i class='bx bx-search-alt' style="font-size:24px; color:#3b82f6; margin-bottom:6px;"></i>
+                                        <div style="font-size:12px; font-weight:600; color:var(--text-main);">Revisione Requisiti</div>
+                                        <div style="font-size:11px; color:var(--text-muted); margin-top:2px;">Aggiornamento requisiti autorizzazione e accreditamento</div>
+                                    </div>
+                                    <div style="background:rgba(139,92,246,0.08); border:1px solid rgba(139,92,246,0.2); border-radius:10px; padding:14px; text-align:center;">
+                                        <i class='bx bx-check-shield' style="font-size:24px; color:#8b5cf6; margin-bottom:6px;"></i>
+                                        <div style="font-size:12px; font-weight:600; color:var(--text-main);">Verifiche sul Campo</div>
+                                        <div style="font-size:11px; color:var(--text-muted); margin-top:2px;">Organizzazione e realizzazione delle verifiche ispettive</div>
+                                    </div>
+                                    <div style="background:rgba(16,185,129,0.08); border:1px solid rgba(16,185,129,0.2); border-radius:10px; padding:14px; text-align:center;">
+                                        <i class='bx bx-book-reader' style="font-size:24px; color:#10b981; margin-bottom:6px;"></i>
+                                        <div style="font-size:12px; font-weight:600; color:var(--text-main);">Formazione Valutatori</div>
+                                        <div style="font-size:11px; color:var(--text-muted); margin-top:2px;">Selezione e formazione dei Valutatori OTA</div>
+                                    </div>
+                                    <div style="background:rgba(245,158,11,0.08); border:1px solid rgba(245,158,11,0.2); border-radius:10px; padding:14px; text-align:center;">
+                                        <i class='bx bx-wrench' style="font-size:24px; color:#f59e0b; margin-bottom:6px;"></i>
+                                        <div style="font-size:12px; font-weight:600; color:var(--text-main);">Strumenti Tecnici</div>
+                                        <div style="font-size:11px; color:var(--text-muted); margin-top:2px;">Procedure, manuali e checklist per le verifiche</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- ORGANIGRAMMA OTA -->
+                        <div class="glass-card" style="padding:0; overflow:hidden; border:1px solid rgba(139,92,246,0.3); margin-bottom:24px;">
+                            <div style="background:linear-gradient(135deg, rgba(139,92,246,0.18), rgba(59,130,246,0.08)); padding:20px 24px; border-bottom:1px solid rgba(139,92,246,0.2);">
+                                <div style="display:flex; align-items:center; gap:14px;">
+                                    <div style="width:44px; height:44px; border-radius:12px; background:linear-gradient(135deg,#8b5cf6,#6366f1); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                                        <i class='bx bx-sitemap' style="font-size:22px; color:#fff;"></i>
+                                    </div>
+                                    <div>
+                                        <div style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:1.5px; color:#8b5cf6; margin-bottom:2px;">Organizzazione</div>
+                                        <h4 style="margin:0; font-size:16px;">Organigramma dell'OTA — Le 6 Funzioni Operative</h4>
+                                    </div>
+                                </div>
+                            </div>
+                            <div style="padding:24px;">
+                                <div class="org-grid">
+                                    <div class="org-card" style="border-left:3px solid #3b82f6;">
+                                        <div class="org-card-num" style="color:#3b82f6;">F1</div>
+                                        <div class="org-card-title">Requisiti e Procedure</div>
+                                        <div class="org-card-desc">Individuazione, revisione e aggiornamento dei requisiti per l'autorizzazione sanitaria e l'accreditamento. Predisposizione di checklist, procedure e strumenti per le verifiche.</div>
+                                    </div>
+                                    <div class="org-card" style="border-left:3px solid #8b5cf6;">
+                                        <div class="org-card-num" style="color:#8b5cf6;">F2</div>
+                                        <div class="org-card-title">Formazione</div>
+                                        <div class="org-card-desc">Selezione candidati, progettazione e organizzazione dei Corsi di formazione e aggiornamento per Valutatori OTA.</div>
+                                    </div>
+                                    <div class="org-card" style="border-left:3px solid #10b981;">
+                                        <div class="org-card-num" style="color:#10b981;">F3</div>
+                                        <div class="org-card-title">Verifiche</div>
+                                        <div class="org-card-desc">Pianificazione, svolgimento e gestione esiti delle verifiche di conformità ai requisiti per autorizzazione e accreditamento.</div>
+                                    </div>
+                                    <div class="org-card" style="border-left:3px solid #f59e0b;">
+                                        <div class="org-card-num" style="color:#f59e0b;">F4</div>
+                                        <div class="org-card-title">Rapporti con i Portatori di Interesse</div>
+                                        <div class="org-card-desc">Gestione rapporti con i portatori di interesse iscritti nel Registro dell'Assessorato (D.A. 706/2019).</div>
+                                    </div>
+                                    <div class="org-card" style="border-left:3px solid #ec4899;">
+                                        <div class="org-card-num" style="color:#ec4899;">F5</div>
+                                        <div class="org-card-title">Adempimenti Amministrativi e Contabili</div>
+                                        <div class="org-card-desc">Predisposizione degli atti amministrativi e contabili funzionali all'esercizio delle attività di competenza dell'OTA.</div>
+                                    </div>
+                                    <div class="org-card" style="border-left:3px solid #06b6d4;">
+                                        <div class="org-card-num" style="color:#06b6d4;">F6</div>
+                                        <div class="org-card-title">Gestione Documenti e Archivio</div>
+                                        <div class="org-card-desc">Ricezione della corrispondenza, classificazione e archiviazione dei documenti cartacei e digitali.</div>
+                                    </div>
+                                </div>
+
+                                <!-- Professionisti OTA -->
+                                <div style="margin-top:28px; font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:1px; color:#8b5cf6; margin-bottom:14px; display:flex; align-items:center; gap:8px;">
+                                    <i class='bx bx-group'></i> I Professionisti dell'OTA
+                                </div>
+                                <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap:14px;">
+                                    <div style="background:rgba(59,130,246,0.08); border:1px solid rgba(59,130,246,0.2); border-radius:12px; padding:16px;">
+                                        <div style="display:flex; align-items:center; gap:10px; margin-bottom:8px;">
+                                            <i class='bx bx-id-card' style="font-size:20px; color:#3b82f6;"></i>
+                                            <strong style="font-size:13px;">Personale DASOE</strong>
+                                        </div>
+                                        <p style="font-size:12px; color:var(--text-muted); margin:0; line-height:1.5;">Professionisti da ruoli regionali con percorsi formativi specifici. Gestiscono le Funzioni dell'OTA presso l'Area Interdipartimentale 2.</p>
+                                    </div>
+                                    <div style="background:rgba(16,185,129,0.08); border:1px solid rgba(16,185,129,0.2); border-radius:12px; padding:16px;">
+                                        <div style="display:flex; align-items:center; gap:10px; margin-bottom:8px;">
+                                            <i class='bx bx-user-check' style="font-size:20px; color:#10b981;"></i>
+                                            <strong style="font-size:13px;">Valutatori OTA</strong>
+                                        </div>
+                                        <p style="font-size:12px; color:var(--text-muted); margin:0; line-height:1.5;">Professionisti sanitari formati dall'OTA. Effettuano le verifiche di conformità sul campo. Elenco in GURS n. 37 del 12/08/2022.</p>
+                                    </div>
+                                    <div style="background:rgba(245,158,11,0.08); border:1px solid rgba(245,158,11,0.2); border-radius:12px; padding:16px;">
+                                        <div style="display:flex; align-items:center; gap:10px; margin-bottom:8px;">
+                                            <i class='bx bx-star' style="font-size:20px; color:#f59e0b;"></i>
+                                            <strong style="font-size:13px;">Esperti OTA</strong>
+                                        </div>
+                                        <p style="font-size:12px; color:var(--text-muted); margin:0; line-height:1.5;">Specialisti con competenze tecniche avanzate. Valutano aspetti tecnici specifici e partecipano ad attività di ricerca dell'OTA.</p>
+                                    </div>
+                                </div>
+
+                                <!-- Connessione con Gap Analysis -->
+                                <div style="margin-top:24px; background:rgba(16,185,129,0.06); border:1px solid rgba(16,185,129,0.2); border-radius:10px; padding:14px; display:flex; align-items:center; gap:12px;">
+                                    <i class='bx bx-link' style="font-size:20px; color:var(--success);"></i>
+                                    <div style="flex:1;">
+                                        <div style="font-size:12px; font-weight:600; color:var(--success);">Connessione con la Dashboard</div>
+                                        <div style="font-size:11px; color:var(--text-muted);">Le 6 Funzioni dell'OTA sono il riferimento per i requisiti OTA_01÷OTA_11 nella tua Gap Analysis. Preparati alla verifica ispettiva completando tutti i requisiti.</div>
+                                    </div>
+                                    <button class="btn btn-outline" style="padding:6px 14px; font-size:12px; flex-shrink:0;" onclick="app.navigate('gap-analysis'); app.switchGapTab('ota');">
+                                        <i class='bx bx-right-arrow-alt'></i> Vai alla Gap Analysis OTA
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TAB 2: Procedure e Manuali in Vigore -->
+                    <div id="proc-page-procedure" class="proc-page" style="display:none;">
+                        <!-- Filtro struttura -->
+                        <div class="glass-card" style="padding:16px 20px; margin-bottom:20px; display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+                            <i class='bx bx-filter' style="font-size:18px; color:var(--primary);"></i>
+                            <span style="font-size:13px; font-weight:600; color:var(--text-muted);">Filtra per la tua struttura:</span>
+                            <span id="proc-structure-badge" style="font-size:12px; padding:4px 12px; background:rgba(59,130,246,0.15); border:1px solid rgba(59,130,246,0.3); border-radius:6px; color:var(--primary); font-weight:600;">Nessuna profilazione</span>
+                            <span style="font-size:11px; color:var(--text-muted); margin-left:auto;"><i class='bx bx-info-circle'></i> I manuali pertinenti alla tua struttura sono evidenziati</span>
+                        </div>
+                        <!-- Container dinamico -->
+                        <div id="proc-manuals-container"></div>
+                    </div>
+                </div>
+
+                <!-- VIEW: Panoramica -->
+                <div id="view-panoramica" class="view">
+                    <div class="gap-header">
+                        <h3><i class='bx bx-map-alt' style="color:var(--primary);"></i> Panoramica — Accreditamento Sanitario in Sicilia</h3>
+                        <span class="status-badge status-green"><i class='bx bx-check-shield'></i> Guida Completa</span>
+                    </div>
+
+                    <!-- Tab Navigation -->
+                    <div class="proc-tab-nav glass-card">
+                        <button class="proc-tab-btn active" id="pan-tab-iter" onclick="app.switchPanTab('iter')">
+                            <i class='bx bx-trip'></i>
+                            <span>Iter &amp; Processo OTA</span>
+                        </button>
+                        <button class="proc-tab-btn" id="pan-tab-storico" onclick="app.switchPanTab('storico')">
+                            <i class='bx bx-history'></i>
+                            <span>Storico Normativa</span>
+                        </button>
+                    </div>
+
+                    <!-- TAB 1: ITER -->
+                    <div id="pan-page-iter" class="proc-page">
+
+                        <!-- Cos'è l'OTA -->
+                        <div class="glass-card" style="padding:0; overflow:hidden; border:1px solid rgba(59,130,246,0.3); margin-bottom:24px;">
+                            <div style="background:linear-gradient(135deg, rgba(59,130,246,0.18), rgba(139,92,246,0.12)); padding:20px 24px; border-bottom:1px solid rgba(59,130,246,0.2);">
+                                <div style="display:flex; align-items:center; gap:14px;">
+                                    <div style="width:48px; height:48px; border-radius:14px; background:linear-gradient(135deg,#3b82f6,#6366f1); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                                        <i class='bx bx-institution' style="font-size:24px; color:#fff;"></i>
+                                    </div>
+                                    <div>
+                                        <div style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:1.5px; color:var(--primary); margin-bottom:2px;">Cos'è l'OTA</div>
+                                        <h4 style="margin:0; font-size:17px;">Organismo Tecnicamente Accreditante</h4>
+                                        <p style="margin:2px 0 0; font-size:12px; color:var(--text-muted);">Il "braccio tecnico" della Regione Siciliana per controllare qualità, sicurezza e organizzazione delle strutture sanitarie</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div style="padding:24px;">
+                                <p style="font-size:13px; color:var(--text-muted); line-height:1.7; margin:0 0 16px;">
+                                    L'OTA è l'<strong style="color:var(--text-main);">Organismo Tecnicamente Accreditante</strong>. In Sicilia è l'organismo tecnico che verifica se una struttura sanitaria privata possiede i requisiti previsti per ottenere o mantenere l'<strong style="color:var(--primary);">accreditamento istituzionale</strong> con il Servizio Sanitario Regionale.
+                                </p>
+
+                                <!-- Cosa fa concretamente -->
+                                <div style="font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:1px; color:var(--primary); margin:20px 0 14px; display:flex; align-items:center; gap:8px;">
+                                    <i class='bx bx-check-shield'></i> Cosa fa concretamente l'OTA
+                                </div>
+                                <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:10px; margin-bottom:24px;">
+                                    <div style="background:rgba(59,130,246,0.06); border:1px solid rgba(59,130,246,0.15); border-radius:10px; padding:12px; display:flex; align-items:center; gap:10px;">
+                                        <i class='bx bx-search-alt' style="font-size:18px; color:#3b82f6;"></i>
+                                        <span style="font-size:12px; color:var(--text-muted);">Verifica requisiti organizzativi, strutturali e tecnologici</span>
+                                    </div>
+                                    <div style="background:rgba(139,92,246,0.06); border:1px solid rgba(139,92,246,0.15); border-radius:10px; padding:12px; display:flex; align-items:center; gap:10px;">
+                                        <i class='bx bx-clipboard' style="font-size:18px; color:#8b5cf6;"></i>
+                                        <span style="font-size:12px; color:var(--text-muted);">Controlla procedure sanitarie e amministrative</span>
+                                    </div>
+                                    <div style="background:rgba(16,185,129,0.06); border:1px solid rgba(16,185,129,0.15); border-radius:10px; padding:12px; display:flex; align-items:center; gap:10px;">
+                                        <i class='bx bx-building-house' style="font-size:18px; color:#10b981;"></i>
+                                        <span style="font-size:12px; color:var(--text-muted);">Effettua sopralluoghi nelle strutture</span>
+                                    </div>
+                                    <div style="background:rgba(245,158,11,0.06); border:1px solid rgba(245,158,11,0.15); border-radius:10px; padding:12px; display:flex; align-items:center; gap:10px;">
+                                        <i class='bx bx-group' style="font-size:18px; color:#f59e0b;"></i>
+                                        <span style="font-size:12px; color:var(--text-muted);">Utilizza verificatori qualificati (team OTA)</span>
+                                    </div>
+                                    <div style="background:rgba(236,72,153,0.06); border:1px solid rgba(236,72,153,0.15); border-radius:10px; padding:12px; display:flex; align-items:center; gap:10px;">
+                                        <i class='bx bx-file' style="font-size:18px; color:#ec4899;"></i>
+                                        <span style="font-size:12px; color:var(--text-muted);">Redige relazioni tecniche</span>
+                                    </div>
+                                    <div style="background:rgba(6,182,212,0.06); border:1px solid rgba(6,182,212,0.15); border-radius:10px; padding:12px; display:flex; align-items:center; gap:10px;">
+                                        <i class='bx bx-badge-check' style="font-size:18px; color:#06b6d4;"></i>
+                                        <span style="font-size:12px; color:var(--text-muted);">Esprime esito per concedere/rinnovare accreditamento</span>
+                                    </div>
+                                </div>
+
+                                <!-- Su quali strutture -->
+                                <div style="font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:1px; color:#8b5cf6; margin:20px 0 14px; display:flex; align-items:center; gap:8px;">
+                                    <i class='bx bx-buildings'></i> Su quali strutture interviene
+                                </div>
+                                <div style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:24px;">
+                                    <span style="font-size:11px; padding:5px 12px; background:rgba(59,130,246,0.1); border:1px solid rgba(59,130,246,0.25); border-radius:6px; color:var(--primary); font-weight:600;">Poliambulatori</span>
+                                    <span style="font-size:11px; padding:5px 12px; background:rgba(139,92,246,0.1); border:1px solid rgba(139,92,246,0.25); border-radius:6px; color:#8b5cf6; font-weight:600;">Laboratori Analisi</span>
+                                    <span style="font-size:11px; padding:5px 12px; background:rgba(16,185,129,0.1); border:1px solid rgba(16,185,129,0.25); border-radius:6px; color:var(--success); font-weight:600;">RSA</span>
+                                    <span style="font-size:11px; padding:5px 12px; background:rgba(245,158,11,0.1); border:1px solid rgba(245,158,11,0.25); border-radius:6px; color:var(--warning); font-weight:600;">Cliniche Private</span>
+                                    <span style="font-size:11px; padding:5px 12px; background:rgba(236,72,153,0.1); border:1px solid rgba(236,72,153,0.25); border-radius:6px; color:#ec4899; font-weight:600;">Centri Riabilitazione</span>
+                                    <span style="font-size:11px; padding:5px 12px; background:rgba(6,182,212,0.1); border:1px solid rgba(6,182,212,0.25); border-radius:6px; color:#06b6d4; font-weight:600;">Strutture Radiologiche</span>
+                                    <span style="font-size:11px; padding:5px 12px; background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.25); border-radius:6px; color:var(--danger); font-weight:600;">Centri Specialistici</span>
+                                    <span style="font-size:11px; padding:5px 12px; background:rgba(100,116,139,0.1); border:1px solid rgba(100,116,139,0.25); border-radius:6px; color:var(--text-muted); font-weight:600;">Strutture Socio-Sanitarie</span>
+                                </div>
+
+                                <!-- Differenza Autorizzazione vs Accreditamento -->
+                                <div style="font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:1px; color:var(--warning); margin:20px 0 14px; display:flex; align-items:center; gap:8px;">
+                                    <i class='bx bx-transfer-alt'></i> Differenza Importante
+                                </div>
+                                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:14px; margin-bottom:24px;">
+                                    <div style="background:rgba(245,158,11,0.06); border:1px solid rgba(245,158,11,0.25); border-radius:12px; padding:18px; border-left:4px solid var(--warning);">
+                                        <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+                                            <i class='bx bx-key' style="font-size:20px; color:var(--warning);"></i>
+                                            <strong style="font-size:14px;">Autorizzazione Sanitaria</strong>
+                                        </div>
+                                        <p style="font-size:12px; color:var(--text-muted); margin:0; line-height:1.6;">È il <strong>permesso per poter aprire e operare</strong>. Verifica che locali, impianti e attrezzature siano idonei. Competenza: ASP + Comune/SUAP.</p>
+                                    </div>
+                                    <div style="background:rgba(16,185,129,0.06); border:1px solid rgba(16,185,129,0.25); border-radius:12px; padding:18px; border-left:4px solid var(--success);">
+                                        <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+                                            <i class='bx bx-medal' style="font-size:20px; color:var(--success);"></i>
+                                            <strong style="font-size:14px;">Accreditamento Istituzionale</strong>
+                                        </div>
+                                        <p style="font-size:12px; color:var(--text-muted); margin:0; line-height:1.6;">È il <strong>riconoscimento di qualità</strong>: la struttura viene riconosciuta idonea a lavorare con il SSR e convenzionarsi. Competenza: Regione + OTA.</p>
+                                    </div>
+                                </div>
+
+                                <!-- Iter verifica OTA -->
+                                <div style="font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:1px; color:var(--success); margin:20px 0 14px; display:flex; align-items:center; gap:8px;">
+                                    <i class='bx bx-trip'></i> Come avviene la verifica OTA — Le 9 fasi
+                                </div>
+                                <div id="pan-iter-timeline" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap:10px; margin-bottom:24px;"></div>
+
+                                <!-- Aspetto strategico -->
+                                <div style="background:linear-gradient(135deg, rgba(59,130,246,0.08), rgba(139,92,246,0.06)); border:1px solid rgba(59,130,246,0.2); border-radius:14px; padding:20px; margin-top:8px;">
+                                    <div style="display:flex; align-items:center; gap:10px; margin-bottom:12px;">
+                                        <i class='bx bx-rocket' style="font-size:24px; color:var(--primary);"></i>
+                                        <strong style="font-size:15px; color:var(--text-main);">Aspetto Strategico</strong>
+                                    </div>
+                                    <p style="font-size:13px; color:var(--text-muted); line-height:1.7; margin:0 0 14px;">
+                                        Conoscere il funzionamento OTA significa conoscere il <strong style="color:var(--text-main);">"cuore" dell'accreditamento</strong> sanitario siciliano. Esiste un enorme mercato di:
+                                    </p>
+                                    <div style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:14px;">
+                                        <span style="font-size:11px; padding:4px 10px; background:rgba(59,130,246,0.12); border-radius:6px; color:var(--primary); font-weight:600;">Consulenza sanitaria</span>
+                                        <span style="font-size:11px; padding:4px 10px; background:rgba(139,92,246,0.12); border-radius:6px; color:#8b5cf6; font-weight:600;">Audit interni</span>
+                                        <span style="font-size:11px; padding:4px 10px; background:rgba(16,185,129,0.12); border-radius:6px; color:var(--success); font-weight:600;">Gestione qualità</span>
+                                        <span style="font-size:11px; padding:4px 10px; background:rgba(245,158,11,0.12); border-radius:6px; color:var(--warning); font-weight:600;">Adeguamento requisiti</span>
+                                        <span style="font-size:11px; padding:4px 10px; background:rgba(236,72,153,0.12); border-radius:6px; color:#ec4899; font-weight:600;">Supporto normativo</span>
+                                        <span style="font-size:11px; padding:4px 10px; background:rgba(6,182,212,0.12); border-radius:6px; color:#06b6d4; font-weight:600;">Progettazione documentale</span>
+                                        <span style="font-size:11px; padding:4px 10px; background:rgba(239,68,68,0.12); border-radius:6px; color:var(--danger); font-weight:600;">Formazione personale</span>
+                                    </div>
+                                    <p style="font-size:13px; color:var(--text-muted); line-height:1.6; margin:0;">
+                                        <strong style="color:var(--primary);">Accredita360</strong> si posiziona proprio qui: una piattaforma che guida le strutture passo passo nella conformità OTA e nel mantenimento dell'accreditamento.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Le 2 Fasi del procedimento -->
+                        <div class="glass-card" style="padding:0; overflow:hidden; border:1px solid rgba(16,185,129,0.3); margin-bottom:24px;">
+                            <div style="background:linear-gradient(135deg, rgba(16,185,129,0.18), rgba(59,130,246,0.08)); padding:20px 24px; border-bottom:1px solid rgba(16,185,129,0.2);">
+                                <div style="display:flex; align-items:center; gap:14px;">
+                                    <div style="width:44px; height:44px; border-radius:12px; background:linear-gradient(135deg,#10b981,#3b82f6); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                                        <i class='bx bx-git-branch' style="font-size:22px; color:#fff;"></i>
+                                    </div>
+                                    <div>
+                                        <div style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:1.5px; color:var(--success); margin-bottom:2px;">Mappa Generale</div>
+                                        <h4 style="margin:0; font-size:16px;">Come si divide il Procedimento</h4>
+                                    </div>
+                                </div>
+                            </div>
+                            <div style="padding:24px;">
+                                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px;">
+                                    <div style="background:rgba(245,158,11,0.06); border:1px solid rgba(245,158,11,0.2); border-radius:14px; padding:20px;">
+                                        <div style="font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:1px; color:var(--warning); margin-bottom:10px;">Fase 1 — Autorizzazione Sanitaria</div>
+                                        <div style="font-size:12px; color:var(--text-muted); margin-bottom:8px;"><strong>Competenza:</strong> ASP + Comune/SUAP</div>
+                                        <ul style="list-style:none; padding:0; margin:0;">
+                                            <li style="font-size:12px; color:var(--text-muted); padding:3px 0; display:flex; align-items:center; gap:6px;"><i class='bx bx-check' style="color:var(--warning);"></i> Verifica locali e impianti</li>
+                                            <li style="font-size:12px; color:var(--text-muted); padding:3px 0; display:flex; align-items:center; gap:6px;"><i class='bx bx-check' style="color:var(--warning);"></i> Sicurezza e requisiti minimi</li>
+                                            <li style="font-size:12px; color:var(--text-muted); padding:3px 0; display:flex; align-items:center; gap:6px;"><i class='bx bx-check' style="color:var(--warning);"></i> Requisiti strutturali</li>
+                                            <li style="font-size:12px; color:var(--text-muted); padding:3px 0; display:flex; align-items:center; gap:6px;"><i class='bx bx-check' style="color:var(--warning);"></i> Requisiti tecnologici</li>
+                                        </ul>
+                                        <button class="btn btn-outline" style="margin-top:12px; font-size:11px; padding:5px 12px;" onclick="app.navigate('gap-analysis'); app.switchGapTab('asp');"><i class='bx bx-right-arrow-alt'></i> Gap Analysis ASP</button>
+                                    </div>
+                                    <div style="background:rgba(16,185,129,0.06); border:1px solid rgba(16,185,129,0.2); border-radius:14px; padding:20px;">
+                                        <div style="font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:1px; color:var(--success); margin-bottom:10px;">Fase 2 — Accreditamento Istituzionale</div>
+                                        <div style="font-size:12px; color:var(--text-muted); margin-bottom:8px;"><strong>Competenza:</strong> Regione + OTA</div>
+                                        <ul style="list-style:none; padding:0; margin:0;">
+                                            <li style="font-size:12px; color:var(--text-muted); padding:3px 0; display:flex; align-items:center; gap:6px;"><i class='bx bx-check' style="color:var(--success);"></i> Qualità e organizzazione</li>
+                                            <li style="font-size:12px; color:var(--text-muted); padding:3px 0; display:flex; align-items:center; gap:6px;"><i class='bx bx-check' style="color:var(--success);"></i> Protocolli e governance</li>
+                                            <li style="font-size:12px; color:var(--text-muted); padding:3px 0; display:flex; align-items:center; gap:6px;"><i class='bx bx-check' style="color:var(--success);"></i> Gestione rischio clinico</li>
+                                            <li style="font-size:12px; color:var(--text-muted); padding:3px 0; display:flex; align-items:center; gap:6px;"><i class='bx bx-check' style="color:var(--success);"></i> Personale e audit</li>
+                                        </ul>
+                                        <button class="btn btn-outline" style="margin-top:12px; font-size:11px; padding:5px 12px;" onclick="app.navigate('gap-analysis'); app.switchGapTab('ota');"><i class='bx bx-right-arrow-alt'></i> Gap Analysis OTA</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Tabella pratica professionale -->
+                        <div class="glass-card" style="padding:0; overflow:hidden; border:1px solid rgba(139,92,246,0.3);">
+                            <div style="background:linear-gradient(135deg, rgba(139,92,246,0.18), rgba(59,130,246,0.08)); padding:20px 24px; border-bottom:1px solid rgba(139,92,246,0.2);">
+                                <div style="display:flex; align-items:center; gap:14px;">
+                                    <div style="width:44px; height:44px; border-radius:12px; background:linear-gradient(135deg,#8b5cf6,#6366f1); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                                        <i class='bx bx-table' style="font-size:22px; color:#fff;"></i>
+                                    </div>
+                                    <div>
+                                        <div style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:1.5px; color:#8b5cf6; margin-bottom:2px;">Pratica Professionale</div>
+                                        <h4 style="margin:0; font-size:16px;">Norme da conoscere per area</h4>
+                                    </div>
+                                </div>
+                            </div>
+                            <div style="padding:0;">
+                                <div class="checklist-table-wrapper">
+                                    <table class="checklist-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Area</th>
+                                                <th>Norme Principali</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr><td><span style="font-weight:600;">Autorizzazione sanitaria</span></td><td style="font-size:13px; color:var(--text-muted);">DPR 14/01/1997 — D.A. 724/2022</td></tr>
+                                            <tr><td><span style="font-weight:600;">Accreditamento</span></td><td style="font-size:13px; color:var(--text-muted);">D.Lgs. 502/92 — D.A. 890/2002</td></tr>
+                                            <tr><td><span style="font-weight:600;">OTA</span></td><td style="font-size:13px; color:var(--text-muted);">D.P.R.S. 12/2019 — Intesa 32/CSR/2015</td></tr>
+                                            <tr><td><span style="font-weight:600;">Requisiti tecnici</span></td><td style="font-size:13px; color:var(--text-muted);">D.A. 20/2024</td></tr>
+                                            <tr><td><span style="font-weight:600;">Organizzazione SSR Sicilia</span></td><td style="font-size:13px; color:var(--text-muted);">L.R. 5/2009</td></tr>
+                                            <tr><td><span style="font-weight:600;">Verifiche e audit</span></td><td style="font-size:13px; color:var(--text-muted);">Intese Stato-Regioni</td></tr>
+                                            <tr><td><span style="font-weight:600;">Cure territoriali</span></td><td style="font-size:13px; color:var(--text-muted);">D.M. 77/2022</td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TAB 2: STORICO NORMATIVA -->
+                    <div id="pan-page-storico" class="proc-page" style="display:none;">
+                        <!-- Container dinamico per le norme -->
+                        <div id="pan-storico-container"></div>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="normativa_db.js"></script>
+    <script src="backend.js"></script>
+    <script src="app.js"></script>
 </body>
 </html>
