@@ -4,6 +4,9 @@
  * Estratto da app.js — contiene solo la logica admin/consulente
  */
 
+// Helper sicurezza XSS — sanitizza tutti i dati prima di inserirli nel DOM
+const _s = (str) => (typeof DOMPurify !== 'undefined' ? DOMPurify.sanitize(String(str ?? '')) : String(str ?? '').replace(/</g,'&lt;').replace(/>/g,'&gt;'));
+
 const admin = {
 
     _adminAllDocs: [],
@@ -111,8 +114,8 @@ const admin = {
                     const tipoLabel = tipoMap[u.tipo_registrazione] || 'N/D';
                     const tipoIcon  = u.tipo_registrazione === 'azienda' ? 'bx-building' : 'bx-user';
                     return `<tr>
-                        <td style="font-weight:600;">${u.name || '—'}</td>
-                        <td style="font-size:13px; color:var(--text-muted);">${u.email}</td>
+                        <td style="font-weight:600;">${_s(u.name || '—')}</td>
+                        <td style="font-size:13px; color:var(--text-muted);">${_s(u.email)}</td>
                         <td><span style="font-size:12px; padding:3px 10px; border-radius:20px; background:rgba(139,92,246,0.12); color:#8b5cf6; font-weight:600; display:inline-flex; align-items:center; gap:5px;">
                             <i class='bx ${tipoIcon}'></i> ${tipoLabel}
                         </span></td>
@@ -158,11 +161,15 @@ const admin = {
         };
         list.innerHTML = docs.map(item => {
             const { strutturaNome, strutturaTipo, userEmail, req } = item;
-            const fileTag = req.file
-                ? `<span style="color:var(--primary); font-size:13px;"><i class='bx bx-file'></i> ${req.file}</span>`
+            const sNome  = _s(strutturaNome);
+            const sEmail = _s(userEmail);
+            const sFile  = req.file ? _s(req.file) : null;
+            const sNote  = req.noteConsulente ? _s(req.noteConsulente) : null;
+            const fileTag = sFile
+                ? `<span style="color:var(--primary); font-size:13px;"><i class='bx bx-file'></i> ${sFile}</span>`
                 : `<span style="color:var(--text-muted); font-size:12px;">Nessun file</span>`;
-            const noteTag = req.noteConsulente
-                ? `<span style="font-size:12px; color:var(--text-muted);">${req.noteConsulente}</span>`
+            const noteTag = sNote
+                ? `<span style="font-size:12px; color:var(--text-muted);">${sNote}</span>`
                 : `<span style="font-size:12px; color:var(--text-muted);">—</span>`;
             const azioniTag = req.file && req.stato !== 'green'
                 ? `<div style="display:flex; flex-direction:column; gap:6px;">
@@ -179,11 +186,11 @@ const admin = {
                     ? `<span style="font-size:12px; color:var(--success);"><i class='bx bx-check-double'></i> Già validato</span>`
                     : `<span style="font-size:12px; color:var(--text-muted);">Attende file</span>`;
             return `<tr>
-                <td style="font-weight:600;">${strutturaNome}<div style="font-size:11px; color:var(--text-muted);">${userEmail}</div></td>
+                <td style="font-weight:600;">${sNome}<div style="font-size:11px; color:var(--text-muted);">${sEmail}</div></td>
                 <td><span style="font-size:12px; padding:3px 8px; background:rgba(59,130,246,0.15); border-radius:4px; color:var(--primary);">${tipoLabels[strutturaTipo] || strutturaTipo}</span></td>
                 <td>
-                    <div style="font-weight:500; font-size:13px;">${req.titolo}</div>
-                    <div style="font-size:11px; color:var(--text-muted);">${req.norma}</div>
+                    <div style="font-weight:500; font-size:13px;">${_s(req.titolo)}</div>
+                    <div style="font-size:11px; color:var(--text-muted);">${_s(req.norma)}</div>
                 </td>
                 <td>${fileTag}</td>
                 <td>${statusIcons[req.stato] || statusIcons['red']}</td>

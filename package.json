@@ -1,0 +1,13 @@
+{
+  "name": "accredita360-tests",
+  "version": "1.0.0",
+  "description": "Suite di test E2E per Accredita360",
+  "scripts": {
+    "test": "npx playwright test",
+    "test:headed": "npx playwright test --headed",
+    "test:report": "npx playwright show-report"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.44.0"
+  }
+}
