@@ -25,11 +25,14 @@
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
         
+        html, body {
+            overflow-x: hidden;
+        }
         body {
             background-color: var(--bg-deep);
             color: var(--text-main);
             font-family: 'Inter', sans-serif;
-            overflow-x: hidden;
+            overflow-y: auto;
             line-height: 1.6;
         }
 
@@ -53,9 +56,9 @@
         /* Navbar */
         nav {
             display: flex;
-            justify-content: space-between;
             align-items: center;
-            padding: 15px 8%;
+            gap: 32px;
+            padding: 15px 1% 15px 2%;
             background: rgba(255, 255, 255, 0.9);
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
@@ -76,7 +79,16 @@
             font-weight: 800;
             color: var(--primary);
         }
-        .logo img { height: 45px; border-radius: 8px; }
+        .logo img { 
+            height: 74px; 
+            border-radius: 10px; 
+            filter: drop-shadow(0 0 12px rgba(2, 132, 199, 0.4));
+            animation: logoGlow 3s ease-in-out infinite alternate;
+        }
+        @keyframes logoGlow {
+            0% { filter: drop-shadow(0 0 8px rgba(2, 132, 199, 0.3)); }
+            100% { filter: drop-shadow(0 0 20px rgba(6, 182, 212, 0.6)); }
+        }
         
         .nav-links { display: flex; gap: 40px; align-items: center; }
         .nav-links a { color: var(--text-main); text-decoration: none; font-weight: 600; font-size: 14px; transition: color 0.3s; }
@@ -117,13 +129,13 @@
 
         /* Hero Section */
         .hero {
-            min-height: 100vh;
+            min-height: auto;
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
             text-align: center;
-            padding: 140px 8% 60px;
+            padding: 100px 8% 40px;
             position: relative;
         }
 
@@ -155,12 +167,12 @@
         .container {
             max-width: 1200px;
             margin: 0 auto;
-            padding: 100px 8%;
+            padding: 60px 8%;
         }
 
         .section-header {
             text-align: center;
-            margin-bottom: 80px;
+            margin-bottom: 40px;
         }
         .section-header h2 {
             font-size: 48px;
@@ -178,14 +190,14 @@
         .method-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 40px;
+            gap: 25px;
         }
 
         .method-step {
             background: var(--glass-bg);
             border: 1px solid var(--glass-border);
-            padding: 50px 40px;
-            border-radius: 24px;
+            padding: 35px 25px;
+            border-radius: 20px;
             backdrop-filter: blur(20px);
             box-shadow: 0 20px 40px var(--glass-shadow);
             transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
@@ -218,7 +230,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            margin: 0 auto 30px;
+            margin: 0 auto 15px;
             font-size: 40px;
             color: var(--primary);
             transition: all 0.4s;
@@ -238,12 +250,12 @@
         .method-step ul li i { color: var(--secondary); font-size: 18px; }
 
         /* Pricing */
-        .pricing-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 40px; }
+        .pricing-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 25px; }
         .price-card {
             background: var(--glass-bg);
             border: 1px solid var(--glass-border);
-            border-radius: 24px;
-            padding: 50px 40px;
+            border-radius: 20px;
+            padding: 35px 25px;
             box-shadow: 0 10px 30px var(--glass-shadow);
             transition: all 0.4s;
         }
@@ -257,7 +269,7 @@
         .price-card.premium h3 { color: white; }
         .price-card.premium .desc { color: #94a3b8; }
         
-        .price-val { font-size: 48px; font-weight: 800; font-family: 'Playfair Display', serif; margin: 30px 0; }
+        .price-val { font-size: 48px; font-weight: 800; font-family: 'Playfair Display', serif; margin: 15px 0; }
         .price-features li { margin-bottom: 16px; font-weight: 600; display: flex; align-items: center; gap: 10px; font-size: 15px; }
         .price-features li i { color: var(--secondary); font-size: 22px; }
 
@@ -281,8 +293,11 @@
 
     <nav>
         <div class="logo">
-            <img src="C:/Users/siapa/.gemini/antigravity/brain/2e064e9e-9a70-433f-8469-7b05d0ca2d66/accredita360_futuristic_logo_1778360325564.png" alt="Accredita360 Logo">
-            Accredita360
+            <img src="logo.png" alt="Accredita360 Logo">
+            <div style="display:flex; flex-direction:column; line-height:1.2;">
+                <span>Accredita360</span>
+                <span style="font-size:12px; font-weight:500; color:var(--text-muted); letter-spacing:2px; text-transform:uppercase;">Sicilia</span>
+            </div>
         </div>
         <div class="nav-links">
             <a href="#chi-siamo">Chi Siamo</a>
@@ -291,70 +306,96 @@
             <a href="#servizi">Modelli B2B</a>
             <a href="#contatti">Contatti</a>
         </div>
-        <a href="index.html" class="btn btn-primary">
-            Accedi all'App <i class='bx bx-right-arrow-alt'></i>
-        </a>
+        <div style="margin-left:auto; display:flex; gap:12px; align-items:center;">
+            <a href="login.html" class="btn btn-outline" style="padding:10px 22px; font-size:13px;">
+                <i class='bx bx-log-in'></i> Accedi
+            </a>
+            <a href="register.html" class="btn btn-primary" style="padding:10px 22px; font-size:13px;">
+                <i class='bx bx-user-plus'></i> Inizia Ora
+            </a>
+        </div>
     </nav>
 
     <section class="hero">
-        <div style="display:inline-block; padding: 6px 16px; background: rgba(2, 132, 199, 0.1); border: 1px solid rgba(2, 132, 199, 0.2); border-radius: 20px; color: var(--primary); font-size: 14px; font-weight: 600; margin-bottom: 24px;"><i class='bx bx-check-shield'></i> Conforme ai requisiti D.A. 890/02 e D.A. 20/2024</div>
         <h1 style="margin-top:0;">Accredita360<br><span>Piattaforma All-in-One.</span></h1>
         <p>Progettata per semplificare l'iter di autorizzazione e l'accreditamento OTA. Un ecosistema completo per guidare Direttori Sanitari e Management attraverso le complessità normative.</p>
-        <div class="hero-cta">
-            <a href="index.html" class="btn btn-primary">
-                Entra nella Dashboard <i class='bx bx-shield-quarter'></i>
-            </a>
-            <a href="#metodo" class="btn btn-outline">
-                Scopri il Flusso <i class='bx bx-down-arrow-alt'></i>
-            </a>
-        </div>
     </section>
 
     <!-- Sezione Chi Siamo -->
-    <section id="chi-siamo" class="container">
-        <div class="section-header">
-            <h2>Chi Siamo</h2>
-            <p>Siamo un team di Risk Manager, Ingegneri Clinici ed esperti in Diritto Sanitario dedicati a garantire la sicurezza e l'eccellenza della tua struttura.</p>
+    <section id="chi-siamo" class="container" style="display: flex; flex-wrap: wrap; align-items: stretch; gap: 60px; padding-top: 40px; padding-bottom: 60px;">
+        <div style="flex: 1.2; min-width: 400px; display: flex;">
+            <img src="uploaded_hero.jpg" alt="Accredita360 Hero" style="width: 100%; height: 100%; object-fit: cover; border-radius: 24px; box-shadow: 0 20px 50px rgba(2, 132, 199, 0.2); border: 1px solid var(--glass-border);">
+        </div>
+        <div style="flex: 1; min-width: 400px; display: flex; flex-direction: column; justify-content: center;">
+            <h2 style="margin-bottom: 20px; font-size: 42px; color: var(--primary); text-align: left;">Chi Siamo</h2>
+            <p style="text-align: justify; margin-bottom: 15px; font-size: 16px; line-height: 1.7;">
+                La nostra storia nasce da una profonda consapevolezza: il mondo sanitario richiede un livello di eccellenza che non ammette compromessi. 
+                Siamo un team multidisciplinare di figure professionali altamente specializzate, uniti dalla vocazione per l'innovazione e la conformità nel settore della salute. 
+                In sinergia operano <strong style="color: var(--primary);">ingegneri clinici, avvocati, informatici e consulenti aziendali</strong>, 
+                guidando le strutture verso i più alti standard qualitativi.
+            </p>
+            <p style="text-align: justify; margin-bottom: 15px; font-size: 16px; line-height: 1.7;">
+                Conosciamo la complessità normativa moderna — dalle autorizzazioni ASP all'accreditamento OTA — e sappiamo quanto ogni dettaglio incida sull'affidabilità dei servizi. 
+                Il nostro metodo spazia dalla progettazione di percorsi sicuri alla compliance legale, fino alla <strong style="color: var(--secondary);">sicurezza dei dati sensibili</strong>.
+            </p>
+            <p style="text-align: justify; font-size: 16px; line-height: 1.7; margin: 0;">
+                Ci poniamo come partner strategici al fianco di Direttori Sanitari e Top Management per trasformare i requisiti normativi in opportunità di crescita, assicurando efficienza e massima affidabilità.
+            </p>
         </div>
     </section>
 
     <!-- Sezione Il Metodo -->
-    <section id="metodo" class="container">
-        <div class="section-header">
-            <h2>L'Infrastruttura del Procedimento</h2>
-            <p>Non solo un software, ma l'impalcatura metodologica completa per guidare il management sanitario.</p>
+    <section id="metodo" class="container" style="padding-top: 60px; padding-bottom: 60px;">
+        <div style="display: flex; flex-wrap: wrap; align-items: stretch; gap: 60px; margin-bottom: 60px; flex-direction: row-reverse;">
+            <div style="flex: 1.2; min-width: 400px; display: flex;">
+                <img src="uploaded_method.jpg" alt="Metodo Accredita360" style="width: 100%; height: 100%; object-fit: cover; border-radius: 24px; box-shadow: 0 20px 50px rgba(2, 132, 199, 0.2); border: 1px solid var(--glass-border);">
+            </div>
+            <div style="flex: 1; min-width: 400px; display: flex; flex-direction: column; justify-content: center;">
+                <h2 style="margin-bottom: 20px; font-size: 42px; color: var(--primary); text-align: left;">L'Infrastruttura del Procedimento</h2>
+                <p style="text-align: justify; font-size: 17px; line-height: 1.8; color: var(--text-muted); margin: 0;">
+                    Non forniamo un semplice software gestionale, ma un'impalcatura metodologica rigorosa e completa, progettata per sollevare il management sanitario dal peso della burocrazia. 
+                    Il nostro approccio ingegnerizza l'intero iter di compliance, trasformando normative complesse in flussi di lavoro chiari, tracciabili e sicuri. 
+                    Dall'ottenimento dell'autorizzazione sanitaria fino all'accreditamento istituzionale, applichiamo protocolli di altissima affidabilità blindando i risultati contro ogni rischio ispettivo.
+                </p>
+            </div>
         </div>
         
         <div class="method-grid">
             <div class="method-step">
                 <div class="step-icon-wrapper"><i class='bx bx-building-house'></i></div>
-                <h3>1. Autorizzazione</h3>
-                <p>La fase base (D.A. 890/2002) per ottenere l'autorizzazione all'apertura dalla ASP.</p>
-                <ul>
-                    <li><i class='bx bx-check'></i> Verifica urbanistica e impianti</li>
-                    <li><i class='bx bx-check'></i> Presentazione pratica SUAP</li>
-                    <li><i class='bx bx-check'></i> Superamento sopralluogo ASP</li>
+                <h3 style="font-size: 22px; margin-bottom: 10px;">1. Autorizzazione Sanitaria</h3>
+                <p style="text-align: left; font-size: 15px; line-height: 1.5; margin-bottom: 15px; color: var(--text-muted);">
+                    Il fondamento imprescindibile per l'operatività. Gestiamo rigorosamente i requisiti strutturali, impiantistici e tecnologici imposti dal D.A. 890/2002, assicurando la totale conformità in fase di rilascio dell'autorizzazione da parte dell'ASP competente.
+                </p>
+                <ul style="border-top: 1px solid rgba(0,0,0,0.1); padding-top: 15px;">
+                    <li><i class='bx bx-check'></i> Verifica conformità urbanistica</li>
+                    <li><i class='bx bx-check'></i> Istruzione pratiche SUAP</li>
+                    <li><i class='bx bx-check'></i> Assistenza sopralluogo ASP</li>
                 </ul>
             </div>
             
             <div class="method-step">
                 <div class="step-icon-wrapper"><i class='bx bx-medal'></i></div>
-                <h3>2. Accreditamento OTA</h3>
-                <p>L'innalzamento degli standard organizzativi (D.A. 20/2024) per l'idoneità al SSR.</p>
-                <ul>
-                    <li><i class='bx bx-check'></i> Adozione Sistema Qualità</li>
+                <h3 style="font-size: 22px; margin-bottom: 10px;">2. Accreditamento OTA</h3>
+                <p style="text-align: left; font-size: 15px; line-height: 1.5; margin-bottom: 15px; color: var(--text-muted);">
+                    Il salto di qualità verso l'eccellenza clinica. Implementiamo architetture organizzative conformi al D.A. 20/2024, elevando gli standard della struttura per superare con autorevolezza le ispezioni dell'Organismo Tecnicamente Accreditante regionale.
+                </p>
+                <ul style="border-top: 1px solid rgba(0,0,0,0.1); padding-top: 15px;">
+                    <li><i class='bx bx-check'></i> Progettazione Sistema Qualità</li>
                     <li><i class='bx bx-check'></i> Gestione Rischio Clinico</li>
-                    <li><i class='bx bx-check'></i> Audit Ispettivo OTA</li>
+                    <li><i class='bx bx-check'></i> Affiancamento Audit OTA</li>
                 </ul>
             </div>
 
             <div class="method-step">
                 <div class="step-icon-wrapper"><i class='bx bx-briefcase-alt-2'></i></div>
-                <h3>3. Convenzionamento</h3>
-                <p>La contrattualizzazione finale con la Regione per l'assegnazione del budget.</p>
-                <ul>
+                <h3 style="font-size: 22px; margin-bottom: 10px;">3. Convenzionamento</h3>
+                <p style="text-align: left; font-size: 15px; line-height: 1.5; margin-bottom: 15px; color: var(--text-muted);">
+                    Il consolidamento del modello di business. Forniamo consulenza strategica di alto profilo per la fase di contrattualizzazione con il Servizio Sanitario Regionale, tutelando gli interessi della struttura nell'assegnazione dei budget e tetti di spesa.
+                </p>
+                <ul style="border-top: 1px solid rgba(0,0,0,0.1); padding-top: 15px;">
                     <li><i class='bx bx-check'></i> Negoziazione Budget SSR</li>
-                    <li><i class='bx bx-check'></i> Contrattualistica ASP</li>
+                    <li><i class='bx bx-check'></i> Tutela legale contratti ASP</li>
                     <li><i class='bx bx-check'></i> Programmazione Sanitaria</li>
                 </ul>
             </div>
@@ -362,10 +403,21 @@
     </section>
 
     <!-- Sezione Sicurezza -->
-    <section id="sicurezza" class="container">
-        <div class="section-header">
-            <h2>Sicurezza & Normative</h2>
-            <p>La nostra infrastruttura garantisce la totale conformità al GDPR e la protezione del dato sanitario tramite crittografia end-to-end.</p>
+    <section id="sicurezza" class="container" style="display: flex; flex-wrap: wrap; align-items: stretch; gap: 60px; padding-top: 60px; padding-bottom: 60px;">
+        <div style="flex: 1.2; min-width: 400px; text-align: left; display: flex; flex-direction: column; justify-content: center;">
+            <h2 style="margin-bottom: 25px; font-size: 42px; color: var(--primary);">Sicurezza & Normative</h2>
+            <p style="text-align: justify; font-size: 17px; line-height: 1.8; margin-bottom: 20px;">
+                La protezione del dato è l'architrave su cui poggia l'intera affidabilità di Accredita360. In un settore delicato come quello sanitario, la sicurezza non è un'opzione, ma un prerequisito fondamentale. La nostra infrastruttura è progettata secondo il principio della <strong>Security by Design</strong> per garantire l'integrità e la riservatezza di ogni informazione.
+            </p>
+            <p style="text-align: justify; font-size: 17px; line-height: 1.8; margin-bottom: 20px;">
+                Adottiamo protocolli di <strong>crittografia avanzata</strong> e sistemi di protezione del dato sanitario pienamente conformi al <strong>GDPR</strong>. Ogni fascicolo documentale e ogni Gap Analysis sono blindati e pronti per superare con successo i rigorosi audit delle commissioni ispettive ASP e OTA, garantendo al Management la massima serenità operativa.
+            </p>
+            <p style="text-align: justify; font-size: 17px; line-height: 1.8; margin: 0;">
+                Garantiamo la <strong>tracciabilità totale</strong> di ogni operazione e il backup ridondato su infrastrutture sicure in territorio UE, offrendo un ecosistema digitale impenetrabile che tutela il valore e la privacy della tua struttura sanitaria.
+            </p>
+        </div>
+        <div style="flex: 0.8; min-width: 300px; display: flex;">
+            <img src="uploaded_security.jpg" alt="Sicurezza Accredita360" style="width: 100%; height: 100%; object-fit: cover; border-radius: 24px; box-shadow: 0 20px 50px rgba(2, 132, 199, 0.2); border: 1px solid var(--glass-border);">
         </div>
     </section>
 
@@ -421,6 +473,21 @@
             <i class='bx bx-envelope'></i> Parla con un Consulente
         </a>
     </section>
+
+    <!-- Footer -->
+    <footer style="background: rgba(255,255,255,0.9); border-top: 1px solid var(--glass-border); padding: 40px 8%; text-align: center; position: relative; z-index: 10; backdrop-filter: blur(10px);">
+        <div style="max-width: 1200px; margin: 0 auto;">
+            <p style="font-weight: 600; color: var(--text-main); margin-bottom: 12px;">&copy; 2026 Accredita360. Tutti i diritti riservati.</p>
+            <p style="font-size: 12px; color: var(--text-muted); line-height: 1.6; max-width: 800px; margin: 0 auto 20px;">
+                Piattaforma B2B ad uso esclusivo di consulenti e strutture sanitarie per la gestione dell'iter autorizzativo (ASP) e accreditamento istituzionale (OTA). Le informazioni riportate hanno valore di supporto procedurale.
+            </p>
+            <div style="display: flex; gap: 24px; justify-content: center;">
+                <a href="#" style="color: var(--primary); text-decoration: none; font-size: 13px; font-weight: 600;">Privacy Policy</a>
+                <a href="#" style="color: var(--primary); text-decoration: none; font-size: 13px; font-weight: 600;">Termini di Servizio</a>
+                <a href="#" style="color: var(--primary); text-decoration: none; font-size: 13px; font-weight: 600;">Assistenza Legale</a>
+            </div>
+        </div>
+    </footer>
 
     <script>
         const canvas = document.getElementById('bg-canvas');
