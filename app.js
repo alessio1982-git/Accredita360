@@ -13,12 +13,11 @@ const app = {
         this.bindEvents();
         this.renderProfilingForm();
         
-        // Verifica Autenticazione
+        // Verifica Autenticazione — redirect reale a login.html se non loggato
         const user = Backend.getCurrentUser();
         if (!user) {
-            this.navigate('login');
-            document.querySelector('.sidebar').style.display = 'none';
-            document.querySelector('.topbar').style.display = 'none';
+            window.location.href = 'login.html';
+            return;
         } else {
             this.setupUI(user);
             await this.loadData();
