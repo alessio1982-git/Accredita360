@@ -285,6 +285,172 @@
             .method-grid, .pricing-grid { grid-template-columns: 1fr; }
             .hero-cta { flex-direction: column; }
         }
+
+        /* Modal Overlay & Styling */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(15, 23, 42, 0.4);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            z-index: 2000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal-content {
+            width: 90%;
+            max-width: 580px;
+            background: rgba(255, 255, 255, 0.85);
+            border: 1px solid rgba(2, 132, 199, 0.2);
+            border-radius: 24px;
+            padding: 40px;
+            box-shadow: 0 25px 50px -12px rgba(2, 132, 199, 0.25);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            position: relative;
+            transform: scale(0.9) translateY(20px);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            text-align: left;
+        }
+
+        .modal-overlay.active .modal-content {
+            transform: scale(1) translateY(0);
+        }
+
+        .modal-close-btn {
+            position: absolute;
+            top: 20px;
+            right: 24px;
+            background: none;
+            border: none;
+            font-size: 32px;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: color 0.2s, transform 0.2s;
+            line-height: 1;
+        }
+
+        .modal-close-btn:hover {
+            color: var(--primary);
+            transform: scale(1.1);
+        }
+
+        .modal-title {
+            font-size: 28px;
+            color: var(--primary);
+            margin-bottom: 8px;
+            font-weight: 800;
+            font-family: 'Playfair Display', serif;
+        }
+
+        .modal-subtitle {
+            font-size: 14px;
+            color: var(--text-muted);
+            margin-bottom: 24px;
+            font-family: 'Inter', sans-serif;
+            font-weight: 500;
+            line-height: 1.4;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+
+        @media (max-width: 500px) {
+            .form-row {
+                grid-template-columns: 1fr;
+                gap: 16px;
+            }
+        }
+
+        .form-group-modal {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            margin-bottom: 16px;
+            text-align: left;
+        }
+
+        .form-group-modal label {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-main);
+            font-family: 'Inter', sans-serif;
+        }
+
+        .form-group-modal input,
+        .form-group-modal textarea {
+            width: 100%;
+            padding: 12px 16px;
+            border-radius: 12px;
+            border: 1px solid rgba(2, 132, 199, 0.15);
+            background: rgba(255, 255, 255, 0.6);
+            color: var(--text-main);
+            font-family: 'Inter', sans-serif;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .form-group-modal input:focus,
+        .form-group-modal textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(2, 132, 199, 0.15);
+            background: #ffffff;
+        }
+
+        .btn-submit-modal {
+            width: 100%;
+            justify-content: center;
+            font-size: 14px;
+            cursor: pointer;
+            border: none;
+            margin-top: 8px;
+        }
+
+        .modal-success-screen {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 20px 0;
+            animation: fadeInModal 0.5s ease forwards;
+        }
+
+        .success-icon-anim {
+            font-size: 72px;
+            color: var(--secondary);
+            margin-bottom: 16px;
+            filter: drop-shadow(0 0 10px rgba(5, 150, 105, 0.3));
+            animation: scaleUpSuccess 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        @keyframes scaleUpSuccess {
+            0% { transform: scale(0.5); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        @keyframes fadeInModal {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
     </style>
 </head>
 <body>
@@ -446,7 +612,7 @@
                     <li><i class='bx bx-check'></i> Sopralluogo e Gap Analysis fisica</li>
                     <li><i class='bx bx-check'></i> Affiancamento durante visita OTA</li>
                 </ul>
-                <a href="#" class="btn btn-primary" style="width: 100%; justify-content: center;">Parla con un Consulente</a>
+                <button class="btn btn-primary open-modal-trigger" style="width: 100%; justify-content: center; border: none; cursor: pointer;">Parla con un Consulente</button>
             </div>
 
             <div class="price-card">
@@ -469,10 +635,53 @@
             <h2>Contattaci</h2>
             <p>Richiedi un Audit esplorativo gratuito o prenota una demo del software.</p>
         </div>
-        <a href="mailto:info@accredita360.it" class="btn btn-primary" style="display:inline-flex; align-items:center; gap:10px;">
+        <button class="btn btn-primary open-modal-trigger" style="display:inline-flex; align-items:center; gap:10px; border: none; cursor: pointer;">
             <i class='bx bx-envelope'></i> Parla con un Consulente
-        </a>
+        </button>
     </section>
+
+    <!-- Modal di Contatto Premium -->
+    <div id="contact-modal" class="modal-overlay">
+        <div class="modal-content glass-card">
+            <button class="modal-close-btn" id="close-modal-btn">&times;</button>
+            <h3 class="modal-title">Parla con un Consulente</h3>
+            <p class="modal-subtitle">Compila il modulo sottostante. Il tuo messaggio sarà inviato direttamente all'indirizzo <strong>info@accredita360s.com</strong>.</p>
+            
+            <form id="contact-form">
+                <div class="form-row">
+                    <div class="form-group-modal">
+                        <label for="c-nome">Nome</label>
+                        <input type="text" id="c-nome" required placeholder="Es. Mario">
+                    </div>
+                    <div class="form-group-modal">
+                        <label for="c-cognome">Cognome</label>
+                        <input type="text" id="c-cognome" required placeholder="Es. Rossi">
+                    </div>
+                </div>
+                <div class="form-group-modal">
+                    <label for="c-email">Email</label>
+                    <input type="email" id="c-email" required placeholder="es. nome@azienda.it">
+                </div>
+                <div class="form-group-modal">
+                    <label for="c-tel">Telefono</label>
+                    <input type="tel" id="c-tel" required placeholder="Es. 333 1234567">
+                </div>
+                <div class="form-group-modal">
+                    <label for="c-messaggio">Note di messaggio:</label>
+                    <textarea id="c-messaggio" rows="4" required placeholder="Scrivi qui il tuo messaggio per il consulente..."></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary btn-submit-modal">Invia Richiesta</button>
+            </form>
+            
+            <!-- Schermata di Successo -->
+            <div id="contact-success" class="modal-success-screen" style="display: none;">
+                <i class='bx bx-check-circle success-icon-anim'></i>
+                <h4 style="font-family:'Playfair Display', serif; font-size:24px; color:var(--primary); margin-bottom:8px;">Richiesta Inviata!</h4>
+                <p style="font-family:'Inter', sans-serif; font-size:14px; color:var(--text-muted); margin-bottom:20px; line-height:1.5;">Grazie per averci contattato. Abbiamo preparato la tua e-mail per <strong>info@accredita360s.com</strong>. Ti risponderemo il prima possibile.</p>
+                <button class="btn btn-outline" id="success-close-btn" style="padding: 10px 24px;">Chiudi</button>
+            </div>
+        </div>
+    </div>
 
     <!-- Footer -->
     <footer style="background: rgba(255,255,255,0.9); border-top: 1px solid var(--glass-border); padding: 40px 8%; text-align: center; position: relative; z-index: 10; backdrop-filter: blur(10px);">
@@ -489,7 +698,106 @@
         </div>
     </footer>
 
+    <!-- Supabase JS Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
+        // Gestione Eventi e Logica del Modal di Contatto
+        document.addEventListener('DOMContentLoaded', () => {
+            const contactModal = document.getElementById('contact-modal');
+            const openModalTriggers = document.querySelectorAll('.open-modal-trigger');
+            const closeModalBtn = document.getElementById('close-modal-btn');
+            const successCloseBtn = document.getElementById('success-close-btn');
+            const contactForm = document.getElementById('contact-form');
+            const contactSuccess = document.getElementById('contact-success');
+
+            // Inizializzazione Client Supabase per la Landing Page
+            const SUPABASE_URL = 'https://kvthfnkgfbxtjgkqpbwj.supabase.co';
+            const SUPABASE_KEY = 'sb_publishable_OoxTUZ8dE9oOBTa27lDquQ_pths83qG';
+            const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+            function openModal() {
+                contactModal.classList.add('active');
+                document.body.style.overflow = 'hidden';
+            }
+
+            function closeModal() {
+                contactModal.classList.remove('active');
+                document.body.style.overflow = '';
+                // Reset del form allo stato iniziale dopo l'animazione di chiusura
+                setTimeout(() => {
+                    contactForm.style.display = 'block';
+                    contactSuccess.style.display = 'none';
+                    contactForm.reset();
+                }, 400);
+            }
+
+            openModalTriggers.forEach(trigger => {
+                trigger.addEventListener('click', openModal);
+            });
+
+            closeModalBtn.addEventListener('click', closeModal);
+            successCloseBtn.addEventListener('click', closeModal);
+
+            contactModal.addEventListener('click', (e) => {
+                if (e.target === contactModal) {
+                    closeModal();
+                }
+            });
+
+            contactForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+
+                const nome = document.getElementById('c-nome').value.trim();
+                const cognome = document.getElementById('c-cognome').value.trim();
+                const email = document.getElementById('c-email').value.trim();
+                const tel = document.getElementById('c-tel').value.trim();
+                const messaggio = document.getElementById('c-messaggio').value.trim();
+
+                // 1. Transizione immediata e fluida alla schermata di successo
+                contactForm.style.display = 'none';
+                contactSuccess.style.display = 'flex';
+
+                try {
+                    // 2. Persistenza dei dati sul Database di Supabase (tabella contact_requests)
+                    const { error: dbError } = await supabase
+                        .from('contact_requests')
+                        .insert([{
+                            nome: nome,
+                            cognome: cognome,
+                            email: email,
+                            telefono: tel,
+                            messaggio: messaggio,
+                            created_at: new Date().toISOString()
+                        }]);
+
+                    if (dbError) {
+                        console.error("[Supabase DB] Errore di salvataggio:", dbError);
+                    } else {
+                        console.log("[Supabase DB] Richiesta di contatto salvata con successo!");
+                    }
+
+                    // 3. Invocazione in background della Edge Function per l'invio reale dell'email
+                    const { error: fnError } = await supabase.functions.invoke('send-contact-email', {
+                        body: {
+                            nome: nome,
+                            cognome: cognome,
+                            email: email,
+                            telefono: tel,
+                            messaggio: messaggio
+                        }
+                    });
+
+                    if (fnError) {
+                        console.error("[Supabase Edge Function] Errore nell'invio della notifica:", fnError);
+                    } else {
+                        console.log("[Supabase Edge Function] Email inviata a info@accredita360s.com con successo!");
+                    }
+
+                } catch (err) {
+                    console.error("[Supabase Link] Errore di rete:", err);
+                }
+            });
+        });
         const canvas = document.getElementById('bg-canvas');
         const ctx = canvas.getContext('2d');
         
