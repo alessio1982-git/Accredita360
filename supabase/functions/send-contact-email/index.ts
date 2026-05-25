@@ -1,9 +1,11 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY") ?? "";
-const FROM_EMAIL = "info@accredita360s.com";
+const FROM_EMAIL = "onboarding@resend.dev";
 const FROM_NAME = "Accredita360 Portal";
-const TO_EMAIL = "info@accredita360s.com"; // Email del consulente/amministratore che riceve la notifica
+// TODO: dopo verifica dominio su resend.com/domains, cambiare in "info@accredita360s.com"
+// e FROM_EMAIL in "info@accredita360s.com"
+const TO_EMAIL = "alessio.arlotta@gmail.com";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
