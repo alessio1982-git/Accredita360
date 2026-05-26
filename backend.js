@@ -120,7 +120,7 @@ const Backend = {
             name:                  displayName,
             role:                  requestedRole,
             tipo_registrazione:    tipoRegistrazione || 'persona_fisica',
-            registration_status:   'pending',
+            registration_status:   'active',
             created_at:            new Date().toISOString()
         };
 
