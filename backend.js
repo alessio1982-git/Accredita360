@@ -31,6 +31,50 @@ const Backend = {
     // =========================================================
 
     /**
+     * Legge tutti gli utenti con stato pending.
+     */
+    async getPendingUsers() {
+        const { data, error } = await supabase
+            .from('users')
+            .select('*')
+            .eq('registration_status', 'pending')
+            .order('created_at', { ascending: false });
+        if (error) {
+            console.error('[Backend] Errore getPendingUsers:', error);
+            return [];
+        }
+        return data || [];
+    },
+
+    /**
+     * Approva un utente e avvia la funzione di notifica email.
+     */
+    async approveUser(userEmail) {
+        const { data, error } = await supabase
+            .from('users')
+            .update({ registration_status: 'active' })
+            .eq('email', userEmail)
+            .select()
+            .single();
+
+        if (error) {
+            console.error('[Backend] Errore approveUser:', error);
+            throw new Error('Errore durante l\'approvazione dell\'utente.');
+        }
+
+        // Avvia notifica email
+        try {
+            await supabase.functions.invoke('send-approval-email', {
+                body: { userEmail: userEmail, userName: data.name }
+            });
+        } catch(e) {
+            console.warn('[Email] Errore invio email di approvazione:', e);
+        }
+
+        return data;
+    },
+
+    /**
      * Login tramite tabella `users`.
      * Restituisce la sessione utente o lancia un errore.
      */
@@ -46,6 +90,11 @@ const Backend = {
             console.warn('[Auth] Login fallito:', error?.message || 'Nessun utente trovato');
             throw new Error('Credenziali non valide. Verifica email e password.');
         }
+        
+        // Controllo stato approvazione
+        if (data.registration_status === 'pending') {
+            throw new Error('Il tuo account è in attesa di autorizzazione da parte dell\'amministratore.');
+        }
 
         const session = {
             token:     'session_' + Date.now(),
@@ -57,10 +106,10 @@ const Backend = {
     },
 
     /**
-     * Registrazione: crea utente in `users` e avvia la sessione.
-     * Poi chiama la Edge Function per inviare la email di benvenuto.
+     * Registrazione: crea utente in `users` con stato `pending`.
+     * Poi chiama la Edge Function per inviare la email all'admin e all'utente.
      */
-    async register(email, password, nome, cognome, ragioneSociale, tipoRegistrazione) {
+    async register(email, password, nome, cognome, ragioneSociale, tipoRegistrazione, requestedRole = 'cliente') {
         const displayName = tipoRegistrazione === 'azienda'
             ? ragioneSociale
             : `${nome} ${cognome}`.trim();
@@ -69,9 +118,9 @@ const Backend = {
             email:                 email.trim().toLowerCase(),
             password:              password,
             name:                  displayName,
-            role:                  'cliente',
+            role:                  requestedRole,
             tipo_registrazione:    tipoRegistrazione || 'persona_fisica',
-            registration_status:   'active',
+            registration_status:   'pending',
             created_at:            new Date().toISOString()
         };
 
@@ -96,7 +145,7 @@ const Backend = {
         };
         sessionStorage.setItem(SESSION_KEY, JSON.stringify(session));
 
-        // Invia email di benvenuto (non bloccante — in background)
+        // Invia email di benvenuto (admin notificato e utente notificato)
         this.sendWelcomeEmail(displayName, email.trim().toLowerCase(), tipoRegistrazione)
             .catch(err => console.warn('[Email] Invio benvenuto fallito (non critico):', err));
 

@@ -16,11 +16,25 @@ const loginApp = {
             return;
         }
 
-        // Controlla parametro URL ?view=
+        // Controlla parametro URL ?role=
         const params = new URLSearchParams(window.location.search);
-        const view = params.get('view');
-        if (view === 'consulente') {
-            this.selectPanel('consulente');
+        const role = params.get('role');
+        if (role === 'consulente' || role === 'utente') {
+            // Nascondi la griglia di selezione
+            const grid = document.querySelector('.panels-grid');
+            if (grid) grid.style.display = 'none';
+            // Forza il testo della pagina
+            const headerP = document.querySelector('.page-header p');
+            if (headerP) headerP.style.display = 'none';
+            
+            // Aggiorna il link di registrazione
+            const regLink = document.querySelector('.form-footer a');
+            if (regLink) regLink.href = 'register.html?role=' + role;
+            
+            this.selectPanel(role);
+        } else {
+            // Se manca il ruolo, rimanda al gateway
+            window.location.href = 'gateway.html';
         }
     },
 
@@ -52,7 +66,7 @@ const loginApp = {
             iconContainer.style.background = "rgba(16,185,129,0.15)";
             title.textContent    = "Accesso Consulente / Amministratore";
             subtitle.textContent = "Area riservata alla gestione delle pratiche e alla supervisione";
-            document.getElementById('login-email').placeholder = "admin@accredita360s.com";
+            document.getElementById('login-email').placeholder = "admin@accredita360.it";
         }
 
         // Pulisce campi e messaggi di errore
@@ -82,7 +96,7 @@ const loginApp = {
             this._redirectByRole(session.user);
         } catch (e) {
             this._setLoading(false);
-            this._showError('Credenziali non valide. Verifica email e password e riprova.');
+            this._showError(e.message || 'Credenziali non valide. Verifica email e password e riprova.');
         }
     },
 

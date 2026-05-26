@@ -89,12 +89,16 @@ const registerApp = {
         this._setLoading(true);
 
         try {
+            const params = new URLSearchParams(window.location.search);
+            const requestedRole = params.get('role') || 'cliente';
+
             await Backend.register(
                 email, pwd,
                 nome, cognome, ragioneSociale,
-                tipo === 'fisica' ? 'persona_fisica' : 'azienda'
+                tipo === 'fisica' ? 'persona_fisica' : 'azienda',
+                requestedRole
             );
-            // Effettua subito il logout — l'utente deve prima confermare l'email
+            // Effettua subito il logout
             Backend.logout();
             this._showSuccess(email);
         } catch (e) {

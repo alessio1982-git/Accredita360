@@ -71,7 +71,7 @@ serve(async (req) => {
               <p style="font-size:22px; font-weight:700; color:#0f172a; margin:0 0 16px;">${saluto},</p>
               <p style="font-size:15px; color:#475569; line-height:1.7; margin:0 0 20px;">
                 La tua registrazione alla piattaforma <strong style="color:#0284c7;">Accredita360</strong> è stata ricevuta con successo.<br>
-                Puoi ora accedere all'area riservata e iniziare il tuo percorso verso l'autorizzazione sanitaria e l'accreditamento istituzionale OTA.
+                Il tuo account è attualmente <strong>in attesa di autorizzazione</strong> da parte del nostro team amministrativo.
               </p>
 
               <!-- Info box -->
@@ -80,18 +80,17 @@ serve(async (req) => {
                   📋 I prossimi passi
                 </div>
                 <ul style="margin:0; padding:0 0 0 16px; color:#334155; font-size:14px; line-height:1.8;">
-                  <li>Completa l'<strong>Anagrafica Struttura</strong></li>
-                  <li>Esegui la <strong>Profilazione</strong> per generare la tua Gap Analysis</li>
-                  <li>Carica i documenti richiesti per la conformità ASP/OTA</li>
-                  <li>Il nostro team di consulenti ti supporterà in ogni fase</li>
+                  <li>Verificheremo i tuoi dati nel più breve tempo possibile</li>
+                  <li>Riceverai un'email non appena le credenziali saranno attivate</li>
+                  <li>Potrai quindi accedere all'area riservata e gestire la tua conformità</li>
                 </ul>
               </div>
 
               <!-- CTA Button -->
               <div style="text-align:center; margin:0 0 32px;">
-                <a href="https://accredita360s.com" 
+                <a href="https://accredita360s.com/login.html" 
                    style="display:inline-block; background:linear-gradient(135deg,#0284c7,#059669); color:#ffffff; font-size:15px; font-weight:700; text-decoration:none; padding:14px 40px; border-radius:10px; letter-spacing:0.3px;">
-                  Accedi alla Piattaforma →
+                  Vai alla pagina di Login →
                 </a>
               </div>
 
@@ -121,8 +120,8 @@ serve(async (req) => {
 </body>
 </html>`;
 
-    // Invio email tramite Resend
-    const resendRes = await fetch("https://api.resend.com/emails", {
+    // 1. Invia email all'utente (in attesa)
+    const resendUserRes = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {
         "Authorization": `Bearer ${RESEND_API_KEY}`,
@@ -131,25 +130,49 @@ serve(async (req) => {
       body: JSON.stringify({
         from: `${FROM_NAME} <${FROM_EMAIL}>`,
         to: [email],
-        subject: "✅ Benvenuto in Accredita360 — Registrazione Confermata",
+        subject: "⏳ Registrazione Ricevuta — In attesa di autorizzazione",
         html: htmlBody,
       }),
     });
+    const resendUserData = await resendUserRes.json();
 
-    const resendData = await resendRes.json();
+    // 2. Invia notifica all'admin
+    const adminHtml = `
+      <h2>Nuova Registrazione da Autorizzare</h2>
+      <p>Un nuovo utente si è registrato e attende autorizzazione:</p>
+      <ul>
+        <li><strong>Nome:</strong> ${nome}</li>
+        <li><strong>Email:</strong> ${email}</li>
+        <li><strong>Tipo:</strong> ${tipoRegistrazione}</li>
+      </ul>
+      <p><a href="https://accredita360s.com/login.html?view=consulente">Accedi al Pannello Admin per autorizzarlo.</a></p>
+    `;
+    const resendAdminRes = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${RESEND_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from: `${FROM_NAME} <${FROM_EMAIL}>`,
+        to: ["info@accredita360s.com"],
+        subject: `[Admin] Nuova richiesta di registrazione: ${nome}`,
+        html: adminHtml,
+      }),
+    });
 
-    if (!resendRes.ok) {
-      console.error("[send-welcome-email] Errore Resend:", resendData);
+    if (!resendUserRes.ok) {
+      console.error("[send-welcome-email] Errore Resend:", resendUserData);
       return new Response(
-        JSON.stringify({ error: "Invio email fallito", detail: resendData }),
+        JSON.stringify({ error: "Invio email fallito", detail: resendUserData }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    console.log(`[send-welcome-email] Email inviata a ${email} — ID: ${resendData.id}`);
+    console.log(`[send-welcome-email] Email inviata a ${email} e notifica admin.`);
 
     return new Response(
-      JSON.stringify({ success: true, emailId: resendData.id }),
+      JSON.stringify({ success: true }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
 

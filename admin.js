@@ -80,14 +80,14 @@ const admin = {
 
     // ── CONSULENTI DATA ──────────────────────────────────────────
     async renderConsultantsData() {
-        const [stats, recentRegs] = await Promise.all([
+        const [stats, pendingUsers] = await Promise.all([
             Backend.getAdminStats(),
-            Backend.getRecentRegistrations()
+            Backend.getPendingUsers()
         ]);
 
         const setEl = (id, val) => { const e = document.getElementById(id); if (e) e.textContent = val; };
         setEl('admin-stat-structures',  stats.activeStructures);
-        setEl('admin-stat-new-reg',     stats.newRegistrations);
+        setEl('admin-stat-new-reg',     pendingUsers.length);
         setEl('admin-stat-pending',     stats.pendingDocs);
         setEl('admin-stat-validated',   stats.validatedDocs);
         setEl('admin-stat-rejected',    stats.rejectedDocs);
@@ -96,18 +96,18 @@ const admin = {
         setEl('dash-stat-structures', stats.activeStructures);
         setEl('dash-stat-pending',    stats.pendingDocs);
         setEl('dash-stat-validated',  stats.validatedDocs);
-        setEl('dash-stat-new-reg',    stats.newRegistrations);
+        setEl('dash-stat-new-reg',    pendingUsers.length);
 
-        // Tabella nuove iscrizioni
+        // Tabella nuove iscrizioni (ora "Richieste in Sospeso")
         const regTbody = document.getElementById('admin-new-registrations');
         if (regTbody) {
-            if (recentRegs.length === 0) {
+            if (pendingUsers.length === 0) {
                 regTbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:20px; color:var(--text-muted); font-size:13px;">
-                    <i class='bx bx-info-circle'></i> Nessuna nuova iscrizione negli ultimi 30 giorni.
+                    <i class='bx bx-info-circle'></i> Nessuna richiesta in sospeso.
                 </td></tr>`;
             } else {
                 const tipoMap = { persona_fisica: 'Persona Fisica', azienda: 'Azienda / Studio' };
-                regTbody.innerHTML = recentRegs.map(u => {
+                regTbody.innerHTML = pendingUsers.map(u => {
                     const data = u.created_at
                         ? new Date(u.created_at).toLocaleDateString('it-IT', {day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'})
                         : '—';
@@ -115,12 +115,17 @@ const admin = {
                     const tipoIcon  = u.tipo_registrazione === 'azienda' ? 'bx-building' : 'bx-user';
                     return `<tr>
                         <td style="font-weight:600;">${_s(u.name || '—')}</td>
-                        <td style="font-size:13px; color:var(--text-muted);">${_s(u.email)}</td>
+                        <td style="font-size:13px; color:var(--text-muted);">${_s(u.email)}<br><small>Ruolo richiesto: ${_s(u.role)}</small></td>
                         <td><span style="font-size:12px; padding:3px 10px; border-radius:20px; background:rgba(139,92,246,0.12); color:#8b5cf6; font-weight:600; display:inline-flex; align-items:center; gap:5px;">
                             <i class='bx ${tipoIcon}'></i> ${tipoLabel}
                         </span></td>
                         <td style="font-size:12px; color:var(--text-muted);">${data}</td>
-                        <td><span class="status-badge status-green" style="font-size:11px;"><i class='bx bx-check-circle'></i> Attivo</span></td>
+                        <td>
+                            <button class="btn btn-outline" style="padding:6px 14px; font-size:12px; color:var(--success); border-color:var(--success);"
+                                onclick="admin.approveUser('${_s(u.email)}')">
+                                <i class='bx bx-check-circle'></i> Autorizza
+                            </button>
+                        </td>
                     </tr>`;
                 }).join('');
             }
@@ -207,6 +212,17 @@ const admin = {
         if (nota === null) return;
         await Backend.adminValidateRequirement(userEmail, reqId, newStatus, nota);
         this.renderConsultantsData();
+    },
+
+    async approveUser(userEmail) {
+        if (!confirm('Vuoi autorizzare e rilasciare le credenziali per ' + userEmail + '?')) return;
+        try {
+            await Backend.approveUser(userEmail);
+            alert('Utente autorizzato con successo. Un\'email di conferma è stata inviata.');
+            this.renderConsultantsData();
+        } catch(e) {
+            alert(e.message || 'Errore durante l\'approvazione.');
+        }
     },
 
     filterAdminDocs(filter, btn, searchText) {
