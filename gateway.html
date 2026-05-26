@@ -120,7 +120,7 @@
 
         <div class="gateway-cards">
             <!-- Card Struttura/Utente -->
-            <a href="login.html?role=utente" class="role-card">
+            <div class="role-card">
                 <div class="role-icon">
                     <i class='bx bx-building-house'></i>
                 </div>
@@ -128,11 +128,12 @@
                 <div class="role-desc">
                     Per poliambulatori, laboratori, RSA e cliniche che devono gestire l'accreditamento istituzionale e l'autorizzazione ASP.
                 </div>
-                <div class="btn btn-primary role-btn">Accedi come Struttura</div>
-            </a>
+                <a href="login.html?role=utente" class="btn btn-primary role-btn" style="text-decoration:none;">Accedi come Struttura</a>
+                <a href="register.html?role=utente" style="margin-top: 15px; color: var(--primary); text-decoration: none; font-size: 14px; font-weight: 500;">Prima volta? Registrati</a>
+            </div>
 
             <!-- Card Consulente -->
-            <a href="login.html?role=consulente" class="role-card">
+            <div class="role-card">
                 <div class="role-icon">
                     <i class='bx bx-briefcase-alt-2'></i>
                 </div>
@@ -140,8 +141,9 @@
                 <div class="role-desc">
                     Per i professionisti e gli amministratori che gestiscono e validano le pratiche documentali delle strutture clienti.
                 </div>
-                <div class="btn btn-outline role-btn">Accedi come Consulente</div>
-            </a>
+                <a href="login.html?role=consulente" class="btn btn-outline role-btn" style="text-decoration:none;">Accedi come Consulente</a>
+                <a href="register.html?role=consulente" style="margin-top: 15px; color: var(--primary); text-decoration: none; font-size: 14px; font-weight: 500;">Prima volta? Registrati</a>
+            </div>
         </div>
 
         <a href="index.html" class="back-link"><i class='bx bx-arrow-back'></i> Torna alla Home</a>

@@ -932,14 +932,12 @@ const app = {
     },
 
     // ===== PROCEDURE OTA: Render Manuali e Procedure =====
-    renderProcedureManuali() {
+    async renderProcedureManuali() {
         const container = document.getElementById('proc-manuals-container');
         if (!container) return;
 
         // Detect user structure type for relevance
-        const user = Backend.getCurrentUser();
-        const structures = JSON.parse(localStorage.getItem('accredita360_structures') || '{}');
-        const myStruct = user ? structures[user.email] : null;
+        const myStruct = await Backend.getCurrentStructure();
         const structType = myStruct ? myStruct.type : null;
 
         const tipoLabels = {
@@ -1343,6 +1341,11 @@ const app = {
 
     salvaAnagrafica() {
         alert('Dati Anagrafici salvati con successo nel fascicolo della struttura.');
+    },
+
+    doLogout() {
+        Backend.logout();
+        window.location.href = 'index.html';
     }
 };
 
