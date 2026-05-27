@@ -476,9 +476,9 @@
             <a href="login.html" class="btn btn-outline" style="padding:10px 22px; font-size:13px;">
               <i class='bx bx-log-in' style="font-size:16px;"></i> Accedi
             </a>
-            <a href="login.html" class="btn btn-primary" style="padding:10px 22px; font-size:13px;">
+            <button class="btn btn-primary open-register-modal-trigger" style="padding:10px 22px; font-size:13px; border:none; cursor:pointer;">
                 <i class='bx bx-user-plus'></i> Inizia Ora
-            </a>
+            </button>
         </div>
     </nav>
 
@@ -683,6 +683,32 @@
         </div>
     </div>
 
+    <!-- Modal di Selezione Registrazione -->
+    <div id="register-modal" class="modal-overlay">
+        <div class="modal-content glass-card" style="text-align: center;">
+            <button class="modal-close-btn" id="close-register-modal-btn">&times;</button>
+            <h3 class="modal-title" style="margin-bottom: 24px;">Come vuoi registrarti?</h3>
+            <p class="modal-subtitle">Scegli il tuo profilo per iniziare il processo di registrazione sulla piattaforma.</p>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 20px;">
+                <a href="register.html?type=utente" style="text-decoration: none;">
+                    <div style="background: rgba(2, 132, 199, 0.05); border: 1px solid rgba(2, 132, 199, 0.2); border-radius: 16px; padding: 24px; transition: all 0.3s; cursor: pointer;" onmouseover="this.style.background='rgba(2, 132, 199, 0.1)'; this.style.transform='translateY(-3px)'" onmouseout="this.style.background='rgba(2, 132, 199, 0.05)'; this.style.transform='translateY(0)'">
+                        <i class='bx bx-user' style="font-size: 48px; color: var(--primary); margin-bottom: 12px;"></i>
+                        <h4 style="font-size: 18px; color: var(--text-main); margin-bottom: 8px;">Utente</h4>
+                        <p style="font-size: 13px; color: var(--text-muted); line-height: 1.4;">Struttura Sanitaria. Invia i tuoi dati per la verifica e ottieni l'accesso.</p>
+                    </div>
+                </a>
+                <a href="register.html?type=consulente" style="text-decoration: none;">
+                    <div style="background: rgba(5, 150, 105, 0.05); border: 1px solid rgba(5, 150, 105, 0.2); border-radius: 16px; padding: 24px; transition: all 0.3s; cursor: pointer;" onmouseover="this.style.background='rgba(5, 150, 105, 0.1)'; this.style.transform='translateY(-3px)'" onmouseout="this.style.background='rgba(5, 150, 105, 0.05)'; this.style.transform='translateY(0)'">
+                        <i class='bx bx-briefcase' style="font-size: 48px; color: var(--secondary); margin-bottom: 12px;"></i>
+                        <h4 style="font-size: 18px; color: var(--text-main); margin-bottom: 8px;">Consulente</h4>
+                        <p style="font-size: 13px; color: var(--text-muted); line-height: 1.4;">Gestisci le pratiche per conto delle strutture sanitarie.</p>
+                    </div>
+                </a>
+            </div>
+        </div>
+    </div>
+
     <!-- Footer -->
     <footer style="background: rgba(255,255,255,0.9); border-top: 1px solid var(--glass-border); padding: 40px 8%; text-align: center; position: relative; z-index: 10; backdrop-filter: blur(10px);">
         <div style="max-width: 1200px; margin: 0 auto;">
@@ -741,6 +767,30 @@
             contactModal.addEventListener('click', (e) => {
                 if (e.target === contactModal) {
                     closeModal();
+                }
+            });
+
+            // Gestione Eventi e Logica del Modal di Registrazione
+            const registerModal = document.getElementById('register-modal');
+            const openRegisterTriggers = document.querySelectorAll('.open-register-modal-trigger');
+            const closeRegisterBtn = document.getElementById('close-register-modal-btn');
+
+            function openRegisterModal() {
+                registerModal.classList.add('active');
+                document.body.style.overflow = 'hidden';
+            }
+
+            function closeRegisterModal() {
+                registerModal.classList.remove('active');
+                document.body.style.overflow = '';
+            }
+
+            openRegisterTriggers.forEach(trigger => trigger.addEventListener('click', openRegisterModal));
+            closeRegisterBtn.addEventListener('click', closeRegisterModal);
+            
+            registerModal.addEventListener('click', (e) => {
+                if (e.target === registerModal) {
+                    closeRegisterModal();
                 }
             });
 

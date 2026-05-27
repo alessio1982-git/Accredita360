@@ -120,7 +120,7 @@ const Backend = {
             name:                  displayName,
             role:                  requestedRole,
             tipo_registrazione:    tipoRegistrazione || 'persona_fisica',
-            registration_status:   'active',
+            registration_status:   'pending',
             created_at:            new Date().toISOString()
         };
 
@@ -145,9 +145,29 @@ const Backend = {
         };
         sessionStorage.setItem(SESSION_KEY, JSON.stringify(session));
 
-        // Invia email di benvenuto (admin notificato e utente notificato)
+        // Invia email di benvenuto all'utente
         this.sendWelcomeEmail(displayName, email.trim().toLowerCase(), tipoRegistrazione)
             .catch(err => console.warn('[Email] Invio benvenuto fallito (non critico):', err));
+
+        // Invia email all'amministratore usando la funzione contact-email per notificare la registrazione
+        try {
+            await supabase.functions.invoke('send-contact-email', {
+                body: {
+                    nome: displayName,
+                    cognome: (tipoRegistrazione + ' - Registrazione').toUpperCase(),
+                    email: email.trim().toLowerCase(),
+                    telefono: "N/A",
+                    messaggio: `Nuova richiesta di registrazione in attesa di approvazione. 
+Ruolo: ${requestedRole} 
+Tipo: ${tipoRegistrazione}
+Email: ${email.trim().toLowerCase()}
+
+Vai nel pannello Admin per approvare l'utente.`
+                }
+            });
+        } catch(err) {
+            console.warn('[Email] Notifica admin fallita (non critico):', err);
+        }
 
         return session;
     },
