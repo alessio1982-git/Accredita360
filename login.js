@@ -32,9 +32,6 @@ const loginApp = {
             if (regLink) regLink.href = 'register.html?role=' + role;
             
             this.selectPanel(role);
-        } else {
-            // Se manca il ruolo, rimanda al gateway
-            window.location.href = 'gateway.html';
         }
     },
 
