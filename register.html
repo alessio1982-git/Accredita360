@@ -220,22 +220,8 @@
         <!-- FORM CARD -->
         <div id="register-form-card" class="glass-card">
 
-            <!-- TIPO REGISTRAZIONE -->
-            <div class="section-label">Tipo di Registrazione</div>
-            <div class="type-selector">
-                <label id="reg-type-fisica-label" class="type-label" onclick="registerApp.switchType('fisica')">
-                    <i class='bx bx-user'></i>
-                    <span>Persona Fisica</span>
-                    <input type="radio" name="reg-tipo" id="reg-tipo-fisica" value="fisica" checked style="display:none;">
-                </label>
-                <label id="reg-type-azienda-label" class="type-label" style="border-color:var(--glass-border); background:transparent;" onclick="registerApp.switchType('azienda')">
-                    <i class='bx bx-building' style="color:var(--text-muted);"></i>
-                    <span>Azienda / Studio</span>
-                    <input type="radio" name="reg-tipo" id="reg-tipo-azienda" value="azienda" style="display:none;">
-                </label>
-            </div>
-
-            <!-- DATI PERSONA FISICA -->
+            <!-- DATI PERSONALI -->
+            <input type="hidden" id="reg-tipo-fisica" name="reg-tipo" value="fisica">
             <div id="reg-fields-fisica">
                 <div class="section-label">Dati Personali</div>
                 <div class="two-cols">
@@ -247,15 +233,6 @@
                         <label>Cognome <span class="req">*</span></label>
                         <input type="text" id="reg-cognome" class="input-box" placeholder="Es. Rossi">
                     </div>
-                </div>
-            </div>
-
-            <!-- DATI AZIENDA -->
-            <div id="reg-fields-azienda" style="display:none;">
-                <div class="section-label">Dati Azienda</div>
-                <div class="form-group">
-                    <label>Ragione Sociale / Denominazione <span class="req">*</span></label>
-                    <input type="text" id="reg-ragione-sociale" class="input-box" placeholder="Es. Poliambulatorio Santa Lucia Srl">
                 </div>
             </div>
 
