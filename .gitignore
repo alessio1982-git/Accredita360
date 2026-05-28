@@ -1,0 +1,29 @@
+# Dipendenze
+node_modules/
+
+# File temporanei Supabase CLI
+supabase/.temp/
+supabase-cli/
+
+# Archivi ZIP (non tracciare file pesanti)
+*.zip
+
+# Cartelle skills Antigravity (non fanno parte del progetto)
+antigravity-skills/
+antigravity-skills-main/
+antigravity-awesome-skills/
+antigravity-awesome-skills-main/
+
+# Profili browser di test
+chrome-profile/
+
+# File di conflitto Dropbox
+*Copia in conflitto*
+
+# File di test locali
+test-connection.js
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
