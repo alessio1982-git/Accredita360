@@ -1,78 +1,57 @@
 /**
- * Accredita360 — register.js
+ * Accredita360 — register.js v3
  * Controller per la pagina di registrazione (register.html)
- * Gestisce: tipo registrazione, validazione form, invio, schermata successo
+ * Gestisce: validazione form, invio, schermata successo
  */
 
 const registerApp = {
 
     async init() {
-        // Se già loggato → redirect diretto
-        const user = Backend.getCurrentUser();
-        if (user) {
-            window.location.href = user.role === 'admin' ? 'admin.html' : 'app.html';
+        // Guard: se Backend non è disponibile ricarica dopo 500ms (attesa CDN)
+        if (typeof Backend === 'undefined' && typeof window.Backend === 'undefined') {
+            console.warn('[Register] Backend non ancora disponibile, attendo...');
+            setTimeout(() => registerApp.init(), 500);
             return;
         }
-        // Attiva tipo default (Persona Fisica)
-        this.switchType('fisica');
-    },
 
-    switchType(tipo) {
-        const fisicaLabel  = document.getElementById('reg-type-fisica-label');
-        const aziendaLabel = document.getElementById('reg-type-azienda-label');
-        const fisicaFields = document.getElementById('reg-fields-fisica');
-        const aziendaFields= document.getElementById('reg-fields-azienda');
-        const fisicaIcon   = fisicaLabel?.querySelector('i');
-        const aziendaIcon  = aziendaLabel?.querySelector('i');
+        const B = window.Backend || Backend;
 
-        if (tipo === 'fisica') {
-            document.getElementById('reg-tipo-fisica').checked = true;
-            fisicaLabel.style.border     = '2px solid var(--primary)';
-            fisicaLabel.style.background = 'rgba(2,132,199,0.08)';
-            aziendaLabel.style.border    = '2px solid var(--glass-border)';
-            aziendaLabel.style.background= 'transparent';
-            if (fisicaIcon)  fisicaIcon.style.color  = 'var(--primary)';
-            if (aziendaIcon) aziendaIcon.style.color = 'var(--text-muted)';
-            fisicaFields.style.display  = 'block';
-            aziendaFields.style.display = 'none';
-        } else {
-            document.getElementById('reg-tipo-azienda').checked = true;
-            aziendaLabel.style.border     = '2px solid var(--primary)';
-            aziendaLabel.style.background = 'rgba(2,132,199,0.08)';
-            fisicaLabel.style.border      = '2px solid var(--glass-border)';
-            fisicaLabel.style.background  = 'transparent';
-            if (aziendaIcon) aziendaIcon.style.color = 'var(--primary)';
-            if (fisicaIcon)  fisicaIcon.style.color  = 'var(--text-muted)';
-            aziendaFields.style.display = 'block';
-            fisicaFields.style.display  = 'none';
+        // Se già loggato → redirect diretto
+        try {
+            const user = B.getCurrentUser();
+            if (user) {
+                window.location.href = user.role === 'admin' ? 'admin.html' : 'app.html';
+                return;
+            }
+        } catch (e) {
+            console.warn('[Register] getCurrentUser error:', e);
         }
-        this._hideError();
     },
 
     async doRegister() {
         this._hideError();
 
-        const tipo = document.getElementById('reg-tipo-fisica')?.value || 'fisica';
-        const email    = document.getElementById('reg-email')?.value?.trim() || '';
-        const pwd      = document.getElementById('reg-pwd')?.value || '';
-        const pwdConf  = document.getElementById('reg-pwd-confirm')?.value || '';
-        const terms    = document.getElementById('reg-terms')?.checked;
+        // Guard: verifica che Backend sia caricato
+        const B = (typeof window.Backend !== 'undefined') ? window.Backend
+                : (typeof Backend !== 'undefined') ? Backend
+                : null;
 
-        let nome = '', cognome = '', ragioneSociale = '', telefono = '';
-        if (tipo === 'fisica') {
-            nome    = document.getElementById('reg-nome')?.value?.trim() || '';
-            cognome = document.getElementById('reg-cognome')?.value?.trim() || '';
-        } else {
-            ragioneSociale = document.getElementById('reg-ragione-sociale')?.value?.trim() || '';
+        if (!B) {
+            return this._showError('Errore di caricamento. Ricarica la pagina e riprova.');
         }
-        telefono = document.getElementById('reg-telefono')?.value?.trim() || '';
+
+        const tipo    = 'fisica'; // unico tipo supportato in questo form
+        const email   = document.getElementById('reg-email')?.value?.trim() || '';
+        const pwd     = document.getElementById('reg-pwd')?.value || '';
+        const pwdConf = document.getElementById('reg-pwd-confirm')?.value || '';
+        const terms   = document.getElementById('reg-terms')?.checked;
+        const nome    = document.getElementById('reg-nome')?.value?.trim() || '';
+        const cognome = document.getElementById('reg-cognome')?.value?.trim() || '';
+        const telefono= document.getElementById('reg-telefono')?.value?.trim() || '';
 
         // Validazione
-        if (tipo === 'fisica' && (!nome || !cognome)) {
+        if (!nome || !cognome) {
             return this._showError('Inserisci nome e cognome.');
-        }
-        if (tipo === 'azienda' && !ragioneSociale) {
-            return this._showError('Inserisci la ragione sociale.');
         }
         if (!telefono) {
             return this._showError('Inserisci il recapito telefonico.');
@@ -96,15 +75,15 @@ const registerApp = {
             const params = new URLSearchParams(window.location.search);
             const requestedRole = params.get('role') || 'cliente';
 
-            await Backend.register(
+            await B.register(
                 email, pwd,
-                nome, cognome, ragioneSociale,
-                tipo === 'fisica' ? 'persona_fisica' : 'azienda',
+                nome, cognome, '',
+                'persona_fisica',
                 requestedRole,
                 telefono
             );
             // Effettua subito il logout
-            Backend.logout();
+            B.logout();
             this._showSuccess(email);
         } catch (e) {
             this._setLoading(false);
@@ -113,18 +92,26 @@ const registerApp = {
     },
 
     _showSuccess(email) {
-        const formCard = document.getElementById('register-form-card');
+        const formCard    = document.getElementById('register-form-card');
         const successCard = document.getElementById('register-success-card');
-        const emailSpan = document.getElementById('success-email');
-        if (formCard)   formCard.style.display   = 'none';
+        const emailSpan   = document.getElementById('success-email');
+        if (formCard)    formCard.style.display    = 'none';
         if (successCard) successCard.style.display = 'block';
-        if (emailSpan)  emailSpan.textContent     = email;
+        if (emailSpan) {
+            emailSpan.textContent = email;
+            emailSpan.style.display = 'block';
+        }
     },
 
     _showError(msg) {
-        const el = document.getElementById('reg-error');
+        const el   = document.getElementById('reg-error');
+        const span = el?.querySelector('span');
         if (!el) return;
-        el.textContent = msg;
+        if (span) {
+            span.textContent = msg;
+        } else {
+            el.textContent = msg;
+        }
         el.style.display = 'flex';
     },
 
