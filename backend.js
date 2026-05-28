@@ -109,7 +109,7 @@ const Backend = {
      * Registrazione: crea utente in `users` con stato `pending`.
      * Poi chiama la Edge Function per inviare la email all'admin e all'utente.
      */
-    async register(email, password, nome, cognome, ragioneSociale, tipoRegistrazione, requestedRole = 'cliente') {
+    async register(email, password, nome, cognome, ragioneSociale, tipoRegistrazione, requestedRole = 'cliente', telefono = '') {
         const displayName = tipoRegistrazione === 'azienda'
             ? ragioneSociale
             : `${nome} ${cognome}`.trim();
@@ -120,6 +120,7 @@ const Backend = {
             name:                  displayName,
             role:                  requestedRole,
             tipo_registrazione:    tipoRegistrazione || 'persona_fisica',
+            telefono:              telefono || '',
             registration_status:   'pending',
             created_at:            new Date().toISOString()
         };
@@ -156,11 +157,12 @@ const Backend = {
                     nome: displayName,
                     cognome: (tipoRegistrazione + ' - Registrazione').toUpperCase(),
                     email: email.trim().toLowerCase(),
-                    telefono: "N/A",
+                    telefono: telefono || 'N/A',
                     messaggio: `Nuova richiesta di registrazione in attesa di approvazione. 
 Ruolo: ${requestedRole} 
 Tipo: ${tipoRegistrazione}
 Email: ${email.trim().toLowerCase()}
+Telefono: ${telefono || 'N/A'}
 
 Vai nel pannello Admin per approvare l'utente.`
                 }

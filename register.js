@@ -52,19 +52,20 @@ const registerApp = {
     async doRegister() {
         this._hideError();
 
-        const tipo = document.querySelector('input[name="reg-tipo"]:checked')?.value || 'fisica';
+        const tipo = document.getElementById('reg-tipo-fisica')?.value || 'fisica';
         const email    = document.getElementById('reg-email')?.value?.trim() || '';
         const pwd      = document.getElementById('reg-pwd')?.value || '';
         const pwdConf  = document.getElementById('reg-pwd-confirm')?.value || '';
         const terms    = document.getElementById('reg-terms')?.checked;
 
-        let nome = '', cognome = '', ragioneSociale = '';
+        let nome = '', cognome = '', ragioneSociale = '', telefono = '';
         if (tipo === 'fisica') {
             nome    = document.getElementById('reg-nome')?.value?.trim() || '';
             cognome = document.getElementById('reg-cognome')?.value?.trim() || '';
         } else {
             ragioneSociale = document.getElementById('reg-ragione-sociale')?.value?.trim() || '';
         }
+        telefono = document.getElementById('reg-telefono')?.value?.trim() || '';
 
         // Validazione
         if (tipo === 'fisica' && (!nome || !cognome)) {
@@ -72,6 +73,9 @@ const registerApp = {
         }
         if (tipo === 'azienda' && !ragioneSociale) {
             return this._showError('Inserisci la ragione sociale.');
+        }
+        if (!telefono) {
+            return this._showError('Inserisci il recapito telefonico.');
         }
         if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
             return this._showError('Inserisci un indirizzo email valido.');
@@ -96,7 +100,8 @@ const registerApp = {
                 email, pwd,
                 nome, cognome, ragioneSociale,
                 tipo === 'fisica' ? 'persona_fisica' : 'azienda',
-                requestedRole
+                requestedRole,
+                telefono
             );
             // Effettua subito il logout
             Backend.logout();
