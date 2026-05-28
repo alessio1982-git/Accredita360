@@ -308,9 +308,137 @@
 
     </main>
 
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="normativa_db.js?v=3"></script>
-    <script src="backend.js?v=3"></script>
-    <script src="register.js?v=3"></script>
+    <script>
+    // ============================================================
+    // REGISTER — Script autonomo, zero dipendenze esterne
+    // Usa Supabase REST API direttamente tramite fetch()
+    // ============================================================
+
+    const SUPA_URL = 'https://kvthfnkgfbxtjgkqpbwj.supabase.co';
+    const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt2dGhmbmtnZmJ4dGpna3FwYndqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NzkxNDQsImV4cCI6MjA5NDQ1NTE0NH0._2UzfUZqy7P7W_9S8xpFWcz0K_pAykl4D8sdXghvbLM';
+
+    function showErr(msg) {
+        const el   = document.getElementById('reg-error');
+        const span = el && el.querySelector('span');
+        if (!el) return;
+        if (span) span.textContent = msg; else el.textContent = msg;
+        el.style.display = 'flex';
+    }
+    function hideErr() {
+        const el = document.getElementById('reg-error');
+        if (el) el.style.display = 'none';
+    }
+    function setLoading(on) {
+        const btn = document.getElementById('reg-submit-btn');
+        const txt = document.getElementById('reg-btn-text');
+        const ld  = document.getElementById('reg-btn-loading');
+        if (!btn) return;
+        btn.disabled = on;
+        if (txt) txt.style.display = on ? 'none' : 'inline-flex';
+        if (ld)  ld.style.display  = on ? 'inline-flex' : 'none';
+    }
+    function showSuccess(email) {
+        const formCard    = document.getElementById('register-form-card');
+        const successCard = document.getElementById('register-success-card');
+        const emailSpan   = document.getElementById('success-email');
+        if (formCard)    formCard.style.display    = 'none';
+        if (successCard) successCard.style.display = 'block';
+        if (emailSpan)   { emailSpan.textContent = email; emailSpan.style.display = 'block'; }
+    }
+
+    async function supabaseInsert(table, row) {
+        const res = await fetch(`${SUPA_URL}/rest/v1/${table}`, {
+            method: 'POST',
+            headers: {
+                'apikey':        SUPA_KEY,
+                'Authorization': 'Bearer ' + SUPA_KEY,
+                'Content-Type':  'application/json',
+                'Prefer':        'return=minimal'
+            },
+            body: JSON.stringify(row)
+        });
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error(err.message || err.details || 'Errore registrazione (HTTP ' + res.status + ')');
+        }
+        return true;
+    }
+
+    async function invokeFn(fnName, body) {
+        try {
+            await fetch(`${SUPA_URL}/functions/v1/${fnName}`, {
+                method: 'POST',
+                headers: {
+                    'apikey':        SUPA_KEY,
+                    'Authorization': 'Bearer ' + SUPA_KEY,
+                    'Content-Type':  'application/json'
+                },
+                body: JSON.stringify(body)
+            });
+        } catch(e) {
+            console.warn('[Register] Edge function non critica fallita:', fnName, e);
+        }
+    }
+
+    const registerApp = {
+        async doRegister() {
+            hideErr();
+
+            const email    = document.getElementById('reg-email')?.value?.trim() || '';
+            const pwd      = document.getElementById('reg-pwd')?.value || '';
+            const pwdConf  = document.getElementById('reg-pwd-confirm')?.value || '';
+            const terms    = document.getElementById('reg-terms')?.checked;
+            const nome     = document.getElementById('reg-nome')?.value?.trim() || '';
+            const cognome  = document.getElementById('reg-cognome')?.value?.trim() || '';
+            const telefono = document.getElementById('reg-telefono')?.value?.trim() || '';
+
+            if (!nome || !cognome)    return showErr('Inserisci nome e cognome.');
+            if (!telefono)            return showErr('Inserisci il recapito telefonico.');
+            if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
+                                      return showErr('Inserisci un indirizzo email valido.');
+            if (pwd.length < 8)       return showErr('La password deve essere di almeno 8 caratteri.');
+            if (pwd !== pwdConf)      return showErr('Le password non coincidono.');
+            if (!terms)               return showErr('Devi accettare i Termini di Servizio per procedere.');
+
+            setLoading(true);
+
+            try {
+                const params = new URLSearchParams(window.location.search);
+                const role   = params.get('role') || 'cliente';
+
+                await supabaseInsert('users', {
+                    email:               email.toLowerCase(),
+                    password:            pwd,
+                    name:                `${nome} ${cognome}`.trim(),
+                    role:                role,
+                    tipo_registrazione:  'persona_fisica',
+                    telefono:            telefono,
+                    registration_status: 'pending',
+                    created_at:          new Date().toISOString()
+                });
+
+                // Notifica admin (non critica)
+                invokeFn('send-contact-email', {
+                    nome, cognome: cognome + ' — Nuova Registrazione',
+                    email, telefono,
+                    messaggio: `Nuova richiesta di registrazione in attesa di approvazione.\nRuolo: ${role}\nEmail: ${email}\nTelefono: ${telefono}`
+                });
+
+                // Email benvenuto utente (non critica)
+                invokeFn('send-welcome-email', { nome, email, tipoRegistrazione: 'persona_fisica' });
+
+                showSuccess(email);
+
+            } catch(e) {
+                setLoading(false);
+                if (e.message && e.message.includes('duplicate') || e.message && e.message.includes('unique')) {
+                    showErr('Email già registrata. Usa un\'altra email o accedi.');
+                } else {
+                    showErr(e.message || 'Errore durante la registrazione. Riprova.');
+                }
+            }
+        }
+    };
+    </script>
 </body>
 </html>
