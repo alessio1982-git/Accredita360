@@ -407,11 +407,14 @@
                 const role   = params.get('role') || 'cliente';
 
                 await supabaseInsert('users', {
-                    email:      email.toLowerCase(),
-                    password:   pwd,
-                    name:       `${nome} ${cognome}`.trim(),
-                    role:       role,
-                    created_at: new Date().toISOString()
+                    email:               email.toLowerCase(),
+                    password:            pwd,
+                    name:                `${nome} ${cognome}`.trim(),
+                    role:                role,
+                    tipo_registrazione:  'persona_fisica',
+                    telefono:            telefono,
+                    registration_status: 'pending',
+                    created_at:          new Date().toISOString()
                 });
 
                 // Notifica admin (non critica)
