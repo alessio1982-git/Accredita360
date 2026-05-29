@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY") ?? "";
-const FROM_EMAIL = "onboarding@resend.dev";
+const FROM_EMAIL = "noreply@accredita360s.com";
 const FROM_NAME = "Accredita360 Portal";
 const TO_EMAIL = "info@accredita360s.com";
 const SITE_URL = "https://accredita360.vercel.app";
