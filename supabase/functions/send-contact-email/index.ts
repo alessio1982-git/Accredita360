@@ -4,6 +4,7 @@ const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY") ?? "";
 const FROM_EMAIL = "onboarding@resend.dev";
 const FROM_NAME = "Accredita360 Portal";
 const TO_EMAIL = "info@accredita360s.com";
+const SITE_URL = "https://accredita360.vercel.app";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -18,7 +19,7 @@ serve(async (req) => {
   }
 
   try {
-    const { nome, cognome, email, telefono, messaggio } = await req.json();
+    const { nome, cognome, email, telefono, messaggio, userId, approvalLink } = await req.json();
 
     if (!email || !nome || !cognome || !messaggio) {
       return new Response(
@@ -57,10 +58,13 @@ serve(async (req) => {
           <tr>
             <td style="padding:40px 40px 32px;">
               <h2 style="font-size:18px; font-weight:700; color:#0f172a; margin:0 0 20px; border-bottom: 2px solid #38bdf8; padding-bottom: 10px;">
-                📬 Nuova Richiesta di Contatto Ricevuta
+                ${approvalLink ? '🆕 Nuova Richiesta di Registrazione' : '📬 Nuova Richiesta di Contatto'}
               </h2>
               <p style="font-size:14px; color:#475569; line-height:1.6; margin:0 0 24px;">
-                Un utente ha inviato un messaggio tramite il pulsante "Parla con un Consulente" sulla landing page di Accredita360.
+                ${approvalLink
+                  ? `Un nuovo utente si è registrato su Accredita360 e attende la tua approvazione per accedere alla piattaforma.`
+                  : `Un utente ha inviato un messaggio tramite il pulsante "Parla con un Consulente" sulla landing page di Accredita360.`
+                }
               </p>
 
               <!-- Dettagli Mittente -->
@@ -83,13 +87,24 @@ serve(async (req) => {
                 </tr>
               </table>
 
+              <!-- Bottone Approvazione (solo per registrazioni) -->
+              ${approvalLink ? `
+              <div style="text-align:center; margin-bottom:28px; padding:20px; background:linear-gradient(135deg,rgba(2,132,199,0.06),rgba(5,150,105,0.06)); border-radius:12px; border:1px solid rgba(2,132,199,0.15);">
+                <p style="font-size:13px; color:#475569; margin:0 0 16px;">Clicca il bottone per approvare l'account e inviare all'utente le credenziali di accesso:</p>
+                <a href="${approvalLink}" style="display:inline-block; background:linear-gradient(135deg,#059669,#0284c7); color:#ffffff; padding:16px 40px; border-radius:12px; font-size:16px; font-weight:800; text-decoration:none; box-shadow:0 8px 24px rgba(5,150,105,0.4); letter-spacing:0.5px;">
+                  ✅ APPROVA ACCOUNT
+                </a>
+                <p style="font-size:11px; color:#94a3b8; margin:16px 0 0;">Oppure copia il link: <code style="font-size:10px; background:#f1f5f9; padding:2px 6px; border-radius:4px; word-break:break-all;">${approvalLink}</code></p>
+              </div>` : ''}
+
               <!-- Note di Messaggio -->
+              ${messaggio ? `
               <div style="font-size:14px; font-weight:700; color:#0f172a; margin-bottom:8px;">
                 ✍️ Note di messaggio:
               </div>
               <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:16px; font-size:14px; color:#334155; line-height:1.6; white-space:pre-wrap; margin-bottom:24px;">
                 ${messaggio}
-              </div>
+              </div>` : ''}
 
               <p style="font-size:12px; color:#94a3b8; line-height:1.5; margin:0;">
                 Puoi rispondere al mittente cliccando direttamente sul suo indirizzo email sopra riportato.
@@ -123,9 +138,11 @@ serve(async (req) => {
       body: JSON.stringify({
         from: `${FROM_NAME} <${FROM_EMAIL}>`,
         to: [TO_EMAIL],
-        subject: `📬 Contatto Portale: ${nome} ${cognome}`,
+        subject: approvalLink
+          ? `🆕 Nuova Registrazione: ${nome} ${cognome} — In Attesa di Approvazione`
+          : `📬 Contatto Portale: ${nome} ${cognome}`,
         html: htmlBody,
-        reply_to: email, // Consente di rispondere direttamente all'utente cliccando su "Rispondi"
+        reply_to: email,
       }),
     });
 

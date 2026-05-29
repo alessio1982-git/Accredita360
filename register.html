@@ -346,6 +346,7 @@
         if (emailSpan)   { emailSpan.textContent = email; emailSpan.style.display = 'block'; }
     }
 
+    // Inserisce l'utente e ritorna i dati (incluso l'id generato dal DB)
     async function supabaseInsert(table, row) {
         const res = await fetch(`${SUPA_URL}/rest/v1/${table}`, {
             method: 'POST',
@@ -353,7 +354,7 @@
                 'apikey':        SUPA_KEY,
                 'Authorization': 'Bearer ' + SUPA_KEY,
                 'Content-Type':  'application/json',
-                'Prefer':        'return=minimal'
+                'Prefer':        'return=representation'  // ritorna la riga inserita con l'id
             },
             body: JSON.stringify(row)
         });
@@ -361,7 +362,8 @@
             const err = await res.json().catch(() => ({}));
             throw new Error(err.message || err.details || 'Errore registrazione (HTTP ' + res.status + ')');
         }
-        return true;
+        const data = await res.json();
+        return data[0] || null;  // ritorna l'utente inserito
     }
 
     async function invokeFn(fnName, body) {
@@ -406,7 +408,8 @@
                 const params = new URLSearchParams(window.location.search);
                 const role   = params.get('role') || 'cliente';
 
-                await supabaseInsert('users', {
+                // ── Inserimento utente nel DB ───────────────────────────
+                const newUser = await supabaseInsert('users', {
                     email:               email.toLowerCase(),
                     password:            pwd,
                     name:                `${nome} ${cognome}`.trim(),
@@ -417,14 +420,26 @@
                     created_at:          new Date().toISOString()
                 });
 
-                // Notifica admin (non critica)
+                // ── Costruzione link autorizzativo ──────────────────────
+                // Il link contiene l'ID univoco dell'utente appena creato.
+                // L'admin che clicca attiva l'account senza bisogno di login.
+                const userId      = newUser?.id || '';
+                const approvalLink = userId
+                    ? `${SUPA_URL}/functions/v1/approve-user?userId=${userId}`
+                    : null;
+
+                // ── Notifica admin con link di approvazione ─────────────
                 invokeFn('send-contact-email', {
-                    nome, cognome: cognome + ' — Nuova Registrazione',
-                    email, telefono,
-                    messaggio: `Nuova richiesta di registrazione in attesa di approvazione.\nRuolo: ${role}\nEmail: ${email}\nTelefono: ${telefono}`
+                    nome,
+                    cognome,
+                    email,
+                    telefono,
+                    messaggio: `Nuova richiesta di registrazione in attesa di approvazione.\nRuolo: ${role}\nEmail: ${email}\nTelefono: ${telefono}`,
+                    userId,
+                    approvalLink   // ← bottone APPROVA nell'email admin
                 });
 
-                // Email benvenuto utente (non critica)
+                // ── Email benvenuto utente (non critica) ────────────────
                 invokeFn('send-welcome-email', { nome, email, tipoRegistrazione: 'persona_fisica' });
 
                 showSuccess(email);
