@@ -16,7 +16,7 @@ const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
 const RESEND_API_KEY   = Deno.env.get("RESEND_API_KEY") ?? "";
 const FROM_EMAIL       = "onboarding@resend.dev";
 const FROM_NAME        = "Accredita360 Portal";
-const SITE_URL         = "https://accredita360.vercel.app";
+const SITE_URL         = "https://accredita360s.com";
 
 serve(async (req) => {
   const url    = new URL(req.url);
