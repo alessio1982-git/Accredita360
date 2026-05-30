@@ -408,49 +408,28 @@
                 const params = new URLSearchParams(window.location.search);
                 const role   = params.get('role') || 'cliente';
 
-                // ── Inserimento utente nel DB ───────────────────────────
-                const newUser = await supabaseInsert('users', {
-                    email:               email.toLowerCase(),
-                    password:            pwd,
-                    name:                `${nome} ${cognome}`.trim(),
-                    role:                role,
-                    tipo_registrazione:  'persona_fisica',
-                    telefono:            telefono,
-                    registration_status: 'pending',
-                    created_at:          new Date().toISOString()
+                // ── Tutto server-side: insert + email admin con APPROVA ──
+                const res = await fetch(`${SUPA_URL}/functions/v1/register-user`, {
+                    method: 'POST',
+                    headers: {
+                        'apikey':        SUPA_KEY,
+                        'Authorization': 'Bearer ' + SUPA_KEY,
+                        'Content-Type':  'application/json'
+                    },
+                    body: JSON.stringify({ nome, cognome, email, password: pwd, telefono, role })
                 });
 
-                // ── Costruzione link autorizzativo ──────────────────────
-                // Il link contiene l'ID univoco dell'utente appena creato.
-                // L'admin che clicca attiva l'account senza bisogno di login.
-                const userId      = newUser?.id || '';
-                const approvalLink = userId
-                    ? `${SUPA_URL}/functions/v1/approve-user?userId=${userId}`
-                    : null;
+                const data = await res.json();
 
-                // ── Notifica admin con link di approvazione ─────────────
-                invokeFn('send-contact-email', {
-                    nome,
-                    cognome,
-                    email,
-                    telefono,
-                    messaggio: `Nuova richiesta di registrazione in attesa di approvazione.\nRuolo: ${role}\nEmail: ${email}\nTelefono: ${telefono}`,
-                    userId,
-                    approvalLink   // ← bottone APPROVA nell'email admin
-                });
-
-                // ── Email benvenuto utente (non critica) ────────────────
-                invokeFn('send-welcome-email', { nome, email, tipoRegistrazione: 'persona_fisica' });
+                if (!res.ok || !data.success) {
+                    throw new Error(data.message || 'Errore durante la registrazione.');
+                }
 
                 showSuccess(email);
 
             } catch(e) {
                 setLoading(false);
-                if (e.message && e.message.includes('duplicate') || e.message && e.message.includes('unique')) {
-                    showErr('Email già registrata. Usa un\'altra email o accedi.');
-                } else {
-                    showErr(e.message || 'Errore durante la registrazione. Riprova.');
-                }
+                showErr(e.message || 'Errore durante la registrazione. Riprova.');
             }
         }
     };
