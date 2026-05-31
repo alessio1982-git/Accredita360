@@ -56,6 +56,16 @@ const app = {
         this.navigate('dashboard');
     },
 
+    doLogout() {
+        // Pulisce la sessione e torna alla pagina principale
+        try {
+            const KEY = 'accredita360_session_v2';
+            sessionStorage.removeItem(KEY);
+            localStorage.removeItem(KEY);
+        } catch(e) {}
+        window.location.href = 'index.html';
+    },
+
     _adminAllDocs: [], // Cache interna per i filtri
 
     renderConsultantsData() {
