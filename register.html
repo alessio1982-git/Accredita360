@@ -406,7 +406,7 @@
 
             try {
                 const params = new URLSearchParams(window.location.search);
-                const role   = params.get('role') || 'cliente';
+                const role   = params.get('role') || params.get('type') || 'cliente';
 
                 // ── Tutto server-side: insert + email admin con APPROVA ──
                 const res = await fetch(`${SUPA_URL}/functions/v1/register-user`, {
