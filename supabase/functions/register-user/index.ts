@@ -18,7 +18,7 @@ const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
 const RESEND_API_KEY   = Deno.env.get("RESEND_API_KEY") ?? "";
 const FROM_EMAIL       = "noreply@accredita360s.com";
 const FROM_NAME        = "Accredita360 Portal";
-const ADMIN_EMAIL      = "info@accredita360s.com";
+const ADMIN_EMAIL      = "alessio.arlotta@gmail.com";  // riceve le notifiche admin
 const SITE_URL         = "https://accredita360s.com";
 
 const corsHeaders = {
