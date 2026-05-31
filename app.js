@@ -27,9 +27,18 @@ const app = {
     setupUI(user) {
         document.querySelector('.sidebar').style.display = 'flex';
         document.querySelector('.topbar').style.display = 'flex';
-        document.querySelector('.user-name').textContent = user.name || 'Utente';
+
+        // Popola nome e email in alto a destra
+        const nameEl  = document.querySelector('.user-name');
         const emailEl = document.querySelector('.user-email');
-        if (emailEl) emailEl.textContent = user.email || '';
+
+        const displayName  = user.name  || user.email || 'Utente';
+        const displayEmail = user.email || '';
+
+        if (nameEl)  nameEl.textContent  = displayName;
+        if (emailEl) emailEl.textContent = displayEmail;
+
+        console.log('[App] Utente loggato:', displayName, displayEmail);
         
         if(user.role === 'admin') {
             document.getElementById('nav-consultants').style.display = 'flex';
