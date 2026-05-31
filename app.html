@@ -70,6 +70,25 @@
                     <button class="btn btn-outline" style="padding: 6px 12px; font-size: 13px;" onclick="app.doLogout()"><i class='bx bx-log-out'></i> Esci</button>
                 </div>
             </header>
+            <!-- Script inline: popola nome/email subito dalla sessione, senza attendere app.js -->
+            <script>
+                (function() {
+                    try {
+                        var KEY = 'accredita360_session_v2';
+                        var raw = sessionStorage.getItem(KEY) || localStorage.getItem(KEY);
+                        if (raw) {
+                            var s = JSON.parse(raw);
+                            var u = s && s.user ? s.user : s;
+                            if (u && u.email) {
+                                var nm = document.querySelector('.user-name');
+                                var em = document.querySelector('.user-email');
+                                if (nm) nm.textContent = u.name || u.email;
+                                if (em) em.textContent = u.email;
+                            }
+                        }
+                    } catch(e) {}
+                })();
+            </script>
 
             <div class="content-area">
                 <!-- VIEW: Dashboard -->
