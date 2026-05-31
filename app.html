@@ -67,7 +67,7 @@
                         <span class="user-email" style="font-size:11px; color:var(--text-muted); display:block;">—</span>
                     </div>
                     <div class="avatar" title="Profilo utente"><i class='bx bx-user'></i></div>
-                    <button class="btn btn-outline" style="padding: 6px 12px; font-size: 13px;" onclick="app.doLogout()"><i class='bx bx-log-out'></i> Esci</button>
+                    <button class="btn btn-outline" style="padding: 6px 12px; font-size: 13px;" onclick="(function(){try{var K='accredita360_session_v2';sessionStorage.removeItem(K);localStorage.removeItem(K);}catch(e){}window.location.href='index.html';})()"><i class='bx bx-log-out'></i> Esci</button>
                 </div>
             </header>
             <!-- Script inline: popola nome/email subito dalla sessione, senza attendere app.js -->
