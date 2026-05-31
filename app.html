@@ -61,12 +61,12 @@
         <main class="main-content">
             <header class="topbar">
                 <h2 id="view-title">Dashboard</h2>
-                <div class="user-profile" style="display:flex; align-items:center; gap: 16px;">
-                    <div class="user-info">
-                        <span class="user-name">—</span>
-                        <span class="user-role">Caricamento...</span>
+                <div class="user-profile" style="display:flex; align-items:center; gap: 12px;">
+                    <div class="user-info" style="text-align:right;">
+                        <span class="user-name" style="font-size:13px; font-weight:600; color:var(--text-main);">—</span>
+                        <span class="user-email" style="font-size:11px; color:var(--text-muted); display:block;">Caricamento...</span>
                     </div>
-                    <div class="avatar">?</div>
+                    <div class="avatar" title="Profilo utente"><i class='bx bx-user'></i></div>
                     <button class="btn btn-outline" style="padding: 6px 12px; font-size: 13px;" onclick="app.doLogout()"><i class='bx bx-log-out'></i> Esci</button>
                 </div>
             </header>
@@ -84,48 +84,7 @@
                         </div>
                     </div>
 
-                    <!-- Hub 4 Sottovoci -->
-                    <div class="dashboard-hub-grid">
-                        <!-- 1. Anagrafica -->
-                        <div class="dashboard-hub-card hub-card-anagrafica" onclick="app.navigate('anagrafica')">
-                            <div class="hub-icon"><i class='bx bx-building'></i></div>
-                            <div class="hub-info">
-                                <h4>Anagrafica Struttura</h4>
-                                <p>Gestisci i dati legali, la sede operativa e i riferimenti della struttura.</p>
-                            </div>
-                            <div class="hub-arrow"><i class='bx bx-chevron-right'></i></div>
-                        </div>
 
-                        <!-- 2. Profilazione -->
-                        <div class="dashboard-hub-card hub-card-profilazione" onclick="app.navigate('profiling')">
-                            <div class="hub-icon"><i class='bx bx-slider-alt'></i></div>
-                            <div class="hub-info">
-                                <h4>Profilazione Struttura</h4>
-                                <p>Definisci la tipologia di struttura e i servizi erogati per attivare l'iter.</p>
-                            </div>
-                            <div class="hub-arrow"><i class='bx bx-chevron-right'></i></div>
-                        </div>
-
-                        <!-- 3. Gap Analysis -->
-                        <div class="dashboard-hub-card hub-card-gap" onclick="app.navigate('gap-analysis')">
-                            <div class="hub-icon"><i class='bx bx-list-check'></i></div>
-                            <div class="hub-info">
-                                <h4>Gap Analysis</h4>
-                                <p>Valuta i requisiti per l'Autorizzazione ASP e l'Accreditamento OTA.</p>
-                            </div>
-                            <div class="hub-arrow"><i class='bx bx-chevron-right'></i></div>
-                        </div>
-
-                        <!-- 4. Fascicolo Documentale -->
-                        <div class="dashboard-hub-card hub-card-fascicolo" onclick="app.navigate('documents')">
-                            <div class="hub-icon"><i class='bx bx-folder-open'></i></div>
-                            <div class="hub-info">
-                                <h4>Fascicolo Documentale</h4>
-                                <p>Carica, gestisci e monitora la validazione dei documenti richiesti.</p>
-                            </div>
-                            <div class="hub-arrow"><i class='bx bx-chevron-right'></i></div>
-                        </div>
-                    </div>
 
                     <div class="stats-grid">
                         <div class="stat-card glass-card">

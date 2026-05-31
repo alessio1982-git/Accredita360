@@ -27,8 +27,9 @@ const app = {
     setupUI(user) {
         document.querySelector('.sidebar').style.display = 'flex';
         document.querySelector('.topbar').style.display = 'flex';
-        document.querySelector('.user-name').textContent = user.name || user.email;
-        document.querySelector('.user-role').textContent = user.role === 'admin' ? 'Amministratore / Consulente' : 'Legale Rappresentante';
+        document.querySelector('.user-name').textContent = user.name || 'Utente';
+        const emailEl = document.querySelector('.user-email');
+        if (emailEl) emailEl.textContent = user.email || '';
         
         if(user.role === 'admin') {
             document.getElementById('nav-consultants').style.display = 'flex';
