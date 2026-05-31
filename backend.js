@@ -213,10 +213,17 @@ Vai nel pannello Admin per approvare l'utente.`
      */
     getCurrentUser() {
         try {
-            const raw = sessionStorage.getItem(SESSION_KEY);
+            // Legge da sessionStorage prima, poi localStorage come fallback
+            const raw = sessionStorage.getItem(SESSION_KEY)
+                     || localStorage.getItem(SESSION_KEY);
             if (!raw) return null;
             const session = JSON.parse(raw);
-            return session?.user || null;
+            // Gestisce entrambi i formati:
+            // 1. { user: {...} }  ← formato backend.js
+            // 2. { id, email, name, ... } ← formato login.html (diretto)
+            if (session?.user) return session.user;
+            if (session?.email) return session;
+            return null;
         } catch {
             return null;
         }
