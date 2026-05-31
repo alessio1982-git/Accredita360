@@ -1004,20 +1004,6 @@
             openLoginTriggers.forEach(trigger => {
                 trigger.addEventListener('click', (e) => {
                     e.preventDefault();
-                    // Controlla se c'è già una sessione attiva
-                    const SESSION_KEY = 'accredita360_session_v2';
-                    const saved = sessionStorage.getItem(SESSION_KEY) || localStorage.getItem(SESSION_KEY);
-                    if (saved) {
-                        try {
-                            const user = JSON.parse(saved);
-                            if (user) {
-                                // Se c'è già un utente loggato, reindirizza direttamente
-                                const target = user.role === 'admin' || user.user?.role === 'admin' ? 'admin.html' : 'app.html';
-                                window.location.href = target;
-                                return;
-                            }
-                        } catch(e) {}
-                    }
                     openLoginModal();
                 });
             });
