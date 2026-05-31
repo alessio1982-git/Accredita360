@@ -100,6 +100,8 @@ const loginApp = {
     _redirectByRole(user) {
         if (user.role === 'admin') {
             window.location.href = 'admin.html';
+        } else if (user.role === 'consulente') {
+            window.location.href = 'consulente.html';
         } else {
             window.location.href = 'app.html';
         }

@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Consulente — Accredita360</title>
+    <meta name="description" content="Area riservata consulenti Accredita360. Monitoraggio clienti, documenti e pratiche di accreditamento sanitario OTA Sicilia.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        /* ── MONITORAGGIO GRID ─────────────────────────── */
+        .monitoraggio-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 20px;
+        }
+        /* ── SIDEBAR CONSULENTE ────────────────────────── */
+        .sidebar-consulente .sidebar-badge {
+            background: rgba(16,185,129,0.1);
+            border: 1px solid rgba(16,185,129,0.25);
+            border-radius: 10px;
+            padding: 12px 14px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .sidebar-consulente .sidebar-badge i { font-size:20px; color:#10b981; }
+        .sidebar-consulente .sidebar-badge .badge-title { font-size:12px; font-weight:700; color:#34d399; }
+        .sidebar-consulente .sidebar-badge .badge-sub   { font-size:11px; color:var(--text-muted); }
+        /* ── MONITORAGGIO FILTER BAR ───────────────────── */
+        .mon-filter-bar {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+            padding: 14px 20px;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 14px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+<div class="app-container">
+
+    <!-- ════════════════════════════════════════════
+         SIDEBAR CONSULENTE
+    ════════════════════════════════════════════ -->
+    <nav class="sidebar sidebar-consulente">
+        <div class="sidebar-header">
+            <div class="logo">
+                <img src="logo.png" alt="Accredita360" style="height:54px;border-radius:8px;filter:drop-shadow(0 0 8px rgba(16,185,129,0.4));">
+                <span>Accredita360</span>
+            </div>
+        </div>
+
+        <ul class="nav-links">
+            <li class="active" data-view="dashboard-consulente">
+                <a href="#"><i class='bx bx-grid-alt'></i><span>Dashboard Consulente</span></a>
+            </li>
+            <li data-view="clienti">
+                <a href="#"><i class='bx bx-user-check'></i><span>I Miei Clienti</span></a>
+            </li>
+            <li data-view="monitoraggio">
+                <a href="#"><i class='bx bx-radar'></i><span>Monitoraggio</span></a>
+            </li>
+            <li data-view="normativa">
+                <a href="#"><i class='bx bx-book-open'></i><span>Quadro Normativo</span></a>
+            </li>
+            <li data-view="procedure-ota">
+                <a href="#"><i class='bx bx-clipboard'></i><span>Procedure OTA</span></a>
+            </li>
+            <li data-view="panoramica">
+                <a href="#"><i class='bx bx-map-alt'></i><span>Panoramica</span></a>
+            </li>
+        </ul>
+
+        <div style="margin-top:auto;padding:16px;">
+            <div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--text-muted);margin-bottom:8px;padding:0 8px;">Area Riservata</div>
+            <div class="sidebar-badge">
+                <i class='bx bx-briefcase-alt-2'></i>
+                <div>
+                    <div class="badge-title">Consulente</div>
+                    <div class="badge-sub">Pannello Gestione Clienti</div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- ════════════════════════════════════════════
+         MAIN CONTENT
+    ════════════════════════════════════════════ -->
+    <main class="main-content">
+
+        <!-- TOPBAR -->
+        <header class="topbar">
+            <h2 id="view-title">Dashboard Consulente</h2>
+            <div class="user-profile">
+                <div class="user-info">
+                    <span class="user-name">—</span>
+                    <span class="user-role">Consulente</span>
+                </div>
+                <div class="avatar" style="background:linear-gradient(135deg,#10b981,#3b82f6);">?</div>
+                <button class="btn btn-outline" style="padding:6px 12px;font-size:13px;" onclick="consulente.doLogout()">
+                    <i class='bx bx-log-out'></i> Esci
+                </button>
+            </div>
+        </header>
+
+        <div class="content-area">
+
+            <!-- ══════════════════════════════════════
+                 VIEW: Dashboard Consulente
+            ══════════════════════════════════════ -->
+            <div id="view-dashboard-consulente" class="view">
+
+                <!-- Welcome Card -->
+                <div class="welcome-card" style="margin-bottom:28px;">
+                    <div>
+                        <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
+                            <div style="width:52px;height:52px;border-radius:14px;background:linear-gradient(135deg,#10b981,#3b82f6);display:flex;align-items:center;justify-content:center;font-size:26px;color:#fff;">
+                                <i class='bx bx-briefcase-alt-2'></i>
+                            </div>
+                            <div>
+                                <h3 style="margin:0;font-size:24px;">Dashboard Consulente</h3>
+                                <p style="margin:0;font-size:13px;color:var(--text-muted);">Gestione clienti · Monitoraggio pratiche · Supporto accreditamento OTA</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Stats -->
+                <div class="stats-grid" style="margin-bottom:32px;">
+                    <div class="stat-card glass-card">
+                        <div class="stat-icon success"><i class='bx bx-buildings'></i></div>
+                        <div class="stat-info"><h4>Clienti Attivi</h4><span class="stat-value success" id="dash-stat-clienti">—</span></div>
+                    </div>
+                    <div class="stat-card glass-card">
+                        <div class="stat-icon warning"><i class='bx bx-time-five'></i></div>
+                        <div class="stat-info"><h4>Doc. In Attesa</h4><span class="stat-value warning" id="dash-stat-pending">—</span></div>
+                    </div>
+                    <div class="stat-card glass-card">
+                        <div class="stat-icon"><i class='bx bx-check-double'></i></div>
+                        <div class="stat-info"><h4>Doc. Validati</h4><span class="stat-value" id="dash-stat-validated">—</span></div>
+                    </div>
+                    <div class="stat-card glass-card">
+                        <div class="stat-icon" style="background:rgba(139,92,246,0.15);color:#8b5cf6;"><i class='bx bx-user-plus'></i></div>
+                        <div class="stat-info"><h4>Nuove Richieste</h4><span class="stat-value" style="color:#8b5cf6;" id="dash-stat-new-reg">—</span></div>
+                    </div>
+                </div>
+
+                <!-- Quick Nav -->
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;">
+                    <div class="glass-card" style="padding:20px;cursor:pointer;transition:all 0.3s;border-left:4px solid var(--success);"
+                        onclick="consulente.navigate('clienti')" onmouseover="this.style.transform='translateY(-3px)'" onmouseout="this.style.transform=''">
+                        <i class='bx bx-user-check' style="font-size:28px;color:var(--success);margin-bottom:10px;display:block;"></i>
+                        <div style="font-weight:700;margin-bottom:4px;">I Miei Clienti</div>
+                        <div style="font-size:12px;color:var(--text-muted);">Approva e gestisci le richieste</div>
+                    </div>
+                    <div class="glass-card" style="padding:20px;cursor:pointer;transition:all 0.3s;border-left:4px solid #6366f1;"
+                        onclick="consulente.navigate('monitoraggio')" onmouseover="this.style.transform='translateY(-3px)'" onmouseout="this.style.transform=''">
+                        <i class='bx bx-radar' style="font-size:28px;color:#6366f1;margin-bottom:10px;display:block;"></i>
+                        <div style="font-weight:700;margin-bottom:4px;">Monitoraggio</div>
+                        <div style="font-size:12px;color:var(--text-muted);">Stato documentale e pratiche</div>
+                    </div>
+                    <div class="glass-card" style="padding:20px;cursor:pointer;transition:all 0.3s;border-left:4px solid var(--primary);"
+                        onclick="consulente.navigate('normativa')" onmouseover="this.style.transform='translateY(-3px)'" onmouseout="this.style.transform=''">
+                        <i class='bx bx-book-open' style="font-size:28px;color:var(--primary);margin-bottom:10px;display:block;"></i>
+                        <div style="font-weight:700;margin-bottom:4px;">Quadro Normativo</div>
+                        <div style="font-size:12px;color:var(--text-muted);">Legislazione e coerenza OTA</div>
+                    </div>
+                    <div class="glass-card" style="padding:20px;cursor:pointer;transition:all 0.3s;border-left:4px solid var(--warning);"
+                        onclick="consulente.navigate('procedure-ota')" onmouseover="this.style.transform='translateY(-3px)'" onmouseout="this.style.transform=''">
+                        <i class='bx bx-clipboard' style="font-size:28px;color:var(--warning);margin-bottom:10px;display:block;"></i>
+                        <div style="font-weight:700;margin-bottom:4px;">Procedure OTA</div>
+                        <div style="font-size:12px;color:var(--text-muted);">Manuali e procedure in vigore</div>
+                    </div>
+                    <div class="glass-card" style="padding:20px;cursor:pointer;transition:all 0.3s;border-left:4px solid #8b5cf6;"
+                        onclick="consulente.navigate('panoramica')" onmouseover="this.style.transform='translateY(-3px)'" onmouseout="this.style.transform=''">
+                        <i class='bx bx-map-alt' style="font-size:28px;color:#8b5cf6;margin-bottom:10px;display:block;"></i>
+                        <div style="font-weight:700;margin-bottom:4px;">Panoramica</div>
+                        <div style="font-size:12px;color:var(--text-muted);">Iter OTA e storico normativa</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ══════════════════════════════════════
+                 VIEW: I Miei Clienti
+            ══════════════════════════════════════ -->
+            <div id="view-clienti" class="view">
+                <div class="gap-header">
+                    <h3><i class='bx bx-user-check' style="color:var(--success);"></i> I Miei Clienti</h3>
+                    <span class="status-badge status-green"><i class='bx bx-lock-alt'></i> Accesso Riservato</span>
+                </div>
+                <div class="checklist-container glass-card">
+                    <div class="checklist-table-wrapper">
+                        <table class="checklist-table">
+                            <thead>
+                                <tr>
+                                    <th>Nome</th>
+                                    <th>Email</th>
+                                    <th>Telefono</th>
+                                    <th>Data Iscrizione</th>
+                                    <th>Azione</th>
+                                </tr>
+                            </thead>
+                            <tbody id="clienti-tbody">
+                                <tr><td colspan="5" style="text-align:center;padding:20px;color:var(--text-muted);"><i class='bx bx-loader-alt'></i> Caricamento...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ══════════════════════════════════════
+                 VIEW: Monitoraggio
+            ══════════════════════════════════════ -->
+            <div id="view-monitoraggio" class="view">
+                <div class="gap-header" style="margin-bottom:20px;">
+                    <h3><i class='bx bx-radar' style="color:#6366f1;"></i> Monitoraggio Clienti</h3>
+                    <span class="status-badge" style="background:rgba(99,102,241,0.12);color:#818cf8;"><i class='bx bx-pulse'></i> In Tempo Reale</span>
+                </div>
+
+                <!-- Descrizione -->
+                <div class="glass-card" style="padding:18px 22px;margin-bottom:20px;display:flex;align-items:center;gap:14px;border-left:4px solid #6366f1;">
+                    <i class='bx bx-info-circle' style="font-size:24px;color:#6366f1;flex-shrink:0;"></i>
+                    <p style="margin:0;font-size:13px;color:var(--text-muted);line-height:1.6;">
+                        Visualizza lo <strong>stato documentale completo</strong> di ogni cliente: documenti validati, in attesa, critici e mancanti.
+                        Usa i filtri per identificare rapidamente le pratiche che richiedono attenzione.
+                    </p>
+                </div>
+
+                <!-- Filtri -->
+                <div class="mon-filter-bar">
+                    <span style="font-weight:600;color:var(--text-muted);font-size:13px;"><i class='bx bx-filter'></i> Filtra:</span>
+                    <select id="mon-filter" class="input-box" style="padding:7px 14px;font-size:13px;width:auto;"
+                        onchange="consulente.renderMonitoraggio()">
+                        <option value="all">Tutti i Clienti</option>
+                        <option value="critical">🔴 Critici</option>
+                        <option value="progress">🟡 In Corso</option>
+                        <option value="ok">🟢 Completati</option>
+                    </select>
+                    <div style="margin-left:auto;">
+                        <input type="text" id="mon-search" class="input-box" style="padding:7px 14px;font-size:13px;width:220px;"
+                            placeholder="Cerca cliente..." oninput="consulente.renderMonitoraggio()">
+                    </div>
+                </div>
+
+                <!-- Grid Monitoraggio -->
+                <div id="monitoraggio-grid" class="monitoraggio-grid">
+                    <div style="text-align:center;padding:48px;color:var(--text-muted);grid-column:1/-1;">
+                        <i class='bx bx-loader-alt' style="font-size:32px;opacity:0.4;display:block;margin-bottom:12px;"></i>
+                        <p>Caricamento dati monitoraggio...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ══════════════════════════════════════
+                 VIEW: Quadro Normativo
+            ══════════════════════════════════════ -->
+            <div id="view-normativa" class="view">
+                <div class="gap-header">
+                    <h3><i class='bx bx-book-open' style="color:var(--primary);"></i> Quadro Normativo di Riferimento</h3>
+                    <span class="status-badge status-green"><i class='bx bx-check-shield'></i> Verificato</span>
+                </div>
+                <div class="welcome-card glass-card" style="margin-bottom:24px;">
+                    <div style="display:flex;align-items:center;gap:16px;">
+                        <div style="width:52px;height:52px;border-radius:14px;background:linear-gradient(135deg,#3b82f6,#8b5cf6);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                            <i class='bx bx-scale' style="font-size:26px;color:#fff;"></i>
+                        </div>
+                        <div>
+                            <h3 style="margin:0;font-size:18px;">Normativa Siciliana sull'Accreditamento Sanitario</h3>
+                            <p style="margin:4px 0 0;color:var(--text-muted);font-size:13px;">Riepilogo delle norme che governano i percorsi supportati da Accredita360.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="proc-tab-nav glass-card" style="margin-bottom:24px;">
+                    <button class="proc-tab-btn active" id="norm-tab-coerenza" onclick="consulente.switchNormTab('coerenza')"><i class='bx bx-check-shield'></i><span>Analisi Coerenza OTA</span></button>
+                    <button class="proc-tab-btn" id="norm-tab-legislazione" onclick="consulente.switchNormTab('legislazione')"><i class='bx bx-book'></i><span>Legislazione</span></button>
+                </div>
+                <div id="norm-page-coerenza" class="proc-page">
+                    <div class="glass-card" style="padding:24px;text-align:center;color:var(--text-muted);">
+                        <i class='bx bx-check-shield' style="font-size:40px;color:var(--success);opacity:0.6;display:block;margin-bottom:12px;"></i>
+                        <p style="font-size:14px;">Il Quadro Normativo completo è disponibile nella sezione OTA del sito istituzionale.</p>
+                        <a href="https://www.regione.sicilia.it/istituzioni/regione/strutture-regionali/assessorato-salute/dipartimento-attivita-sanitarie-osservatorio-epidemiologico/organismo/accreditamento/accreditante"
+                            target="_blank" class="btn btn-outline" style="text-decoration:none;margin-top:16px;display:inline-flex;align-items:center;gap:8px;">
+                            <i class='bx bx-link-external'></i> Sito OTA Sicilia
+                        </a>
+                    </div>
+                </div>
+                <div id="norm-page-legislazione" class="proc-page" style="display:none;">
+                    <div class="glass-card" style="padding:24px;text-align:center;color:var(--text-muted);">
+                        <i class='bx bx-book' style="font-size:40px;color:var(--primary);opacity:0.6;display:block;margin-bottom:12px;"></i>
+                        <p>Legislazione e decreti disponibili nella sezione Panoramica.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ══════════════════════════════════════
+                 VIEW: Procedure OTA
+            ══════════════════════════════════════ -->
+            <div id="view-procedure-ota" class="view">
+                <div class="gap-header">
+                    <h3><i class='bx bx-clipboard' style="color:var(--primary);"></i> Procedure OTA</h3>
+                    <a href="https://www.regione.sicilia.it/istituzioni/regione/strutture-regionali/assessorato-salute/dipartimento-attivita-sanitarie-osservatorio-epidemiologico/organismo/accreditamento/accreditante"
+                        target="_blank" class="btn btn-outline" style="text-decoration:none;"><i class='bx bx-link-external'></i> Sito Ufficiale OTA</a>
+                </div>
+                <div class="proc-tab-nav glass-card">
+                    <button class="proc-tab-btn active" id="proc-tab-normativa" onclick="consulente.switchProcTab('normativa')"><i class='bx bx-book-open'></i><span>Normativa &amp; Organigramma</span></button>
+                    <button class="proc-tab-btn" id="proc-tab-procedure" onclick="consulente.switchProcTab('procedure')"><i class='bx bx-folder-open'></i><span>Procedure e Manuali in Vigore</span></button>
+                </div>
+                <div id="proc-page-normativa" class="proc-page">
+                    <div class="glass-card" style="padding:28px;text-align:center;color:var(--text-muted);">
+                        <i class='bx bx-institution' style="font-size:40px;color:var(--primary);opacity:0.6;display:block;margin-bottom:12px;"></i>
+                        <p style="font-size:14px;margin-bottom:16px;">L'OTA (D.P.Reg. n. 12/2019) è l'organismo tecnico della Regione Siciliana per la verifica dei requisiti di accreditamento.</p>
+                        <a href="https://www.regione.sicilia.it/istituzioni/regione/strutture-regionali/assessorato-salute/dipartimento-attivita-sanitarie-osservatorio-epidemiologico/organismo/accreditamento/accreditante"
+                            target="_blank" class="btn btn-outline" style="text-decoration:none;display:inline-flex;align-items:center;gap:8px;"><i class='bx bx-link-external'></i> Documentazione OTA</a>
+                    </div>
+                </div>
+                <div id="proc-page-procedure" class="proc-page" style="display:none;">
+                    <div id="proc-manuals-container"></div>
+                </div>
+            </div>
+
+            <!-- ══════════════════════════════════════
+                 VIEW: Panoramica
+            ══════════════════════════════════════ -->
+            <div id="view-panoramica" class="view">
+                <div class="gap-header">
+                    <h3><i class='bx bx-map-alt' style="color:var(--primary);"></i> Panoramica — Accreditamento Sanitario in Sicilia</h3>
+                    <span class="status-badge status-green"><i class='bx bx-check-shield'></i> Guida Completa</span>
+                </div>
+                <div class="proc-tab-nav glass-card">
+                    <button class="proc-tab-btn active" id="pan-tab-iter" onclick="consulente.switchPanTab('iter')"><i class='bx bx-trip'></i><span>Iter &amp; Processo OTA</span></button>
+                    <button class="proc-tab-btn" id="pan-tab-storico" onclick="consulente.switchPanTab('storico')"><i class='bx bx-history'></i><span>Storico Normativa</span></button>
+                </div>
+                <div id="pan-page-iter" class="proc-page">
+                    <div class="glass-card" style="padding:24px;margin-bottom:24px;">
+                        <div style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--success);margin-bottom:14px;display:flex;align-items:center;gap:8px;">
+                            <i class='bx bx-trip'></i> Come avviene la verifica OTA — Le 9 fasi
+                        </div>
+                        <div id="pan-iter-timeline" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;"></div>
+                    </div>
+                    <div class="glass-card" style="padding:24px;">
+                        <h4 style="margin-bottom:16px;font-size:16px;">Differenza Autorizzazione vs Accreditamento</h4>
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+                            <div style="background:rgba(245,158,11,0.06);border:1px solid rgba(245,158,11,0.25);border-radius:12px;padding:18px;border-left:4px solid var(--warning);">
+                                <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;"><i class='bx bx-key' style="color:var(--warning);font-size:20px;"></i><strong>Autorizzazione Sanitaria</strong></div>
+                                <p style="font-size:12px;color:var(--text-muted);margin:0;line-height:1.6;">Permesso per aprire e operare. Verifica locali, impianti, attrezzature. Competenza: ASP + SUAP.</p>
+                            </div>
+                            <div style="background:rgba(16,185,129,0.06);border:1px solid rgba(16,185,129,0.25);border-radius:12px;padding:18px;border-left:4px solid var(--success);">
+                                <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;"><i class='bx bx-medal' style="color:var(--success);font-size:20px;"></i><strong>Accreditamento Istituzionale</strong></div>
+                                <p style="font-size:12px;color:var(--text-muted);margin:0;line-height:1.6;">Riconoscimento di qualità per lavorare con il SSR. Competenza: Regione + OTA.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div id="pan-page-storico" class="proc-page" style="display:none;">
+                    <div id="pan-storico-container"></div>
+                </div>
+            </div>
+
+        </div><!-- /content-area -->
+    </main>
+</div>
+
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3/dist/purify.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="normativa_db.js?v=3"></script>
+    <script src="backend.js?v=3"></script>
+    <script src="consulente.js?v=1"></script>
+</body>
+</html>
