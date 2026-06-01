@@ -130,7 +130,8 @@
                     <span class="user-role">Consulente</span>
                 </div>
                 <div class="avatar" style="background:linear-gradient(135deg,#10b981,#3b82f6);">?</div>
-                <button class="btn btn-outline" style="padding:6px 12px;font-size:13px;" onclick="consulente.doLogout()">
+                <button class="btn btn-outline" style="padding:6px 12px;font-size:13px;"
+                    onclick="sessionStorage.removeItem('accredita360_session_v2'); localStorage.removeItem('accredita360_session_v2'); window.location.href='index.html';">
                     <i class='bx bx-log-out'></i> Esci
                 </button>
             </div>
