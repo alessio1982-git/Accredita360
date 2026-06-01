@@ -20,7 +20,9 @@ const registerApp = {
         try {
             const user = B.getCurrentUser();
             if (user) {
-                window.location.href = user.role === 'admin' ? 'admin.html' : 'app.html';
+                if (user.role === 'admin')        window.location.href = 'admin.html';
+                else if (user.role === 'consulente') window.location.href = 'consulente.html';
+                else                              window.location.href = 'app.html';
                 return;
             }
         } catch (e) {
@@ -73,7 +75,8 @@ const registerApp = {
 
         try {
             const params = new URLSearchParams(window.location.search);
-            const requestedRole = params.get('role') || 'cliente';
+            // Supporta sia ?role=consulente che ?type=consulente
+            const requestedRole = params.get('role') || params.get('type') || 'cliente';
 
             await B.register(
                 email, pwd,
