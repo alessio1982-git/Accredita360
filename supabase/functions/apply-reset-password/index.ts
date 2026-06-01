@@ -1,4 +1,5 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { serve }  from "https://deno.land/std@0.168.0/http/server.ts";
+import * as bcrypt from "https://deno.land/x/bcrypt@v0.4.1/mod.ts";
 
 // ============================================================
 // apply-reset-password — Edge Function Accredita360
@@ -47,7 +48,10 @@ serve(async (req) => {
       return jsonError("Il link è scaduto (validità 1 ora). Richiedi un nuovo link.", 400);
     }
 
-    // ── 3. Aggiorna password e cancella il token ─────────────
+    // ── 3. Hash nuova password con bcrypt (cost 12) ─────────
+    const passwordHash = await bcrypt.hash(newPassword);
+
+    // ── 4. Aggiorna password (hash) e cancella il token ──────
     await fetch(
       `${SUPABASE_URL}/rest/v1/users?id=eq.${user.id}`,
       {
@@ -59,8 +63,8 @@ serve(async (req) => {
           "Prefer":        "return=minimal",
         },
         body: JSON.stringify({
-          password:             newPassword,
-          reset_token:          null,   // cancella token usato
+          password:             passwordHash,   // ← bcrypt hash, mai in chiaro
+          reset_token:          null,           // cancella token usato
           reset_token_expires:  null,
         }),
       }

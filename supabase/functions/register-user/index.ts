@@ -1,4 +1,5 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { serve }  from "https://deno.land/std@0.168.0/http/server.ts";
+import * as bcrypt from "https://deno.land/x/bcrypt@v0.4.1/mod.ts";
 
 // ============================================================
 // register-user — Edge Function Accredita360
@@ -52,6 +53,9 @@ serve(async (req) => {
       return jsonError("Email già registrata. Usa un'altra email o accedi.", 409);
     }
 
+    // ── 3a. Hash della password con bcrypt (cost 12) ─────────
+    const passwordHash = await bcrypt.hash(password);
+
     // ── 3. Inserimento utente nel DB (service_role → legge l'ID) ──
     const insertRes = await fetch(`${SUPABASE_URL}/rest/v1/users`, {
       method: "POST",
@@ -63,7 +67,7 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         email:               emailLower,
-        password:            password,
+        password:            passwordHash,       // ← bcrypt hash, mai in chiaro
         name:                `${nome} ${cognome}`.trim(),
         role:                role || "cliente",
         tipo_registrazione:  "persona_fisica",

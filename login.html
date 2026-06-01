@@ -482,38 +482,29 @@
             hideErr();
 
             try {
-                // Query diretta su Supabase REST API
+                // ── Chiamata alla Edge Function 'login' (bcrypt server-side) ──
+                // NON usa più password=eq.{pwd} nella query REST (espone pw in chiaro)
                 const res = await fetch(
-                    `${SUPA_URL}/rest/v1/users?email=eq.${encodeURIComponent(email.toLowerCase())}&password=eq.${encodeURIComponent(pwd)}&select=id,email,name,role,registration_status`,
+                    `${SUPA_URL}/functions/v1/login`,
                     {
+                        method: 'POST',
                         headers: {
                             'apikey':        SUPA_KEY,
                             'Authorization': 'Bearer ' + SUPA_KEY,
                             'Content-Type':  'application/json'
-                        }
+                        },
+                        body: JSON.stringify({ email: email.toLowerCase(), password: pwd })
                     }
                 );
 
-                if (!res.ok) throw new Error('Errore di connessione. Riprova.');
+                const data = await res.json();
 
-                const users = await res.json();
-
-                if (!users || users.length === 0) {
+                if (!data.success) {
                     setLoading(false);
-                    return showErr('Email o password non corretti. Verifica le credenziali e riprova.');
+                    return showErr(data.message || 'Email o password non corretti. Verifica le credenziali e riprova.');
                 }
 
-                const user = users[0];
-
-                // Controlla stato registrazione
-                if (user.registration_status === 'pending') {
-                    setLoading(false);
-                    return showErr('Il tuo account è in attesa di approvazione. Riceverai un\'email quando sarà attivo.');
-                }
-                if (user.registration_status === 'rejected') {
-                    setLoading(false);
-                    return showErr('Il tuo account non è stato approvato. Contatta info@accredita360s.com.');
-                }
+                const user = data;
 
                 // Salva sessione
                 sessionStorage.setItem(SESSION_KEY, JSON.stringify(user));
