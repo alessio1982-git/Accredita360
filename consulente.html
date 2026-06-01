@@ -43,6 +43,31 @@
             margin-bottom: 20px;
         }
     </style>
+    <script>
+        /* Popola nome/email topbar immediatamente — evita flash "—" */
+        (function() {
+            try {
+                const raw = sessionStorage.getItem('accredita360_session_v2')
+                         || localStorage.getItem('accredita360_session_v2');
+                if (!raw) return;
+                const u = JSON.parse(raw);
+                const user = u?.user || u;
+                if (!user) return;
+                const name  = user.name  || user.email || '—';
+                const email = user.email || 'Consulente';
+                const initial = name.charAt(0).toUpperCase();
+                document.addEventListener('DOMContentLoaded', () => {
+                    const nameEl   = document.querySelector('.user-name');
+                    const roleEl   = document.querySelector('.user-role');
+                    const avatarEl = document.querySelector('.avatar');
+                    if (nameEl)   nameEl.textContent   = name;
+                    if (roleEl)   roleEl.textContent   = email;
+                    if (avatarEl) avatarEl.textContent = initial;
+                });
+            } catch(e) {}
+        })();
+    </script>
+
 </head>
 <body>
 <div class="app-container">

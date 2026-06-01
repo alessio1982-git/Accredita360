@@ -33,13 +33,14 @@ const consulente = {
     },
 
     setupUI(user) {
-        const displayName = user.name || user.email;
-        const initial = displayName.charAt(0).toUpperCase();
+        const displayName = user.name  || user.email || '—';
+        const emailLabel  = user.email || '';
+        const initial     = displayName.charAt(0).toUpperCase();
         const nameEl   = document.querySelector('.user-name');
         const roleEl   = document.querySelector('.user-role');
         const avatarEl = document.querySelector('.avatar');
-        if (nameEl)   nameEl.textContent   = displayName;
-        if (roleEl)   roleEl.textContent   = 'Consulente';
+        if (nameEl)   nameEl.textContent   = displayName;   // Nome Cognome
+        if (roleEl)   roleEl.textContent   = emailLabel;    // email di login
         if (avatarEl) avatarEl.textContent = initial;
     },
 
