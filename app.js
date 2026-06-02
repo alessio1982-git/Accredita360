@@ -9,7 +9,13 @@ const appState = {
 
 // App Controller
 const app = {
-    state: { anagrafica: null }, // stato locale dell'app
+    // Stato locale dell'app (persistito in memoria durante la sessione)
+    state: {
+        anagrafica:    null,  // dati anagrafica struttura
+        compliantDocs: [],    // documenti conformi (verde) nella Gap Analysis
+        requiredDocs:  null,  // albero requisiti generato dalla profilazione
+        struttura:     null   // tipo struttura selezionata
+    },
     async init() {
         this.bindEvents();
         this.renderProfilingForm();
@@ -1522,17 +1528,6 @@ app.state = {
 };
 
 // ── Alias navigate: accetta sia 'view-dashboard' che 'dashboard' ─────────────
-const _origNavigate = app.navigate.bind(app);
-app.navigate = function(viewId) {
-    // Normalizza: rimuove prefisso 'view-' se presente
-    const normalized = viewId.startsWith('view-') ? viewId.replace('view-', '') : viewId;
-    _origNavigate(normalized);
-    // Sincronizza active sul nav
-    document.querySelectorAll('.nav-links li').forEach(li => {
-        li.classList.toggle('active', li.dataset.view === normalized);
-    });
-};
-
 // ── Alias updateDashboardStats → updateStats + loadData ─────────────────────
 app.updateDashboardStats = async function() {
     appState.requirements = await Backend.getRequirements();
@@ -1906,6 +1901,96 @@ async function initMantenimentoScadenze() {
 }
 
 // =============================================================================
+// FUNZIONI MANCANTI — implementazione reale (no AntigravitySkills nel browser)
+// =============================================================================
+
+/**
+ * getFormData — raccoglie i dati dal form di profilazione
+ */
+app.getFormData = function() {
+    const data = {};
+    const tipoEl   = document.getElementById('struttura-type');
+    const authEl   = document.getElementById('struttura-auth');
+    const elettroEl = document.getElementById('struttura-elettro');
+    if (tipoEl)    data.tipoStruttura = tipoEl.value;
+    if (authEl)    data.authStatus = authEl.value;
+    if (elettroEl) data.hasElettromedicali = elettroEl.value === 'si';
+    return data;
+};
+
+/**
+ * getOtaManualChecklist — restituisce le regole di checklist per un requisito
+ */
+app.getOtaManualChecklist = function(documentId) {
+    // Restituisce regole di verifica base per il documento richiesto
+    return [
+        { rule: 'documento_presente',   label: 'Documento presente',          weight: 1.0 },
+        { rule: 'norma_citata',         label: 'Riferimento normativo citato', weight: 0.9 },
+        { rule: 'firma_presente',       label: 'Firma L.R. presente',          weight: 0.7 },
+        { rule: 'data_valida',          label: 'Data documento valida',        weight: 0.6 },
+    ];
+};
+
+/**
+ * updateChecklistStatus — aggiorna lo stato di un requisito nella UI e nel backend
+ */
+app.updateChecklistStatus = async function(reqId, newStatus, reason) {
+    if (newStatus === 'processing') {
+        // Stato transitorio: mostra spinner sul pulsante
+        this._setUploadSpinner(reqId, true);
+        return;
+    }
+    // Stato definitivo: aggiorna via Backend
+    const note = reason || (newStatus === 'green' ? 'Documento verificato conforme.' : 'Documento non conforme.');
+    try {
+        await Backend.updateRequirementStatus(reqId, newStatus, null, note);
+        await this.loadData();
+    } catch (err) {
+        console.warn('[updateChecklistStatus] Errore aggiornamento:', err);
+    } finally {
+        this._setUploadSpinner(reqId, false);
+    }
+};
+
+/**
+ * renderCompliantList — popola il fascicolo con i documenti conformi
+ */
+app.renderCompliantList = function(validDocs) {
+    const tbody = document.getElementById('fascicolo-list');
+    if (!tbody) return;
+
+    // Usa i requisiti verdi da appState se validDocs è vuoto o non passato
+    const docs = (validDocs && validDocs.length > 0)
+        ? validDocs
+        : appState.requirements.filter(r => r.stato === 'green').map(r => ({ id: r.id, titolo: r.titolo, norma: r.norma, file: r.file }));
+
+    if (docs.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:32px;color:var(--text-muted);">
+            <i class='bx bx-folder-open' style="font-size:32px;display:block;margin-bottom:8px;opacity:0.4;"></i>
+            <strong>Fascicolo vuoto.</strong><br>
+            <span style="font-size:13px;">I documenti conformi (verdi) nella Gap Analysis appariranno qui automaticamente.</span>
+        </td></tr>`;
+        return;
+    }
+
+    tbody.innerHTML = docs.map(doc => {
+        const titolo = doc.titolo || doc.id || 'Documento';
+        const norma  = doc.norma  || '—';
+        const file   = doc.file   || null;
+        return `<tr>
+            <td><span class="status-badge status-green"><i class='bx bx-check-circle'></i> Conforme</span></td>
+            <td><div class="req-title">${_s(titolo)}</div></td>
+            <td style="font-size:12px;">${_s(norma)}</td>
+            <td>${file ? `<span style="color:var(--success);font-size:12px;"><i class='bx bx-file'></i> ${_s(file)}</span>` : '<span style="color:var(--text-muted);font-size:12px;">—</span>'}</td>
+            <td><button class="btn btn-outline" style="padding:5px 12px;font-size:12px;" onclick="app.downloadTemplate({id:'${doc.id}',titolo:'${_s(titolo)}',norma:'${_s(norma)}',desc:'',cat:'',stato:'green'})"><i class='bx bx-download'></i> Modello</button></td>
+        </tr>`;
+    }).join('');
+
+    // Aggiorna anche app.state.compliantDocs
+    app.state.compliantDocs = docs;
+};
+
+// =============================================================================
 // INTEGRAZIONE: hook post-login → chiama automaticamente handleUserLanding
 // =============================================================================
 const _origSetupUI = app.setupUI.bind(app);
@@ -1915,7 +2000,26 @@ app.setupUI = function(user) {
     setTimeout(() => handleUserLanding().catch(console.error), 100);
 };
 
+// Quando si entra in 'documents', popola il fascicolo automaticamente
+const _origNavigate = app.navigate.bind(app);
+app.navigate = function(viewId) {
+    // Normalizza: rimuove prefisso 'view-' se presente
+    const normalized = viewId && viewId.startsWith('view-') ? viewId.replace('view-', '') : viewId;
+    _origNavigate(normalized);
+
+    // Hook per la vista fascicolo: popola automaticamente la lista
+    if (normalized === 'documents') {
+        setTimeout(() => app.renderCompliantList(), 50);
+    }
+
+    // Sincronizza active sul nav link
+    document.querySelectorAll('.nav-links li').forEach(li => {
+        li.classList.toggle('active', li.dataset.view === normalized);
+    });
+};
+
 // Start App
 document.addEventListener('DOMContentLoaded', () => {
     app.init();
 });
+
