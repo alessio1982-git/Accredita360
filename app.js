@@ -9,6 +9,7 @@ const appState = {
 
 // App Controller
 const app = {
+    state: { anagrafica: null }, // stato locale dell'app
     async init() {
         this.bindEvents();
         this.renderProfilingForm();
@@ -1793,8 +1794,8 @@ const AntigravitySkills = {
  */
 async function handleUserLanding() {
     console.log('[Workflow] Utente autenticato con successo.');
-    await app.updateDashboardStats();
-    app.navigate('view-dashboard');
+    // Aggiorna stats senza re-navigare (setupUI gestisce già la navigazione)
+    await app.updateDashboardStats().catch(console.warn);
 }
 
 /**
@@ -1803,7 +1804,7 @@ async function handleUserLanding() {
 async function executeAnagraficaAndProfiling() {
     const anagraficaSaved = await app.salvaAnagrafica();
     if (anagraficaSaved !== false) {  // salvaAnagrafica ritorna undefined = OK
-        app.navigate('view-profiling');
+        app.navigate('profiling');
         await runProfilingWizard();
     }
 }
@@ -1829,7 +1830,7 @@ async function runProfilingWizard() {
 
     console.log(`[Workflow] Requisiti mappati — ASP:${app.state.requiredDocs.autorizzazioneSanitaria.length} OTA:${app.state.requiredDocs.accreditamentoOta.length}`);
 
-    app.navigate('view-gap-analysis');
+    app.navigate('gap-analysis');
     app.switchGapTab('asp');
 }
 
@@ -1882,7 +1883,7 @@ async function buildFascicoloDocumentale() {
  * 6. MANTENIMENTO E MONITORAGGIO SCADENZE (Skill #844)
  */
 async function initMantenimentoScadenze() {
-    app.navigate('view-maintenance');
+    app.navigate('maintenance');
 
     console.log('[Workflow] Attivazione Agent_Time_Keeper (Skill #844)...');
 
