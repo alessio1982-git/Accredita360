@@ -15,8 +15,16 @@ const consulente = {
     _clienti: [],
 
     async init() {
+        // Guard: attende che Backend sia disponibile (CDN potrebbe essere lento)
+        if (typeof Backend === 'undefined' && typeof window.Backend === 'undefined') {
+            console.warn('[Consulente] Backend non ancora pronto, attendo 300ms...');
+            setTimeout(() => consulente.init(), 300);
+            return;
+        }
+        const B = window.Backend || Backend;
+
         // ── AUTH GUARD ─────────────────────────────────────────────
-        const user = Backend.getCurrentUser();
+        const user = B.getCurrentUser();
         if (!user) {
             window.location.href = 'login.html';
             return;
@@ -26,6 +34,7 @@ const consulente = {
             return;
         }
         // ── SETUP UI ───────────────────────────────────────────────
+        this._B = B;  // salva riferimento per gli altri metodi
         this.setupUI(user);
         this.bindEvents();
         await this.loadData();
@@ -78,17 +87,19 @@ const consulente = {
     },
 
     doLogout() {
-        Backend.logout();
+        const B = this._B || window.Backend || Backend;
+        B.logout();
         window.location.href = 'index.html';
     },
 
     // ── CARICAMENTO DATI ──────────────────────────────────────────
     async loadData() {
+        const B = this._B || window.Backend || Backend;
         try {
             const [stats, pendingUsers, allStructures] = await Promise.all([
-                Backend.getAdminStats(),
-                Backend.getPendingUsers(),
-                Backend.getAllStructuresWithRequirements()
+                B.getAdminStats(),
+                B.getPendingUsers(),
+                B.getAllStructuresWithRequirements()
             ]);
 
             const setEl = (id, val) => { const e = document.getElementById(id); if (e) e.textContent = val; };
@@ -97,10 +108,8 @@ const consulente = {
             setEl('dash-stat-validated',  stats.validatedDocs);
             setEl('dash-stat-new-reg',    pendingUsers.length);
 
-            // Costruisce lista clienti
             this._clienti = pendingUsers;
 
-            // Costruisce lista documenti
             this._allDocs = [];
             allStructures.forEach(item => {
                 const strutturaNome = item.user.name || item.user.email;
@@ -110,7 +119,6 @@ const consulente = {
                 });
             });
 
-            // Carica monitoraggio aggiornato
             this._buildMonitoraggioData(allStructures);
 
         } catch(e) {
@@ -149,9 +157,10 @@ const consulente = {
     },
 
     async approveUser(userEmail) {
+        const B = this._B || window.Backend || Backend;
         if (!confirm('Vuoi autorizzare e rilasciare le credenziali per ' + userEmail + '?')) return;
         try {
-            await Backend.approveUser(userEmail);
+            await B.approveUser(userEmail);
             alert("Utente autorizzato con successo. Un'email di conferma è stata inviata.");
             await this.loadData();
             this.renderClienti();
