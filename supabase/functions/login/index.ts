@@ -1,150 +1,171 @@
-import { serve }  from "https://deno.land/std@0.168.0/http/server.ts";
-import * as bcrypt from "https://deno.land/x/bcrypt@v0.4.1/mod.ts";
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 // ============================================================
-// login — Edge Function Accredita360 v3
-// POST /functions/v1/login
-// Body: { email: string, password: string }
-//
-// Flusso SICURO:
-//  1. Rate limiting: max 5 tentativi / 15 min per email
-//  2. Recupera utente per email (service_role)
-//  3. Verifica password con bcrypt.compare()
-//  4. Controlla registration_status
-//  5. Se admin/consulente → richiede 2FA OTP (non restituisce sessione)
-//  6. Se utente normale → restituisce dati utente
+// login — Edge Function Accredita360 v11 (FINAL PRODUCTION)
+// Rate Limiting + bcrypt via pgcrypto + 2FA OTP + Resend
 // ============================================================
 
 const SUPABASE_URL     = Deno.env.get("SUPABASE_URL") ?? "";
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+const RESEND_API_KEY   = Deno.env.get("RESEND_API_KEY") ?? "";
 
-const MAX_ATTEMPTS  = 5;
-const WINDOW_MINS   = 15;
-const corsHeaders   = {
+const MAX_ATTEMPTS    = 5;
+const WINDOW_MINS     = 15;
+const OTP_EXPIRY_MINS = 10;
+
+const CORS = {
   "Access-Control-Allow-Origin":  "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-const supa = (path: string) => `${SUPABASE_URL}/rest/v1/${path}`;
-const headers = {
+// Wrapper fetch sicuro: non crasha su risposte non-JSON
+async function safeFetch(url: string, opts?: RequestInit): Promise<{ ok: boolean; status: number; data: unknown }> {
+  try {
+    const res  = await fetch(url, opts);
+    const text = await res.text();
+    let data: unknown = null;
+    try { data = JSON.parse(text); } catch { data = text; }
+    return { ok: res.ok, status: res.status, data };
+  } catch (e) {
+    console.error("safeFetch error:", e, url);
+    return { ok: false, status: 0, data: null };
+  }
+}
+
+const H = () => ({
   "apikey":        SERVICE_ROLE_KEY,
   "Authorization": `Bearer ${SERVICE_ROLE_KEY}`,
   "Content-Type":  "application/json",
-};
+});
+
+const r = (p: string) => `${SUPABASE_URL}/rest/v1/${p}`;
 
 serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
 
   try {
-    const body            = await req.json();
-    const { email, password } = body;
+    const body     = await req.json();
+    const email    = String(body.email    ?? "").toLowerCase().trim();
+    const password = String(body.password ?? "");
+    if (!email || !password) return res401("Email e password obbligatori.", 400);
 
-    if (!email || !password) return jsonError("Email e password obbligatori.", 400);
-    const emailLower = email.toLowerCase().trim();
+    // ── 1. Pulizia tentativi vecchi ───────────────────────────
+    const cutoff = new Date(Date.now() - WINDOW_MINS * 60_000).toISOString();
+    await safeFetch(r(`login_attempts?attempted_at=lt.${cutoff}`), { method: "DELETE", headers: H() });
 
-    // ── 1. Pulizia record vecchi (> 15 min) ──────────────────
-    const cutoff = new Date(Date.now() - WINDOW_MINS * 60 * 1000).toISOString();
-    await fetch(`${supa("login_attempts")}?attempted_at=lt.${cutoff}`, {
-      method: "DELETE", headers,
-    });
-
-    // ── 2. Conta tentativi recenti per questa email ───────────
-    const attRes = await fetch(
-      `${supa("login_attempts")}?email=eq.${encodeURIComponent(emailLower)}&select=id`,
-      { headers }
-    );
-    const attempts: { id: number }[] = await attRes.json();
-
-    if (attempts.length >= MAX_ATTEMPTS) {
-      console.warn(`[login] Rate limit raggiunto per ${emailLower}`);
-      return jsonError(
-        `Troppi tentativi falliti. Account bloccato per ${WINDOW_MINS} minuti. Riprova più tardi.`,
-        429
-      );
+    // ── 2. Rate limiting ──────────────────────────────────────
+    const attR = await safeFetch(r(`login_attempts?email=eq.${encodeURIComponent(email)}&select=id`), { headers: H() });
+    if (Array.isArray(attR.data) && attR.data.length >= MAX_ATTEMPTS) {
+      return res401(`Troppi tentativi. Riprova tra ${WINDOW_MINS} minuti.`, 429);
     }
 
-    // ── 3. Recupera utente per email ─────────────────────────
-    const userRes = await fetch(
-      `${supa("users")}?email=eq.${encodeURIComponent(emailLower)}&select=id,email,name,role,registration_status,password`,
-      { headers }
+    // ── 3. Recupera utente ────────────────────────────────────
+    const userR = await safeFetch(
+      r(`users?email=eq.${encodeURIComponent(email)}&select=id,email,name,role,registration_status,password`),
+      { headers: H() }
     );
-    const users: Array<{
-      id: string; email: string; name: string;
-      role: string; registration_status: string; password: string;
-    }> = await userRes.json();
+    const users = Array.isArray(userR.data) ? userR.data as Array<{
+      id: string; email: string; name: string; role: string; registration_status: string; password: string;
+    }> : [];
+
+    if (users.length === 0) {
+      await safeFetch(r("login_attempts"), {
+        method: "POST",
+        headers: { ...H(), "Prefer": "return=minimal" },
+        body: JSON.stringify({ email, attempted_at: new Date().toISOString() }),
+      });
+      return res401("Email o password non corretti.", 401);
+    }
+
+    const user     = users[0];
+    const storedPw = user.password ?? "";
 
     // ── 4. Verifica password ──────────────────────────────────
-    let passwordOk = false;
-    if (users && users.length > 0) {
-      const user = users[0];
-      try {
-        passwordOk = await bcrypt.compare(password, user.password);
-      } catch (_) {
-        // Fallback legacy: password in chiaro (migrazione automatica)
-        passwordOk = (password === user.password);
-        if (passwordOk) {
-          const newHash = await bcrypt.hash(password);
-          await fetch(`${supa("users")}?id=eq.${user.id}`, {
-            method: "PATCH", headers,
-            body: JSON.stringify({ password: newHash }),
-          });
-          console.log(`[login] Migrazione bcrypt per ${emailLower}`);
-        }
+    let ok = false;
+    if (storedPw.startsWith("$2a$") || storedPw.startsWith("$2b$")) {
+      // bcrypt → RPC pgcrypto
+      const rpcR = await safeFetch(r("rpc/verify_password"), {
+        method: "POST", headers: H(),
+        body: JSON.stringify({ p_email: email, p_password: password }),
+      });
+      ok = rpcR.data === true;
+    } else {
+      // Plaintext legacy
+      ok = (password === storedPw);
+      if (ok) {
+        // Migra a bcrypt (fire & forget)
+        safeFetch(r("rpc/hash_user_password"), {
+          method: "POST", headers: H(),
+          body: JSON.stringify({ p_email: email, p_password: password }),
+        }).catch(() => {});
       }
     }
 
-    // ── 5. Credenziali errate → registra tentativo ────────────
-    if (!users || users.length === 0 || !passwordOk) {
-      await fetch(supa("login_attempts"), {
-        method: "POST", headers: { ...headers, "Prefer": "return=minimal" },
-        body: JSON.stringify({ email: emailLower, attempted_at: new Date().toISOString() }),
+    if (!ok) {
+      await safeFetch(r("login_attempts"), {
+        method: "POST",
+        headers: { ...H(), "Prefer": "return=minimal" },
+        body: JSON.stringify({ email, attempted_at: new Date().toISOString() }),
       });
-      // Risposta generica (anti-enumeration)
-      return jsonError("Email o password non corretti.", 401);
+      return res401("Email o password non corretti.", 401);
     }
 
-    const user = users[0];
-
-    // ── 6. Controlla stato registrazione ─────────────────────
+    // ── 5. Stato account ──────────────────────────────────────
     if (user.registration_status === "pending") {
-      return jsonError("Il tuo account è in attesa di approvazione. Riceverai un'email quando sarà attivo.", 403);
+      return res401("Account in attesa di approvazione.", 403);
     }
     if (user.registration_status === "rejected") {
-      return jsonError("Il tuo account non è stato approvato. Contatta info@accredita360s.com.", 403);
+      return res401("Account non approvato. Contatta info@accredita360s.com.", 403);
     }
 
-    // ── 7. Cancella tentativi falliti (login OK) ──────────────
-    await fetch(`${supa("login_attempts")}?email=eq.${encodeURIComponent(emailLower)}`, {
-      method: "DELETE", headers,
+    // ── 6. Cancella tentativi ─────────────────────────────────
+    await safeFetch(r(`login_attempts?email=eq.${encodeURIComponent(email)}`), {
+      method: "DELETE", headers: H(),
     });
 
-    // ── 8. Admin/Consulente → richiede 2FA ────────────────────
+    // ── 7. 2FA per admin/consulente ───────────────────────────
     if (user.role === "admin" || user.role === "consulente") {
-      // Genera OTP e invia via email
-      const otpRes = await fetch(`${SUPABASE_URL}/functions/v1/send-otp`, {
-        method: "POST",
-        headers: { ...headers, "Authorization": `Bearer ${SERVICE_ROLE_KEY}` },
-        body: JSON.stringify({ email: emailLower, name: user.name }),
+      const arr = new Uint32Array(1);
+      crypto.getRandomValues(arr);
+      const otp       = String(arr[0] % 1_000_000).padStart(6, "0");
+      const expiresAt = new Date(Date.now() + OTP_EXPIRY_MINS * 60_000).toISOString();
+      const buf       = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(otp));
+      const otpHash   = [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, "0")).join("");
+
+      // Invalida OTP precedenti
+      await safeFetch(r(`otp_codes?email=eq.${encodeURIComponent(email)}&used=eq.false`), {
+        method: "PATCH", headers: { ...H(), "Prefer": "return=minimal" },
+        body: JSON.stringify({ used: true }),
       });
-      const otpData = await otpRes.json();
-      if (!otpData.success) {
-        console.error("[login] Errore invio OTP:", otpData.message);
-        return jsonError("Errore nell'invio del codice OTP. Riprova.", 500);
+      // Salva OTP
+      await safeFetch(r("otp_codes"), {
+        method: "POST", headers: { ...H(), "Prefer": "return=minimal" },
+        body: JSON.stringify({ email, otp_hash: otpHash, expires_at: expiresAt }),
+      });
+
+      // Email via Resend
+      if (RESEND_API_KEY) {
+        const html = `<div style="font-family:Arial;padding:24px;max-width:460px;margin:auto;background:#fff;border-radius:16px"><h2 style="color:#0284c7;margin-top:0">Accredita<span style="color:#059669">360</span></h2><p>Ciao <strong>${user.name || email}</strong>,<br>Il tuo codice OTP (valido <strong>${OTP_EXPIRY_MINS} minuti</strong>):</p><div style="text-align:center;background:#0f172a;border-radius:12px;padding:20px;margin:20px 0"><span style="font-size:36px;font-weight:900;color:#38bdf8;letter-spacing:12px;font-family:monospace">${otp}</span></div><p style="color:#64748b;font-size:12px">Se non hai richiesto questo codice, ignora questa email.</p></div>`;
+        await safeFetch("https://api.resend.com/emails", {
+          method: "POST",
+          headers: { "Authorization": `Bearer ${RESEND_API_KEY}`, "Content-Type": "application/json" },
+          body: JSON.stringify({
+            from:    "Accredita360 <noreply@accredita360s.com>",
+            to:      [email],
+            subject: `🔐 Codice OTP: ${otp}`,
+            html,
+          }),
+        });
+      } else {
+        console.log(`[login] DEV OTP per ${email}: ${otp}`);
       }
 
-      console.log(`[login] OTP inviato a ${emailLower} (role: ${user.role})`);
-      // Risponde con requires_otp=true (il client mostrerà la schermata OTP)
-      return jsonOk({
-        requires_otp: true,
-        email:        user.email,
-        message:      `Codice OTP inviato a ${user.email}. Controlla la tua email.`,
-      });
+      return resOk({ requires_otp: true, email: user.email, message: `OTP inviato a ${user.email}. Valido ${OTP_EXPIRY_MINS} min.` });
     }
 
-    // ── 9. Utente normale → sessione diretta ──────────────────
-    console.log(`[login] Login OK: ${emailLower} (role: ${user.role})`);
-    return jsonOk({
+    // ── 8. Utente normale → risposta diretta ──────────────────
+    return resOk({
       requires_otp:        false,
       id:                  user.id,
       email:               user.email,
@@ -154,18 +175,11 @@ serve(async (req) => {
     });
 
   } catch (err) {
-    console.error("[login] Errore interno:", err);
-    return jsonError("Errore interno del server. Riprova.", 500);
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error("[login] CRASH:", msg);
+    return res401("Errore interno del server. Riprova.", 500);
   }
 });
 
-function jsonOk(data: object) {
-  return new Response(JSON.stringify({ success: true, ...data }), {
-    status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
-  });
-}
-function jsonError(msg: string, status: number) {
-  return new Response(JSON.stringify({ success: false, message: msg }), {
-    status, headers: { ...corsHeaders, "Content-Type": "application/json" },
-  });
-}
+const resOk  = (d: object) => new Response(JSON.stringify({ success: true,  ...d }), { status: 200, headers: { ...CORS, "Content-Type": "application/json" } });
+const res401 = (m: string, s = 401) => new Response(JSON.stringify({ success: false, message: m }), { status: s, headers: { ...CORS, "Content-Type": "application/json" } });
