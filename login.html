@@ -371,10 +371,54 @@
                 </div>
             </div>
 
+            <!-- ===== CARD OTP (visibile solo dopo login admin/consulente) ===== -->
+            <div id="otp-card" style="display:none;" class="login-form-area">
+                <div style="text-align:center; margin-bottom:24px;">
+                    <div class="form-icon-wrapper" style="background:rgba(245,158,11,0.15); margin:0 auto 12px;">
+                        <i class='bx bx-shield-quarter' style='color:#f59e0b;'></i>
+                    </div>
+                    <h2 style="font-size:20px; font-weight:700; color:var(--text-main); margin-bottom:4px;">Verifica in 2 Passaggi</h2>
+                    <p id="otp-subtitle" style="font-size:13px; color:var(--text-muted);">Inserisci il codice OTP inviato alla tua email</p>
+                </div>
+
+                <div id="otp-error" class="error-box" style="display:none;">
+                    <i class='bx bx-error-circle' style="font-size:18px; flex-shrink:0;"></i>
+                    <span></span>
+                </div>
+
+                <!-- 6 caselle OTP -->
+                <div id="otp-inputs" style="display:flex; gap:10px; justify-content:center; margin:16px 0 24px;">
+                    <input class="otp-digit" maxlength="1" inputmode="numeric" pattern="[0-9]" style="width:48px;height:60px;text-align:center;font-size:26px;font-weight:700;border:2px solid var(--glass-border);border-radius:12px;background:rgba(255,255,255,0.8);color:var(--text-main);outline:none;transition:border 0.2s;">
+                    <input class="otp-digit" maxlength="1" inputmode="numeric" pattern="[0-9]" style="width:48px;height:60px;text-align:center;font-size:26px;font-weight:700;border:2px solid var(--glass-border);border-radius:12px;background:rgba(255,255,255,0.8);color:var(--text-main);outline:none;transition:border 0.2s;">
+                    <input class="otp-digit" maxlength="1" inputmode="numeric" pattern="[0-9]" style="width:48px;height:60px;text-align:center;font-size:26px;font-weight:700;border:2px solid var(--glass-border);border-radius:12px;background:rgba(255,255,255,0.8);color:var(--text-main);outline:none;transition:border 0.2s;">
+                    <input class="otp-digit" maxlength="1" inputmode="numeric" pattern="[0-9]" style="width:48px;height:60px;text-align:center;font-size:26px;font-weight:700;border:2px solid var(--glass-border);border-radius:12px;background:rgba(255,255,255,0.8);color:var(--text-main);outline:none;transition:border 0.2s;">
+                    <input class="otp-digit" maxlength="1" inputmode="numeric" pattern="[0-9]" style="width:48px;height:60px;text-align:center;font-size:26px;font-weight:700;border:2px solid var(--glass-border);border-radius:12px;background:rgba(255,255,255,0.8);color:var(--text-main);outline:none;transition:border 0.2s;">
+                    <input class="otp-digit" maxlength="1" inputmode="numeric" pattern="[0-9]" style="width:48px;height:60px;text-align:center;font-size:26px;font-weight:700;border:2px solid var(--glass-border);border-radius:12px;background:rgba(255,255,255,0.8);color:var(--text-main);outline:none;transition:border 0.2s;">
+                </div>
+
+                <button id="otp-submit-btn" class="btn btn-primary" onclick="loginApp.verifyOtp()">
+                    <span id="otp-btn-text" style="display:inline-flex; align-items:center; gap:8px;">
+                        <i class='bx bx-check-shield'></i> Verifica Codice
+                    </span>
+                    <span id="otp-btn-loading" style="display:none; align-items:center; gap:8px;">
+                        <i class='bx bx-loader-alt spin'></i> Verifica in corso...
+                    </span>
+                </button>
+
+                <div style="text-align:center; margin-top:14px; font-size:13px; color:var(--text-muted);">
+                    Non hai ricevuto il codice?
+                    <a href="#" id="otp-resend-link" onclick="loginApp.resendOtp(); return false;"
+                       style="color:var(--primary); font-weight:600;">Invialo di nuovo</a>
+                    &nbsp;·&nbsp;
+                    <a href="#" onclick="loginApp.backToLogin(); return false;"
+                       style="color:var(--text-muted);">← Torna al login</a>
+                </div>
+            </div>
+
             <!-- INFO BANNER -->
             <div class="info-banner">
                 <i class='bx bx-lock-alt'></i>
-                <p>Accesso protetto con crittografia end-to-end. I tuoi dati sanitari sono al sicuro e conformi al GDPR. Sessione attiva solo per la durata della navigazione.</p>
+                <p>Accesso protetto con crittografia end-to-end. I tuoi dati sanitari sono al sicuro e conformi al GDPR. Sessione con scadenza automatica 8 ore.</p>
             </div>
         </div>
 
@@ -382,23 +426,36 @@
 
     <script>
     // ============================================================
-    // LOGIN — Script autonomo, zero dipendenze esterne
-    // Usa Supabase REST API direttamente tramite fetch()
+    // LOGIN v3 — Con Rate Limiting, 2FA OTP (admin/consulente),
+    //            Sessione con scadenza 8 ore, NO localStorage
     // ============================================================
 
-    const SUPA_URL = 'https://kvthfnkgfbxtjgkqpbwj.supabase.co';
-    const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt2dGhmbmtnZmJ4dGpna3FwYndqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NzkxNDQsImV4cCI6MjA5NDQ1NTE0NH0._2UzfUZqy7P7W_9S8xpFWcz0K_pAykl4D8sdXghvbLM';
+    const SUPA_URL    = 'https://kvthfnkgfbxtjgkqpbwj.supabase.co';
+    const SUPA_KEY    = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt2dGhmbmtnZmJ4dGpna3FwYndqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NzkxNDQsImV4cCI6MjA5NDQ1NTE0NH0._2UzfUZqy7P7W_9S8xpFWcz0K_pAykl4D8sdXghvbLM';
     const SESSION_KEY = 'accredita360_session_v2';
+    const SESSION_TTL = 8 * 60 * 60 * 1000; // 8 ore in ms
 
+    // ── Helpers UI ──────────────────────────────────────────────
     function showErr(msg) {
-        const el   = document.getElementById('login-error');
-        const span = el && el.querySelector('span');
+        const el = document.getElementById('login-error');
+        const sp = el && el.querySelector('span');
         if (!el) return;
-        if (span) span.textContent = msg; else el.textContent = msg;
+        if (sp) sp.textContent = msg; else el.textContent = msg;
         el.style.display = 'flex';
     }
     function hideErr() {
         const el = document.getElementById('login-error');
+        if (el) el.style.display = 'none';
+    }
+    function showOtpErr(msg) {
+        const el = document.getElementById('otp-error');
+        const sp = el && el.querySelector('span');
+        if (!el) return;
+        if (sp) sp.textContent = msg; else el.textContent = msg;
+        el.style.display = 'flex';
+    }
+    function hideOtpErr() {
+        const el = document.getElementById('otp-error');
         if (el) el.style.display = 'none';
     }
     function setLoading(on) {
@@ -410,19 +467,61 @@
         if (txt) txt.style.display = on ? 'none' : 'inline-flex';
         if (ld)  ld.style.display  = on ? 'inline-flex' : 'none';
     }
+    function setOtpLoading(on) {
+        const btn = document.getElementById('otp-submit-btn');
+        const txt = document.getElementById('otp-btn-text');
+        const ld  = document.getElementById('otp-btn-loading');
+        if (!btn) return;
+        btn.disabled = on;
+        if (txt) txt.style.display = on ? 'none' : 'inline-flex';
+        if (ld)  ld.style.display  = on ? 'inline-flex' : 'none';
+    }
+
+    // ── OTP input navigation ──────────────────────────────────
+    function initOtpInputs() {
+        const digits = document.querySelectorAll('.otp-digit');
+        digits.forEach((inp, i) => {
+            inp.addEventListener('input', () => {
+                inp.value = inp.value.replace(/\D/g, '').slice(-1);
+                if (inp.value && i < digits.length - 1) digits[i + 1].focus();
+                // Auto-submit se tutte le 6 cifre sono inserite
+                const code = [...digits].map(d => d.value).join('');
+                if (code.length === 6) loginApp.verifyOtp();
+            });
+            inp.addEventListener('keydown', (e) => {
+                if (e.key === 'Backspace' && !inp.value && i > 0) digits[i - 1].focus();
+            });
+            inp.addEventListener('focus', () => inp.style.borderColor = 'var(--primary)');
+            inp.addEventListener('blur',  () => inp.style.borderColor = 'var(--glass-border)');
+        });
+    }
 
     const loginApp = {
         currentPanel: null,
+        pendingEmail:  null, // email in attesa di OTP
 
         init() {
-            // Se già loggato → redirect
-            const saved = sessionStorage.getItem(SESSION_KEY) || localStorage.getItem(SESSION_KEY);
-            if (saved) {
+            // Controlla sessione esistente con scadenza
+            const raw = sessionStorage.getItem(SESSION_KEY);
+            if (raw) {
                 try {
-                    const user = JSON.parse(saved);
-                    if (user && user.email) { this._redirectByRole(user); return; }
+                    const s = JSON.parse(raw);
+                    const user = s?.user || (s?.email ? s : null);
+                    if (user && user.email) {
+                        // Verifica scadenza
+                        if (!s.expiresAt || Date.now() < s.expiresAt) {
+                            this._redirectByRole(user);
+                            return;
+                        } else {
+                            sessionStorage.removeItem(SESSION_KEY);
+                        }
+                    }
                 } catch(e) {}
             }
+
+            // Inizializza navigazione OTP
+            initOtpInputs();
+
             // Controllo parametro URL ?role=
             const params = new URLSearchParams(window.location.search);
             const role = params.get('role');
@@ -442,76 +541,65 @@
             document.querySelectorAll('.login-panel-card').forEach(p => p.classList.remove('active'));
             const panelEl = document.getElementById('panel-' + type);
             if (panelEl) panelEl.classList.add('active');
+            document.getElementById('login-form-area').style.display = 'block';
+            document.getElementById('otp-card').style.display = 'none';
 
-            const formArea = document.getElementById('login-form-area');
-            formArea.style.display = 'block';
-
-            const iconContainer = document.getElementById('login-form-icon');
-            const title         = document.getElementById('login-form-title');
-            const subtitle      = document.getElementById('login-form-subtitle');
+            const icon     = document.getElementById('login-form-icon');
+            const title    = document.getElementById('login-form-title');
+            const subtitle = document.getElementById('login-form-subtitle');
 
             if (type === 'utente') {
-                iconContainer.innerHTML  = "<i class='bx bx-user' style='color:#3b82f6;'></i>";
-                iconContainer.style.background = "rgba(59,130,246,0.15)";
+                icon.innerHTML = "<i class='bx bx-user' style='color:#3b82f6;'></i>";
+                icon.style.background = "rgba(59,130,246,0.15)";
                 title.textContent    = "Accesso Struttura Sanitaria";
                 subtitle.textContent = "Inserisci le credenziali del Legale Rappresentante";
                 document.getElementById('login-email').placeholder = "struttura@esempio.it";
             } else {
-                iconContainer.innerHTML  = "<i class='bx bx-briefcase' style='color:#10b981;'></i>";
-                iconContainer.style.background = "rgba(16,185,129,0.15)";
+                icon.innerHTML = "<i class='bx bx-briefcase' style='color:#10b981;'></i>";
+                icon.style.background = "rgba(16,185,129,0.15)";
                 title.textContent    = "Accesso Consulente / Amministratore";
-                subtitle.textContent = "Area riservata alla gestione delle pratiche e alla supervisione";
+                subtitle.textContent = "Area riservata — Verifica in 2 passaggi attiva";
                 document.getElementById('login-email').placeholder = "admin@accredita360.it";
             }
 
             document.getElementById('login-email').value = '';
             document.getElementById('login-pwd').value   = '';
             hideErr();
-            formArea.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            document.getElementById('login-form-area').scrollIntoView({ behavior: 'smooth', block: 'center' });
         },
 
         async doLogin() {
             const email = document.getElementById('login-email')?.value?.trim() || '';
             const pwd   = document.getElementById('login-pwd')?.value || '';
-
-            if (!email || !pwd) {
-                return showErr('Inserisci email e password per continuare.');
-            }
+            if (!email || !pwd) return showErr('Inserisci email e password per continuare.');
 
             setLoading(true);
             hideErr();
 
             try {
-                // ── Chiamata alla Edge Function 'login' (bcrypt server-side) ──
-                // NON usa più password=eq.{pwd} nella query REST (espone pw in chiaro)
-                const res = await fetch(
-                    `${SUPA_URL}/functions/v1/login`,
-                    {
-                        method: 'POST',
-                        headers: {
-                            'apikey':        SUPA_KEY,
-                            'Authorization': 'Bearer ' + SUPA_KEY,
-                            'Content-Type':  'application/json'
-                        },
-                        body: JSON.stringify({ email: email.toLowerCase(), password: pwd })
-                    }
-                );
-
+                const res  = await fetch(`${SUPA_URL}/functions/v1/login`, {
+                    method: 'POST',
+                    headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: email.toLowerCase(), password: pwd })
+                });
                 const data = await res.json();
 
                 if (!data.success) {
                     setLoading(false);
-                    return showErr(data.message || 'Email o password non corretti. Verifica le credenziali e riprova.');
+                    return showErr(data.message || 'Email o password non corretti.');
                 }
 
-                const user = data;
+                // ── Admin/Consulente → mostra schermata OTP ──
+                if (data.requires_otp) {
+                    setLoading(false);
+                    this.pendingEmail = data.email;
+                    this._showOtpCard(data.email);
+                    return;
+                }
 
-                // Salva sessione
-                sessionStorage.setItem(SESSION_KEY, JSON.stringify(user));
-                localStorage.setItem(SESSION_KEY, JSON.stringify(user));
-
-                // Redirect
-                this._redirectByRole(user);
+                // ── Utente normale → sessione con scadenza ───
+                this._saveSession(data);
+                this._redirectByRole(data);
 
             } catch(e) {
                 setLoading(false);
@@ -519,10 +607,107 @@
             }
         },
 
+        _showOtpCard(email) {
+            // Nascondi form login, mostra card OTP
+            const formArea = document.getElementById('login-form-area');
+            formArea.querySelectorAll('.form-group, #login-submit-btn, .divider, .form-footer, #login-error').forEach(el => {
+                el.style.display = 'none';
+            });
+            const otpCard = document.getElementById('otp-card');
+            otpCard.style.display = 'block';
+            document.getElementById('otp-subtitle').textContent = `Codice OTP inviato a ${email} — valido 10 minuti`;
+            // Focus prima cifra
+            setTimeout(() => {
+                const first = document.querySelector('.otp-digit');
+                if (first) first.focus();
+            }, 100);
+        },
+
+        async verifyOtp() {
+            const digits = document.querySelectorAll('.otp-digit');
+            const otp    = [...digits].map(d => d.value).join('');
+            if (otp.length < 6) return showOtpErr('Inserisci tutte le 6 cifre del codice OTP.');
+
+            setOtpLoading(true);
+            hideOtpErr();
+
+            try {
+                const res  = await fetch(`${SUPA_URL}/functions/v1/verify-otp`, {
+                    method: 'POST',
+                    headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: this.pendingEmail, otp })
+                });
+                const data = await res.json();
+
+                if (!data.success) {
+                    setOtpLoading(false);
+                    // Pulisci le caselle in caso di errore
+                    digits.forEach(d => d.value = '');
+                    digits[0].focus();
+                    return showOtpErr(data.message || 'Codice OTP non valido.');
+                }
+
+                // ── 2FA superata → salva sessione con scadenza ──
+                this._saveSession(data);
+                this._redirectByRole(data);
+
+            } catch(e) {
+                setOtpLoading(false);
+                showOtpErr(e.message || 'Errore di verifica. Riprova.');
+            }
+        },
+
+        async resendOtp() {
+            if (!this.pendingEmail) return;
+            const link = document.getElementById('otp-resend-link');
+            if (link) { link.style.opacity = '0.5'; link.style.pointerEvents = 'none'; }
+            try {
+                await fetch(`${SUPA_URL}/functions/v1/send-otp`, {
+                    method: 'POST',
+                    headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: this.pendingEmail, name: '' })
+                });
+                hideOtpErr();
+                document.getElementById('otp-subtitle').textContent = `Nuovo codice inviato a ${this.pendingEmail}`;
+                document.querySelectorAll('.otp-digit').forEach(d => d.value = '');
+                document.querySelector('.otp-digit').focus();
+            } catch(e) { showOtpErr('Errore nell\'invio. Riprova.'); }
+            setTimeout(() => {
+                if (link) { link.style.opacity = '1'; link.style.pointerEvents = 'auto'; }
+            }, 30000);
+        },
+
+        backToLogin() {
+            this.pendingEmail = null;
+            document.getElementById('otp-card').style.display = 'none';
+            const formArea = document.getElementById('login-form-area');
+            formArea.querySelectorAll('.form-group, #login-submit-btn, .divider, .form-footer').forEach(el => {
+                el.style.display = '';
+            });
+            hideErr();
+        },
+
+        _saveSession(user) {
+            // Salva SOLO in sessionStorage (mai in localStorage)
+            // → la sessione muore quando si chiude il tab/browser
+            const session = {
+                expiresAt: Date.now() + SESSION_TTL,
+                createdAt: new Date().toISOString(),
+                user: {
+                    id:                  user.id,
+                    email:               user.email,
+                    name:                user.name,
+                    role:                user.role,
+                    registration_status: user.registration_status
+                }
+            };
+            sessionStorage.setItem(SESSION_KEY, JSON.stringify(session));
+        },
+
         _redirectByRole(user) {
-            if (user.role === 'admin')        window.location.href = 'admin.html';
-            else if (user.role === 'consulente') window.location.href = 'consulente.html';
-            else                              window.location.href = 'app.html';
+            if (user.role === 'admin')            window.location.href = 'admin.html';
+            else if (user.role === 'consulente')  window.location.href = 'consulente.html';
+            else                                  window.location.href = 'app.html';
         }
     };
 

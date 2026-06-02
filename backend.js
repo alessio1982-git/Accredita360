@@ -83,30 +83,32 @@ const Backend = {
     },
 
     /**
-     * Login tramite tabella `users`.
+     * Login via Edge Function /functions/v1/login (bcrypt server-side).
+     * NON usa più query diretta con password in chiaro.
      * Restituisce la sessione utente o lancia un errore.
      */
     async login(email, password) {
-        const { data, error } = await supabase
-            .from('users')
-            .select('*')
-            .eq('email', email.trim().toLowerCase())
-            .eq('password', password)
-            .single();
+        const resp = await fetch(`${SUPABASE_URL}/functions/v1/login`, {
+            method:  'POST',
+            headers: {
+                'apikey':       SUPABASE_KEY,
+                'Authorization': 'Bearer ' + SUPABASE_KEY,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ email: email.trim().toLowerCase(), password })
+        });
 
-        if (error || !data) {
-            console.warn('[Auth] Login fallito:', error?.message || 'Nessun utente trovato');
-            throw new Error('Credenziali non valide. Verifica email e password.');
-        }
-        
-        // Controllo stato approvazione
-        if (data.registration_status === 'pending') {
-            throw new Error('Il tuo account è in attesa di autorizzazione da parte dell\'amministratore.');
+        const data = await resp.json();
+
+        if (!data.success) {
+            console.warn('[Auth] Login fallito:', data.message);
+            throw new Error(data.message || 'Credenziali non valide. Verifica email e password.');
         }
 
         const session = {
             token:     'session_' + Date.now(),
             createdAt: new Date().toISOString(),
+            expiresAt: Date.now() + (8 * 60 * 60 * 1000), // 8 ore
             user:      data
         };
         sessionStorage.setItem(SESSION_KEY, JSON.stringify(session));
@@ -114,71 +116,41 @@ const Backend = {
     },
 
     /**
-     * Registrazione: crea utente in `users` con stato `pending`.
-     * Poi chiama la Edge Function per inviare la email all'admin e all'utente.
+     * Registrazione via Edge Function /functions/v1/register-user.
+     * La password viene hashata con bcrypt server-side prima del salvataggio.
      */
     async register(email, password, nome, cognome, ragioneSociale, tipoRegistrazione, requestedRole = 'cliente', telefono = '') {
-        const displayName = tipoRegistrazione === 'azienda'
-            ? ragioneSociale
-            : `${nome} ${cognome}`.trim();
+        const resp = await fetch(`${SUPABASE_URL}/functions/v1/register-user`, {
+            method:  'POST',
+            headers: {
+                'apikey':        SUPABASE_KEY,
+                'Authorization': 'Bearer ' + SUPABASE_KEY,
+                'Content-Type':  'application/json'
+            },
+            body: JSON.stringify({
+                nome:    tipoRegistrazione === 'azienda' ? ragioneSociale : nome,
+                cognome: tipoRegistrazione === 'azienda' ? '' : cognome,
+                email:   email.trim().toLowerCase(),
+                password,
+                telefono: telefono || '',
+                role:     requestedRole
+            })
+        });
 
-        const newUser = {
-            email:                 email.trim().toLowerCase(),
-            password:              password,
-            name:                  displayName,
-            role:                  requestedRole,
-            tipo_registrazione:    tipoRegistrazione || 'persona_fisica',
-            telefono:              telefono || '',
-            registration_status:   'pending',
-            created_at:            new Date().toISOString()
-        };
+        const data = await resp.json();
 
-        const { data, error } = await supabase
-            .from('users')
-            .insert([newUser])
-            .select()
-            .single();
-
-        if (error) {
-            console.error('[Auth] Registrazione fallita:', error);
-            if (error.code === '23505') {
-                throw new Error('Email già registrata. Usa un\'altra email o accedi.');
-            }
-            throw new Error('Errore durante la registrazione. Riprova.');
+        if (!data.success) {
+            console.error('[Auth] Registrazione fallita:', data.message);
+            throw new Error(data.message || 'Errore durante la registrazione. Riprova.');
         }
 
         const session = {
             token:     'session_' + Date.now(),
             createdAt: new Date().toISOString(),
-            user:      data || newUser
+            expiresAt: Date.now() + (8 * 60 * 60 * 1000), // 8 ore
+            user:      { email: email.trim().toLowerCase(), role: requestedRole, registration_status: 'pending' }
         };
         sessionStorage.setItem(SESSION_KEY, JSON.stringify(session));
-
-        // Invia email di benvenuto all'utente
-        this.sendWelcomeEmail(displayName, email.trim().toLowerCase(), tipoRegistrazione)
-            .catch(err => console.warn('[Email] Invio benvenuto fallito (non critico):', err));
-
-        // Invia email all'amministratore usando la funzione contact-email per notificare la registrazione
-        try {
-            await supabase.functions.invoke('send-contact-email', {
-                body: {
-                    nome: displayName,
-                    cognome: (tipoRegistrazione + ' - Registrazione').toUpperCase(),
-                    email: email.trim().toLowerCase(),
-                    telefono: telefono || 'N/A',
-                    messaggio: `Nuova richiesta di registrazione in attesa di approvazione. 
-Ruolo: ${requestedRole} 
-Tipo: ${tipoRegistrazione}
-Email: ${email.trim().toLowerCase()}
-Telefono: ${telefono || 'N/A'}
-
-Vai nel pannello Admin per approvare l'utente.`
-                }
-            });
-        } catch(err) {
-            console.warn('[Email] Notifica admin fallita (non critico):', err);
-        }
-
         return session;
     },
 
@@ -209,18 +181,25 @@ Vai nel pannello Admin per approvare l'utente.`
 
     /**
      * Recupera l'utente dalla sessione attiva.
-     * Ritorna null se non c'è sessione.
+     * Controlla la scadenza (8 ore) e fa logout automatico se scaduta.
+     * NON usa localStorage come fallback (sicurezza: non persiste tra sessioni).
      */
     getCurrentUser() {
         try {
-            // Legge da sessionStorage prima, poi localStorage come fallback
-            const raw = sessionStorage.getItem(SESSION_KEY)
-                     || localStorage.getItem(SESSION_KEY);
+            const raw = sessionStorage.getItem(SESSION_KEY);
             if (!raw) return null;
             const session = JSON.parse(raw);
+
+            // Controllo scadenza sessione
+            if (session?.expiresAt && Date.now() > session.expiresAt) {
+                console.warn('[Auth] Sessione scaduta — logout automatico.');
+                this.logout();
+                return null;
+            }
+
             // Gestisce entrambi i formati:
-            // 1. { user: {...} }  ← formato backend.js
-            // 2. { id, email, name, ... } ← formato login.html (diretto)
+            // 1. { user: {...}, expiresAt }  ← formato backend.js
+            // 2. { id, email, name, ... }    ← formato login.html (diretto)
             if (session?.user) return session.user;
             if (session?.email) return session;
             return null;
