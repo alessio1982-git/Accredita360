@@ -1,4 +1,4 @@
-﻿// Helper sicurezza XSS — sanitizza tutti i dati prima di inserirli nel DOM
+// Helper sicurezza XSS — sanitizza tutti i dati prima di inserirli nel DOM
 const _s = (str) => (typeof DOMPurify !== 'undefined' ? DOMPurify.sanitize(String(str ?? '')) : String(str ?? '').replace(/</g,'&lt;').replace(/>/g,'&gt;'));
 
 // Stato dell'applicazione
@@ -375,36 +375,102 @@ const app = {
         }
     },
 
+
     async generateRequirements() {
-        if(!appState.selectedType) return;
-        
-        const authData = document.getElementById('struttura-auth').value;
-        const hasElettro = document.getElementById('struttura-elettro').value === 'si';
+        if (!appState.selectedType) {
+            this._showErrorToast('Seleziona prima il tipo di struttura sanitaria.');
+            return;
+        }
+
+        // ── Leggi dati dal form ────────────────────────────────────────────────
+        const authEl     = document.getElementById('struttura-auth');
+        const elettroEl  = document.getElementById('struttura-elettro');
+        const authData   = authEl   ? authEl.value   : 'no';
+        const hasElettro = elettroEl ? elettroEl.value === 'si' : false;
         const wantsAccreditamento = authData === 'si';
 
         const features = {
             hasElettromedicali: hasElettro,
             wantsAccreditamento: wantsAccreditamento
         };
-        
-        // 1. Salva profilazione sul DB
-        await Backend.saveProfiling(appState.selectedType, { authStatus: authData, features: features });
-        
-        // 2. Ricarica i requisiti aggiornati dal DB (ora generati da NormativaDB)
-        await this.loadData();
-        
-        // 3. Naviga alla Gap Analysis
-        document.querySelector('.nav-links li[data-view="profiling"]').classList.remove('active');
-        document.querySelector('.nav-links li[data-view="gap-analysis"]').classList.add('active');
-        this.navigate('gap-analysis');
-        
-        // 4. Indirizza l'utente alla scheda specifica (ASP o OTA)
-        if (wantsAccreditamento) {
-            this.switchGapTab('ota');
-        } else {
-            this.switchGapTab('asp');
+
+        // ── Loading state sul pulsante ────────────────────────────────────────
+        const btn = document.querySelector('[onclick="app.generateRequirements()"]');
+        const originalBtnHtml = btn ? btn.innerHTML : '';
+        if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = `<i class='bx bx-loader-alt bx-spin'></i> Analisi in corso...`;
+        }
+
+        try {
+            // 1. Salva profilo su Supabase
+            const saved = await Backend.saveProfiling(
+                appState.selectedType,
+                { authStatus: authData, features }
+            );
+            if (saved === false) {
+                throw new Error('Errore salvataggio profilo. Controlla la connessione e riprova.');
+            }
+
+            // 2. Genera e carica requisiti (Backend li inserisce in DB se non esistono)
+            appState.requirements = await Backend.getRequirements();
+
+            if (appState.requirements.length === 0) {
+                // Fallback locale: genera direttamente da NormativaDB senza DB
+                appState.requirements = NormativaDB.generateRequirementsList(
+                    appState.selectedType, features
+                );
+                console.warn('[App] Usato fallback locale NormativaDB (DB non disponibile o vuoto).');
+            }
+
+            // 3. Aggiorna le statistiche
+            this.updateStats();
+
+            // 4. Render sezioni
+            this.renderSection('asp', 'all');
+            const otaReqs = appState.requirements.filter(r => r.percorso === 'ota');
+            const otaWrapper = document.getElementById('ota-section-wrapper');
+            if (otaWrapper) otaWrapper.style.display = otaReqs.length > 0 ? 'block' : 'none';
+            if (otaReqs.length > 0) this.renderSection('ota', 'all');
+
+            // 5. Aggiorna statistiche asp/ota nel header
+            const asp = appState.requirements.filter(r => r.percorso === 'asp');
+            const setEl = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+            setEl('asp-stat-total', asp.length);
+            setEl('asp-stat-ok',   asp.filter(r => r.stato === 'green').length);
+            setEl('asp-stat-warn', asp.filter(r => r.stato === 'yellow').length);
+            setEl('asp-stat-crit', asp.filter(r => r.stato === 'red').length);
+            setEl('ota-stat-total', otaReqs.length);
+            setEl('ota-stat-ok',   otaReqs.filter(r => r.stato === 'green').length);
+            setEl('ota-stat-warn', otaReqs.filter(r => r.stato === 'yellow').length);
+            setEl('ota-stat-crit', otaReqs.filter(r => r.stato === 'red').length);
+
+            // 6. Naviga a Gap Analysis (querySelector sicuro)
+            this.navigate('gap-analysis');
+
+            // 7. Seleziona la tab giusta
+            setTimeout(() => {
+                this.switchGapTab(wantsAccreditamento ? 'ota' : 'asp');
+            }, 80);
+
+            // 8. Toast di successo
+            const totale = appState.requirements.length;
+            this._showSuccessToast(
+                `✅ Profilo salvato! ${totale} requisiti generati (${asp.length} ASP${otaReqs.length > 0 ? ' + ' + otaReqs.length + ' OTA' : ''}).`
+            );
+
+        } catch (err) {
+            console.error('[generateRequirements] Errore:', err);
+            this._showErrorToast(err.message || 'Errore durante la generazione della Gap Analysis. Riprova.');
+        } finally {
+            // Ripristina pulsante
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = originalBtnHtml || `<i class='bx bx-check-circle'></i> Salva Profilo e Genera Gap Analysis`;
+            }
         }
     },
+
 
     renderRequirements(filter) {
         // Wrapper di compatibilità — delega alle due sezioni
@@ -602,6 +668,14 @@ const app = {
         const toast = document.createElement('div');
         toast.style.cssText = 'position:fixed;bottom:24px;right:24px;background:#7f1d1d;border:1px solid #ef4444;color:#fef2f2;padding:16px 22px;border-radius:12px;font-size:13px;z-index:9999;max-width:420px;box-shadow:0 8px 32px rgba(0,0,0,0.4);';
         toast.innerHTML = `<strong>❌ Errore</strong><br>${msg}`;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 5000);
+    },
+
+    _showSuccessToast(msg) {
+        const toast = document.createElement('div');
+        toast.style.cssText = 'position:fixed;bottom:24px;right:24px;background:#064e3b;border:1px solid #10b981;color:#d1fae5;padding:16px 22px;border-radius:12px;font-size:13px;z-index:9999;max-width:420px;box-shadow:0 8px 32px rgba(0,0,0,0.4);';
+        toast.innerHTML = `<strong>✅ Successo</strong><br>${msg}`;
         document.body.appendChild(toast);
         setTimeout(() => toast.remove(), 5000);
     },
