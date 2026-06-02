@@ -1,6 +1,24 @@
 // Helper sicurezza XSS — sanitizza tutti i dati prima di inserirli nel DOM
 const _s = (str) => (typeof DOMPurify !== 'undefined' ? DOMPurify.sanitize(String(str ?? '')) : String(str ?? '').replace(/</g,'&lt;').replace(/>/g,'&gt;'));
 
+// Guard: Backend deve essere disponibile prima che app.js si esegua.
+// Se non lo è (CDN lento, errore caricamento), crea uno stub sicuro che non crasha.
+if (typeof Backend === 'undefined') {
+    console.error('[App] ATTENZIONE: backend.js non caricato correttamente. Modalità offline attivata.');
+    window.Backend = {
+        getCurrentUser:            () => null,
+        getRequirements:           async () => [],
+        saveProfiling:             async () => true,
+        updateRequirementStatus:   async () => {},
+        analyzeDocumentConAI:      async (id) => ({ status: 'yellow', comment: 'Analisi offline', score: 50 }),
+        generateMaintenanceSchedule: (reqs) => [],
+        loadAnagrafica:            async () => ({}),
+        saveAnagrafica:            async () => true,
+        getConsultantDocs:         async () => [],
+        init:                      () => {},
+    };
+}
+
 // Stato dell'applicazione
 const appState = {
     selectedType: null,

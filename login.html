@@ -424,6 +424,10 @@
 
     </main>
 
+    <!-- Dipendenze: caricate PRIMA del codice inline -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="backend.js?v=10"></script>
+
     <script>
     // ============================================================
     // LOGIN v3 — Con Rate Limiting, 2FA OTP (admin/consulente),
@@ -713,5 +717,6 @@
 
     document.addEventListener('DOMContentLoaded', () => loginApp.init());
     </script>
+
 </body>
 </html>
