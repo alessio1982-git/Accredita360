@@ -310,7 +310,7 @@ const app = {
         const views = document.querySelectorAll('.view');
         views.forEach(v => v.classList.remove('active-view'));
 
-        const targetView = document.getElementById(iew- + viewId);
+        const targetView = document.getElementById("view-" + viewId);
         if (targetView) {
             targetView.classList.add('active-view');
             // Hook: azioni da eseguire all'ingresso in una vista
