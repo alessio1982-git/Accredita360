@@ -14,6 +14,12 @@ const admin = {
     _currentAdminSearch: '',
 
     async init() {
+        // Guard: attende che Backend sia disponibile
+        if (typeof Backend === 'undefined' && typeof window.Backend === 'undefined') {
+            console.warn('[Admin] Backend non ancora pronto, attendo 300ms...');
+            setTimeout(() => admin.init(), 300);
+            return;
+        }
         // ── AUTH GUARD ─────────────────────────────────────────────
         const user = Backend.getCurrentUser();
         if (!user) {

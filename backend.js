@@ -12,37 +12,18 @@
 const SUPABASE_URL = 'https://kvthfnkgfbxtjgkqpbwj.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt2dGhmbmtnZmJ4dGpna3FwYndqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NzkxNDQsImV4cCI6MjA5NDQ1NTE0NH0._2UzfUZqy7P7W_9S8xpFWcz0K_pAykl4D8sdXghvbLM';
 
-// Inizializzazione lazy — il client viene creato al primo uso
-// così non crasha se il CDN Supabase non è ancora disponibile
-let _supabaseClient = null;
-function getSupabase() {
-    if (_supabaseClient) return _supabaseClient;
+// Inizializzazione Supabase — semplice e robusta
+let supabase = null;
+try {
     if (window.supabase && window.supabase.createClient) {
-        _supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-        return _supabaseClient;
+        supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    } else {
+        console.warn('[Backend] Supabase CDN non ancora caricato. Funzionalità DB disabilitate.');
     }
-    console.warn('[Backend] Supabase JS non ancora disponibile — operazione in modalità offline.');
-    return null;
-}
-// Alias per retrocompatibilità con qualsiasi codice che usa supabase direttamente
-Object.defineProperty(window, 'supabaseClient', { get: getSupabase });
-// Proxy trasparente: 'supabase.from(...)' funziona come getSupabase().from(...)
-// senza dover modificare ogni singola funzione nel file
-const supabase = new Proxy({}, {
-    get(_, prop) {
-        const client = getSupabase();
-        if (!client) {
-            // Ritorna una funzione stub che ritorna una Promise rigettata
-            return (...args) => {
-                if (typeof ({[prop]: () => ({then: () => ({})})}) !== 'undefined') {
-                    return { data: null, error: { message: 'Supabase non disponibile (offline)' } };
-                }
-            };
-        }
-        const val = client[prop];
-        return typeof val === 'function' ? val.bind(client) : val;
-    }
-});
+} catch (e) {
+    console.error('[Backend] Errore init Supabase:', e);
+    supabase = null;
+};
 
 const SESSION_KEY = 'accredita360_session_v2';
 
