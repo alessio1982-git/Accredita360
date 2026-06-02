@@ -5,7 +5,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 // POST /functions/v1/register-user
 // Body: { nome, cognome, email, password, telefono, role }
 //
-// v3: usa RPC "register_new_user" (pgcrypto bcrypt lato DB).
+// v3.1: usa RPC register_new_user (pgcrypto, UUID fix) "register_new_user" (pgcrypto bcrypt lato DB).
 // Zero dipendenze Deno esterne — STABILE al 100%.
 // ============================================================
 
