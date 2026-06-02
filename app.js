@@ -1622,14 +1622,13 @@ app.state = {
 // ── Alias navigate: accetta sia 'view-dashboard' che 'dashboard' ─────────────
 // ── Alias updateDashboardStats → updateStats + loadData ─────────────────────
 app.updateDashboardStats = async function() {
-    appState.requirements = await Backend.getRequirements();
+    try {
+        appState.requirements = await Backend.getRequirements();
+    } catch(e) {
+        console.warn('[Dashboard] getRequirements:', e.message);
+    }
     this.updateStats();
     this.renderMaintenanceView();
-    // Aggiorna stat-card con animazione
-    ['stat-total','stat-ok','stat-warn','stat-crit'].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) { el.style.transform = 'scale(1.15)'; setTimeout(() => el.style.transform = '', 300); }
-    });
 };
 
 // ── getFormData: raccoglie tutti i dati da una vista ────────────────────────
@@ -2016,24 +2015,22 @@ app.renderCompliantList = function(validDocs) {
 };
 
 // =============================================================================
-// HOOK POST-LOGIN + NAVIGATE
+// NAVIGATE WRAPPER — normalizza view- prefix e auto-popola viste
 // =============================================================================
-
-const _origSetupUI = app.setupUI.bind(app);
-app.setupUI = function(user) {
-    _origSetupUI(user);
-    setTimeout(() => handleUserLanding().catch(console.error), 100);
-};
 
 const _origNavigate = app.navigate.bind(app);
 app.navigate = function(viewId) {
     const normalized = viewId && viewId.startsWith('view-') ? viewId.replace('view-', '') : viewId;
     _origNavigate(normalized);
-    if (normalized === 'documents')     setTimeout(() => app.renderCompliantList(), 50);
-    if (normalized === 'normativa')     setTimeout(() => app.renderStoricoNormativa    && app.renderStoricoNormativa(), 50);
-    if (normalized === 'procedure-ota') setTimeout(() => app.renderProcedureManuali    && app.renderProcedureManuali(), 50);
-    if (normalized === 'consultants')   setTimeout(() => app.renderConsultantsData     && app.renderConsultantsData(), 50);
-    if (normalized === 'panoramica')    setTimeout(() => app.renderPanIterTimeline     && app.renderPanIterTimeline(), 50);
+
+    // Auto-popola viste specifiche quando vi si naviga
+    if (normalized === 'documents')     setTimeout(() => app.renderCompliantList && app.renderCompliantList(), 50);
+    if (normalized === 'normativa')     setTimeout(() => app.renderStoricoNormativa && app.renderStoricoNormativa(), 50);
+    if (normalized === 'procedure-ota') setTimeout(() => app.renderProcedureManuali && app.renderProcedureManuali(), 50);
+    if (normalized === 'consultants')   setTimeout(() => app.renderConsultantsData && app.renderConsultantsData(), 50);
+    if (normalized === 'panoramica')    setTimeout(() => app.renderPanIterTimeline && app.renderPanIterTimeline(), 50);
+
+    // Sincronizza nav link attivo
     document.querySelectorAll('.nav-links li').forEach(li => {
         li.classList.toggle('active', li.dataset.view === normalized);
     });
