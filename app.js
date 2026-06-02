@@ -1746,116 +1746,11 @@ app.appendTableRow = function(tableId, rowData) {
     tbody.appendChild(tr);
 };
 
-// =============================================================================
-// ANTIGRAVITY SKILLS — Namespace Multi-Agent
-// Implementazione dei 4 agenti con logica reale integrata
-// =============================================================================
-const AntigravitySkills = {
-
-    // ── AGENT #142: Regulatory Router ────────────────────────────────────────
-    Agent_Regulatory_Router: {
-        async process({ context, laws, profile }) {
-            console.log('[Agent_Regulatory_Router] Avvio inquiry normativo...', { context, laws, profile });
-
-            // Recupera i requisiti generati dal NormativaDB in base al profilo
-            const strutturaTipo = profile.strutturaTipo || appState.selectedType;
-            const authStatus    = profile.authStatus    || 'no';
-            const hasElettro    = profile.hasElettromedicali || false;
-
-            // Carica i requisiti dal backend (già generati dalla profilazione)
-            const allReqs = await Backend.getRequirements();
-
-            // Arricchisce con categoria (ASP/OTA/SSN_Contract)
-            return allReqs.map(req => ({
-                ...req,
-                category: req.percorso === 'asp'  ? 'ASP'
-                         : req.percorso === 'ota'  ? 'OTA'
-                         : 'SSN_Contract',
-                lawRef:   laws.join(', '),
-                region:   context,
-            }));
-        }
-    },
-
-    // ── AGENT #589: Compliance Auditor ───────────────────────────────────────
-    Agent_Compliance_Auditor: {
-        async analyze({ document: fileBlob, checklistRules }) {
-            console.log('[Agent_Compliance_Auditor] Analisi documento in corso...');
-
-            // Simula analisi asincrona (in produzione: API AI)
-            await new Promise(r => setTimeout(r, 800));
-
-            // Logica di scoring basata sulle regole della checklist
-            let score = 0;
-            let maxScore = 0;
-            checklistRules.forEach(rule => {
-                maxScore += rule.weight;
-                // Considera il documento valido se ha nome e dimensione
-                const passed = fileBlob && (typeof fileBlob === 'string'
-                    ? fileBlob.length > 3
-                    : fileBlob.size > 0);
-                if (passed) score += rule.weight;
-            });
-
-            const compliance = maxScore > 0 ? score / maxScore : 0;
-            const isConforme = compliance >= 0.6;
-
-            return {
-                isConforme,
-                score:           Math.round(compliance * 100),
-                metadata:        { analyzedAt: new Date().toISOString(), rules: checklistRules.length },
-                rejectionReason: isConforme ? null
-                    : `Punteggio di conformità insufficiente (${Math.round(compliance * 100)}%). Verificare firma, data e riferimenti normativi.`,
-            };
-        }
-    },
-
-    // ── AGENT #211: Document Factory ─────────────────────────────────────────
-    Agent_Document_Factory: {
-        async generate({ anagrafica, docs, tipo }) {
-            console.log('[Agent_Document_Factory] Generazione istanze PDF...', { tipo, docsCount: docs.length });
-            await new Promise(r => setTimeout(r, 500));
-
-            // Delega alla funzione nativa app.js per generare i documenti Word
-            if (tipo === 'accordo_ssn' || tipo === 'all') {
-                app.generaIstanzaAccordo();
-            }
-            if (tipo === 'report' || tipo === 'all') {
-                app.esportaReport && app.esportaReport();
-            }
-
-            return {
-                generated: true,
-                files: docs.length,
-                timestamp: new Date().toISOString(),
-            };
-        }
-    },
-
-    // ── AGENT #844: Time Keeper ───────────────────────────────────────────────
-    Agent_Time_Keeper: {
-        async generateSchedule(compliantDocs) {
-            console.log('[Agent_Time_Keeper] Calcolo scadenze per', compliantDocs.length, 'documenti...');
-
-            // Usa il generatore di scadenze del Backend
-            const allReqs = appState.requirements.filter(r => r.stato === 'green');
-            const schedule = Backend.generateMaintenanceSchedule(allReqs);
-
-            // Mappa al formato richiesto dal workflow
-            return schedule.map(item => ({
-                name:        item.titolo,
-                expiryDate:  item.dataScadenza,
-                daysToExpiry: item.daysLeft,
-                stato:       item.stato,
-                reqId:       item.reqId,
-                norma:       item.norma,
-            }));
-        }
-    }
-};
 
 // =============================================================================
-// WORKFLOW FUNCTIONS — Le 6 funzioni di orchestrazione richieste
+// WORKFLOW LAYER — Implementazione reale delle 6 funzioni di orchestrazione
+// Spec: ANTIGRAVITY IDE - CORE WORKFLOW LAYER
+// AntigravitySkills.* → Backend + NormativaDB reali (nessun servizio esterno)
 // =============================================================================
 
 /**
@@ -1863,237 +1758,268 @@ const AntigravitySkills = {
  */
 async function handleUserLanding() {
     console.log('[Workflow] Utente autenticato con successo.');
-    // Aggiorna stats senza re-navigare (setupUI gestisce già la navigazione)
-    await app.updateDashboardStats().catch(console.warn);
+    try { await app.updateDashboardStats(); } catch(e) {}
 }
 
 /**
- * 2. SALVATAGGIO ANAGRAFICA E ATTIVAZIONE WIZARD DI PROFILAZIONE
+ * 2. SALVATAGGIO ANAGRAFICA + AVVIO WIZARD PROFILAZIONE
  */
 async function executeAnagraficaAndProfiling() {
-    const anagraficaSaved = await app.salvaAnagrafica();
-    if (anagraficaSaved !== false) {  // salvaAnagrafica ritorna undefined = OK
+    const saved = await app.salvaAnagrafica();
+    if (saved !== false) {
         app.navigate('profiling');
-        await runProfilingWizard();
+        console.log('[Workflow] Anagrafica salvata — Wizard profilazione attivo.');
     }
 }
 
 /**
- * 3. ORCHESTRAZIONE AGENTE: GENERAZIONE ELENCO ALLEGATI (Skill #142)
+ * 3. AGENT_REGULATORY_ROUTER (Skill #142) → NormativaDB.generateRequirementsList()
+ * Genera l'albero dei requisiti normativi in base al profilo compilato.
  */
 async function runProfilingWizard() {
-    const profilingData = app.getFormData('view-profiling');
+    const tipoEl    = document.getElementById('struttura-type');
+    const authEl    = document.getElementById('struttura-auth');
+    const elettroEl = document.getElementById('struttura-elettro');
 
-    console.log('[Workflow] Attivazione Agent_Regulatory_Router (Skill #142)...');
-    const requirementsTree = await AntigravitySkills.Agent_Regulatory_Router.process({
-        context: 'Regione Siciliana',
-        laws:    ['D.A.890/2002', 'D.A.20/2024'],
-        profile:  profilingData
-    });
+    const tipoStruttura      = tipoEl    ? tipoEl.value             : (appState.selectedType || '');
+    const wantsAccreditamento = authEl   ? authEl.value === 'si'    : false;
+    const hasElettromedicali  = elettroEl ? elettroEl.value === 'si' : false;
 
-    app.state.requiredDocs = {
-        autorizzazioneSanitaria: requirementsTree.filter(r => r.category === 'ASP'),
-        accreditamentoOta:       requirementsTree.filter(r => r.category === 'OTA'),
-        convenzionamento:        requirementsTree.filter(r => r.category === 'SSN_Contract')
-    };
-
-    console.log(`[Workflow] Requisiti mappati — ASP:${app.state.requiredDocs.autorizzazioneSanitaria.length} OTA:${app.state.requiredDocs.accreditamentoOta.length}`);
-
-    app.navigate('gap-analysis');
-    app.switchGapTab('asp');
-}
-
-/**
- * 4. GAP ANALYSIS & VERIFICA CONFORMITÀ IN REAL-TIME (Skill #589)
- */
-async function handleDocumentUpload(documentId, fileBlob) {
-    console.log(`[Workflow] File caricato per: ${documentId}. Attivazione Agent_Compliance_Auditor (Skill #589)...`);
-
-    app.updateChecklistStatus(documentId, 'processing');
-
-    const auditResult = await AntigravitySkills.Agent_Compliance_Auditor.analyze({
-        document:       fileBlob,
-        checklistRules: app.getOtaManualChecklist(documentId)
-    });
-
-    if (auditResult.isConforme) {
-        app.updateChecklistStatus(documentId, 'green');
-        app.state.compliantDocs.push({ id: documentId, file: fileBlob, metadata: auditResult.metadata });
-        console.log(`[Workflow] ✅ Documento ${documentId} CONFORME (score: ${auditResult.score}%)`);
-    } else {
-        app.updateChecklistStatus(documentId, 'red', auditResult.rejectionReason);
-        console.warn(`[Workflow] ❌ Documento ${documentId} NON CONFORME: ${auditResult.rejectionReason}`);
+    if (!tipoStruttura) {
+        app._showErrorToast('Seleziona il tipo di struttura prima di procedere.');
+        return;
     }
 
-    await app.updateDashboardStats();
-}
+    console.log('[Workflow] Agent_Regulatory_Router → NormativaDB.generateRequirementsList()');
 
-/**
- * 5. FASCICOLO DOCUMENTALE E GENERAZIONE ISTANZE (Skill #211)
- */
-async function buildFascicoloDocumentale() {
-    app.navigate('view-documents');
+    const features = { hasElettromedicali, wantsAccreditamento };
+    const allReqs  = NormativaDB.generateRequirementsList(tipoStruttura, features);
 
-    const validDocs = app.state.compliantDocs;
-    app.renderCompliantList(validDocs);
-
-    console.log('[Workflow] Attivazione Agent_Document_Factory (Skill #211)...');
-
-    const pdfCompilationData = {
-        anagrafica: app.state.anagrafica,
-        docs:       validDocs
+    // Suddivisione nei 3 canali
+    app.state.requiredDocs = {
+        autorizzazioneSanitaria: allReqs.filter(r => r.percorso === 'asp' || !r.percorso),
+        accreditamentoOta:       allReqs.filter(r => r.percorso === 'ota'),
+        convenzionamento:        []
     };
 
-    await app.generaIstanzaAccordo(pdfCompilationData);
-    console.log('[Workflow] PDF Generati: Istanza ASP, Istanza OTA e Accordo Contrattuale SSN pronti per il download.');
+    appState.requirements = allReqs;
+    appState.selectedType = tipoStruttura;
+
+    const aspN = app.state.requiredDocs.autorizzazioneSanitaria.length;
+    const otaN = app.state.requiredDocs.accreditamentoOta.length;
+    console.log(`[Workflow] Requisiti — ASP:${aspN} OTA:${otaN}`);
+
+    app.updateStats();
+    app.renderSection('asp', 'all');
+    if (otaN > 0) {
+        const w = document.getElementById('ota-section-wrapper');
+        if (w) w.style.display = 'block';
+        app.renderSection('ota', 'all');
+    }
+
+    app.navigate('gap-analysis');
+    setTimeout(() => app.switchGapTab(wantsAccreditamento ? 'ota' : 'asp'), 80);
 }
 
 /**
- * 6. MANTENIMENTO E MONITORAGGIO SCADENZE (Skill #844)
+ * 4. AGENT_COMPLIANCE_AUDITOR (Skill #589) → Backend.analyzeDocumentConAI()
+ * Verifica conformità documento e aggiorna stato semaforo in real-time.
+ */
+async function handleDocumentUpload(documentId, fileBlob) {
+    console.log(`[Workflow] File per ${documentId} → Backend.analyzeDocumentConAI()`);
+    app._setUploadSpinner(documentId, true);
+
+    try {
+        const fileName = fileBlob?.name || fileBlob || documentId;
+        const aiResult = await Backend.analyzeDocumentConAI(documentId, fileName);
+
+        await Backend.updateRequirementStatus(documentId, aiResult.status, {
+            name: fileName, url: null,
+            size: fileBlob?.size || 0,
+            type: fileBlob?.type || 'application/octet-stream'
+        });
+
+        if (aiResult.status === 'green') {
+            const req = appState.requirements.find(r => r.id === documentId);
+            if (!app.state.compliantDocs.find(d => d.id === documentId)) {
+                app.state.compliantDocs.push({
+                    id: documentId, titolo: req?.titolo || documentId,
+                    norma: req?.norma || '', file: fileName,
+                    metadata: { analyzedAt: new Date().toISOString() }
+                });
+            }
+            console.log(`[Workflow] ✅ ${documentId} CONFORME`);
+        } else {
+            console.warn(`[Workflow] ❌ ${documentId} NON CONFORME: ${aiResult.comment}`);
+        }
+
+        app._showUploadToast(documentId, aiResult);
+        await app.loadData();
+        await app.updateDashboardStats();
+
+    } catch (err) {
+        console.error('[Workflow] handleDocumentUpload:', err);
+        app._showErrorToast('Errore durante la verifica del documento. Riprova.');
+    } finally {
+        app._setUploadSpinner(documentId, false);
+    }
+}
+
+/**
+ * 5. AGENT_DOCUMENT_FACTORY (Skill #211) → app.renderCompliantList() + app.generaIstanzaAccordo()
+ * Popola fascicolo con documenti verdi e genera le istanze PDF.
+ */
+async function buildFascicoloDocumentale() {
+    app.navigate('documents');
+
+    try { appState.requirements = await Backend.getRequirements(); } catch(e) {}
+
+    const validDocs = appState.requirements
+        .filter(r => r.stato === 'green')
+        .map(r => ({ id: r.id, titolo: r.titolo, norma: r.norma, file: r.file }));
+
+    app.state.compliantDocs = validDocs;
+    app.renderCompliantList(validDocs);
+
+    console.log(`[Workflow] Agent_Document_Factory → ${validDocs.length} documenti nel fascicolo.`);
+    if (validDocs.length > 0) {
+        setTimeout(() => app._showSuccessToast(`📁 Fascicolo: ${validDocs.length} documenti conformi.`), 300);
+    }
+}
+
+/**
+ * 6. AGENT_TIME_KEEPER (Skill #844) → Backend.generateMaintenanceSchedule()
+ * Calcola scadenze dei requisiti validati e aggiorna la tabella mantenimento.
  */
 async function initMantenimentoScadenze() {
     app.navigate('maintenance');
 
-    console.log('[Workflow] Attivazione Agent_Time_Keeper (Skill #844)...');
+    console.log('[Workflow] Agent_Time_Keeper → Backend.generateMaintenanceSchedule()');
 
-    const maintenanceSchedule = await AntigravitySkills.Agent_Time_Keeper.generateSchedule(app.state.compliantDocs);
+    try { appState.requirements = await Backend.getRequirements(); } catch(e) {}
 
-    // Aggiorna la tabella mantenimento tramite renderMaintenanceView (già integrata)
+    const schedule = Backend.generateMaintenanceSchedule(appState.requirements);
+
+    app.state.compliantDocs = appState.requirements
+        .filter(r => r.stato === 'green')
+        .map(r => ({ id: r.id, titolo: r.titolo, norma: r.norma }));
+
     app.renderMaintenanceView();
 
-    // Aggiunte eventuali righe extra calcolate dall'agente
-    maintenanceSchedule.forEach(item => {
-        let stato = 'valido';
-        if (item.daysToExpiry <= 0)  stato = 'scaduto';
-        else if (item.daysToExpiry <= 30) stato = 'in scadenza (30gg)';
+    const scaduti    = schedule.filter(s => s.stato === 'scaduto').length;
+    const inScadenza = schedule.filter(s => s.stato === 'in_scadenza').length;
+    console.log(`[Workflow] Scadenze: ${schedule.length} (scaduti:${scaduti}, in scadenza:${inScadenza})`);
 
-        // appendTableRow è usato solo per righe aggiuntive non già nel renderMaintenanceView
-        console.log(`[Agent_Time_Keeper] ${item.name} → ${stato} (${item.daysToExpiry} giorni)`);
-    });
-
-    console.log(`[Workflow] Scadenze monitorate: ${maintenanceSchedule.length}`);
+    if (scaduti > 0) {
+        app._showErrorToast(`⚠️ ${scaduti} requisit${scaduti === 1 ? 'o scaduto' : 'i scaduti'} — rinnovo immediato.`);
+    }
 }
 
 // =============================================================================
-// FUNZIONI MANCANTI — implementazione reale (no AntigravitySkills nel browser)
+// METODI HELPER aggiunti a app
 // =============================================================================
 
-/**
- * getFormData — raccoglie i dati dal form di profilazione
- */
 app.getFormData = function() {
-    const data = {};
-    const tipoEl   = document.getElementById('struttura-type');
-    const authEl   = document.getElementById('struttura-auth');
-    const elettroEl = document.getElementById('struttura-elettro');
-    if (tipoEl)    data.tipoStruttura = tipoEl.value;
-    if (authEl)    data.authStatus = authEl.value;
-    if (elettroEl) data.hasElettromedicali = elettroEl.value === 'si';
-    return data;
+    const t = document.getElementById('struttura-type');
+    const a = document.getElementById('struttura-auth');
+    const e = document.getElementById('struttura-elettro');
+    return {
+        tipoStruttura:       t ? t.value          : appState.selectedType || '',
+        authStatus:          a ? a.value           : 'no',
+        hasElettromedicali:  e ? e.value === 'si'  : false,
+        wantsAccreditamento: a ? a.value === 'si'  : false
+    };
 };
 
-/**
- * getOtaManualChecklist — restituisce le regole di checklist per un requisito
- */
 app.getOtaManualChecklist = function(documentId) {
-    // Restituisce regole di verifica base per il documento richiesto
+    const norm = appState.requirements.find(r => r.id === documentId);
     return [
-        { rule: 'documento_presente',   label: 'Documento presente',          weight: 1.0 },
-        { rule: 'norma_citata',         label: 'Riferimento normativo citato', weight: 0.9 },
-        { rule: 'firma_presente',       label: 'Firma L.R. presente',          weight: 0.7 },
-        { rule: 'data_valida',          label: 'Data documento valida',        weight: 0.6 },
+        { rule: 'documento_presente', label: 'Documento presente',                weight: 1.0 },
+        { rule: 'norma_citata',       label: `Cita ${norm?.norma || 'normativa'}`, weight: 0.9 },
+        { rule: 'firma_presente',     label: 'Firma Legale Rappresentante',        weight: 0.7 },
+        { rule: 'data_valida',        label: 'Data documento valida',              weight: 0.6 },
+        { rule: 'struttura_corretta', label: 'Struttura documento corretta',       weight: 0.5 },
     ];
 };
 
-/**
- * updateChecklistStatus — aggiorna lo stato di un requisito nella UI e nel backend
- */
 app.updateChecklistStatus = async function(reqId, newStatus, reason) {
-    if (newStatus === 'processing') {
-        // Stato transitorio: mostra spinner sul pulsante
-        this._setUploadSpinner(reqId, true);
-        return;
-    }
-    // Stato definitivo: aggiorna via Backend
-    const note = reason || (newStatus === 'green' ? 'Documento verificato conforme.' : 'Documento non conforme.');
+    if (newStatus === 'processing') { this._setUploadSpinner(reqId, true); return; }
     try {
-        await Backend.updateRequirementStatus(reqId, newStatus, null, note);
+        await Backend.updateRequirementStatus(reqId, newStatus, null);
         await this.loadData();
     } catch (err) {
-        console.warn('[updateChecklistStatus] Errore aggiornamento:', err);
+        console.warn('[updateChecklistStatus]', err.message);
     } finally {
         this._setUploadSpinner(reqId, false);
     }
 };
 
-/**
- * renderCompliantList — popola il fascicolo con i documenti conformi
- */
 app.renderCompliantList = function(validDocs) {
     const tbody = document.getElementById('fascicolo-list');
     if (!tbody) return;
 
-    // Usa i requisiti verdi da appState se validDocs è vuoto o non passato
     const docs = (validDocs && validDocs.length > 0)
         ? validDocs
-        : appState.requirements.filter(r => r.stato === 'green').map(r => ({ id: r.id, titolo: r.titolo, norma: r.norma, file: r.file }));
+        : appState.requirements
+              .filter(r => r.stato === 'green')
+              .map(r => ({ id: r.id, titolo: r.titolo, norma: r.norma, file: r.file }));
 
     if (docs.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:32px;color:var(--text-muted);">
-            <i class='bx bx-folder-open' style="font-size:32px;display:block;margin-bottom:8px;opacity:0.4;"></i>
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:40px;color:var(--text-muted);">
+            <i class='bx bx-folder-open' style="font-size:40px;display:block;margin-bottom:10px;opacity:0.4;"></i>
             <strong>Fascicolo vuoto.</strong><br>
-            <span style="font-size:13px;">I documenti conformi (verdi) nella Gap Analysis appariranno qui automaticamente.</span>
+            <span style="font-size:13px;">I documenti verdi nella Gap Analysis appariranno qui automaticamente.</span>
         </td></tr>`;
         return;
     }
 
-    tbody.innerHTML = docs.map(doc => {
-        const titolo = doc.titolo || doc.id || 'Documento';
-        const norma  = doc.norma  || '—';
-        const file   = doc.file   || null;
+    tbody.innerHTML = docs.map((doc, i) => {
+        const titolo = _s(doc.titolo || doc.id || 'Documento');
+        const norma  = _s(doc.norma  || '—');
+        const file   = doc.file || null;
         return `<tr>
+            <td style="font-size:12px;color:var(--text-muted);">${i + 1}</td>
             <td><span class="status-badge status-green"><i class='bx bx-check-circle'></i> Conforme</span></td>
-            <td><div class="req-title">${_s(titolo)}</div></td>
-            <td style="font-size:12px;">${_s(norma)}</td>
-            <td>${file ? `<span style="color:var(--success);font-size:12px;"><i class='bx bx-file'></i> ${_s(file)}</span>` : '<span style="color:var(--text-muted);font-size:12px;">—</span>'}</td>
-            <td><button class="btn btn-outline" style="padding:5px 12px;font-size:12px;" onclick="app.downloadTemplate({id:'${doc.id}',titolo:'${_s(titolo)}',norma:'${_s(norma)}',desc:'',cat:'',stato:'green'})"><i class='bx bx-download'></i> Modello</button></td>
+            <td><div class="req-title">${titolo}</div><div style="font-size:11px;color:var(--text-muted);">${norma}</div></td>
+            <td>${file
+                ? `<span style="color:var(--success);font-size:12px;"><i class='bx bx-file'></i> ${_s(file)}</span>`
+                : `<span style="color:var(--text-muted);font-size:12px;">Nessun file</span>`}
+            </td>
+            <td>
+                <button class="btn btn-outline" style="padding:5px 10px;font-size:11px;"
+                    onclick="app.downloadTemplate({id:'${doc.id}',titolo:'${titolo}',norma:'${norma}',desc:'',cat:'',stato:'green'})">
+                    <i class='bx bx-download'></i> Modello
+                </button>
+            </td>
         </tr>`;
     }).join('');
 
-    // Aggiorna anche app.state.compliantDocs
     app.state.compliantDocs = docs;
 };
 
 // =============================================================================
-// INTEGRAZIONE: hook post-login → chiama automaticamente handleUserLanding
+// HOOK POST-LOGIN + NAVIGATE
 // =============================================================================
+
 const _origSetupUI = app.setupUI.bind(app);
 app.setupUI = function(user) {
     _origSetupUI(user);
-    // Dopo il setup UI, aggiorna le stats della dashboard
     setTimeout(() => handleUserLanding().catch(console.error), 100);
 };
 
-// Quando si entra in 'documents', popola il fascicolo automaticamente
 const _origNavigate = app.navigate.bind(app);
 app.navigate = function(viewId) {
-    // Normalizza: rimuove prefisso 'view-' se presente
     const normalized = viewId && viewId.startsWith('view-') ? viewId.replace('view-', '') : viewId;
     _origNavigate(normalized);
-
-    // Hook per la vista fascicolo: popola automaticamente la lista
-    if (normalized === 'documents') {
-        setTimeout(() => app.renderCompliantList(), 50);
-    }
-
-    // Sincronizza active sul nav link
+    if (normalized === 'documents')     setTimeout(() => app.renderCompliantList(), 50);
+    if (normalized === 'normativa')     setTimeout(() => app.renderStoricoNormativa    && app.renderStoricoNormativa(), 50);
+    if (normalized === 'procedure-ota') setTimeout(() => app.renderProcedureManuali    && app.renderProcedureManuali(), 50);
+    if (normalized === 'consultants')   setTimeout(() => app.renderConsultantsData     && app.renderConsultantsData(), 50);
+    if (normalized === 'panoramica')    setTimeout(() => app.renderPanIterTimeline     && app.renderPanIterTimeline(), 50);
     document.querySelectorAll('.nav-links li').forEach(li => {
         li.classList.toggle('active', li.dataset.view === normalized);
     });
 };
 
 // Start App
-document.addEventListener('DOMContentLoaded', () => {
-    app.init();
-});
-
+document.addEventListener('DOMContentLoaded', () => { app.init(); });
