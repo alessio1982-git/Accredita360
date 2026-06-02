@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="it">
 <head>
     <meta charset="UTF-8">
@@ -554,14 +554,147 @@
                     </div>
                 </div>
 
+                <!-- VIEW: Consulenti (Area Consulenti) -->
+                <div id="view-consultants" class="view">
+                    <div class="gap-header" style="margin-bottom:24px;">
+                        <h3>Area Consulenti</h3>
+                        <span style="font-size:12px;color:var(--text-muted);">Documenti in attesa di validazione professionale</span>
+                    </div>
+                    <div id="consultants-container">
+                        <!-- Popolato da renderConsultantsData() -->
+                        <div class="glass-card" style="padding:40px;text-align:center;color:var(--text-muted);">
+                            <i class='bx bx-user-check' style="font-size:48px;display:block;margin-bottom:12px;opacity:0.4;"></i>
+                            <strong>Nessun documento in attesa di validazione.</strong><br>
+                            <span style="font-size:13px;">I documenti caricati nella Gap Analysis appariranno qui per la revisione del consulente.</span>
+                        </div>
+                    </div>
+                    <!-- Tabella documenti da validare -->
+                    <div class="checklist-container glass-card" style="margin-top:24px;display:none;" id="admin-docs-container">
+                        <div style="padding:16px;border-bottom:1px solid rgba(255,255,255,0.08);display:flex;gap:12px;align-items:center;">
+                            <input type="text" class="input-box" id="admin-search" placeholder="Cerca documento..." style="flex:1;padding:8px 12px;" oninput="app.filterAdminDocs()">
+                        </div>
+                        <div class="checklist-table-wrapper">
+                            <table class="checklist-table">
+                                <thead>
+                                    <tr><th>Struttura</th><th>Requisito</th><th>File</th><th>Stato AI</th><th>Azioni Consulente</th></tr>
+                                </thead>
+                                <tbody id="admin-docs-table">
+                                    <tr><td colspan="5" style="text-align:center;padding:32px;color:var(--text-muted);">Nessun documento.</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- VIEW: Normativa (Quadro Normativo) -->
+                <div id="view-normativa" class="view">
+                    <div class="gap-header" style="margin-bottom:24px;">
+                        <h3>Quadro Normativo</h3>
+                        <span style="font-size:12px;color:var(--text-muted);">Coerenza con la normativa vigente siciliana</span>
+                    </div>
+                    <!-- Tab Navigation -->
+                    <div class="tab-nav" style="display:flex;gap:8px;margin-bottom:20px;">
+                        <button id="norm-tab-coerenza"     class="filter-btn active" onclick="app.switchNormTab('coerenza')">Coerenza Normativa</button>
+                        <button id="norm-tab-legislazione" class="filter-btn"        onclick="app.switchNormTab('legislazione')">Legislazione</button>
+                        <button id="norm-tab-storico"      class="filter-btn"        onclick="app.switchNormTab('storico')">Storico Aggiornamenti</button>
+                    </div>
+                    <!-- Tab Coerenza -->
+                    <div id="norm-page-coerenza">
+                        <div id="norm-coerenza-container">
+                            <!-- Popolato da renderStoricoNormativa() -->
+                        </div>
+                    </div>
+                    <!-- Tab Legislazione -->
+                    <div id="norm-page-legislazione" style="display:none;">
+                        <div id="norm-storico-list" class="glass-card" style="padding:32px;">
+                            <h4 style="color:var(--primary);margin-bottom:16px;"><i class='bx bx-book-open'></i> Normativa Regionale Siciliana</h4>
+                            <div id="norm-legislazione-list">
+                                <!-- Popolato da renderStoricoNormativa() -->
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Tab Storico -->
+                    <div id="norm-page-storico" style="display:none;">
+                        <div class="glass-card" style="padding:32px;">
+                            <h4 style="color:var(--primary);margin-bottom:16px;"><i class='bx bx-history'></i> Storico Aggiornamenti Normativi</h4>
+                            <p style="color:var(--text-muted);font-size:13px;">Gli aggiornamenti più recenti alla normativa sanitaria regionale.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- VIEW: Panoramica -->
+                <div id="view-panoramica" class="view">
+                    <div class="gap-header" style="margin-bottom:24px;">
+                        <h3>Panoramica Iter Accreditamento</h3>
+                        <span style="font-size:12px;color:var(--text-muted);">Visualizza l'avanzamento dell'iter e lo storico conformità</span>
+                    </div>
+                    <!-- Tab Navigation -->
+                    <div class="tab-nav" style="display:flex;gap:8px;margin-bottom:20px;">
+                        <button id="pan-tab-iter"    class="filter-btn active" onclick="app.switchPanTab('iter')">Iter Procedurale</button>
+                        <button id="pan-tab-storico" class="filter-btn"        onclick="app.switchPanTab('storico')">Storico Conformità</button>
+                    </div>
+                    <!-- Tab Iter -->
+                    <div id="pan-page-iter">
+                        <div id="pan-iter-timeline" class="glass-card" style="padding:32px;">
+                            <!-- Popolato da renderPanIterTimeline() -->
+                            <div style="text-align:center;color:var(--text-muted);padding:40px;">
+                                <i class='bx bx-sitemap' style="font-size:48px;display:block;margin-bottom:12px;opacity:0.4;"></i>
+                                <strong>Nessun iter attivo.</strong><br>
+                                <span style="font-size:13px;">Completa il profilo struttura per avviare l'iter di accreditamento.</span>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Tab Storico -->
+                    <div id="pan-page-storico" style="display:none;">
+                        <div class="glass-card" style="padding:32px;">
+                            <h4 style="color:var(--primary);margin-bottom:16px;"><i class='bx bx-history'></i> Storico Conformità</h4>
+                            <p style="color:var(--text-muted);font-size:13px;">Lo storico delle validazioni e degli aggiornamenti di conformità appare qui.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- VIEW: Procedure OTA -->
+                <div id="view-procedure-ota" class="view">
+                    <div class="gap-header" style="margin-bottom:24px;">
+                        <h3>Procedure OTA</h3>
+                        <span style="font-size:12px;color:var(--text-muted);">Procedure, Manuali e Documenti dell'Organismo di Accreditamento</span>
+                    </div>
+                    <!-- Tab Navigation -->
+                    <div class="tab-nav" style="display:flex;gap:8px;margin-bottom:20px;">
+                        <button id="proc-tab-normativa"  class="filter-btn active" onclick="app.switchProcTab('normativa')">Normativa OTA</button>
+                        <button id="proc-tab-procedure"  class="filter-btn"        onclick="app.switchProcTab('procedure')">Procedure OTA</button>
+                        <button id="proc-tab-manuali"    class="filter-btn"        onclick="app.switchProcTab('manuali')">Manuali Accreditamento</button>
+                    </div>
+                    <!-- Tab Normativa -->
+                    <div id="proc-page-normativa">
+                        <div id="proc-normativa-container">
+                            <!-- Popolato da renderProcedureManuali() -->
+                        </div>
+                    </div>
+                    <!-- Tab Procedure -->
+                    <div id="proc-page-procedure" style="display:none;">
+                        <div id="proc-manuals-container">
+                            <!-- Popolato da renderProcedureManuali() -->
+                        </div>
+                    </div>
+                    <!-- Tab Manuali -->
+                    <div id="proc-page-manuali" style="display:none;">
+                        <div class="glass-card" style="padding:32px;text-align:center;color:var(--text-muted);">
+                            <i class='bx bx-file-blank' style="font-size:48px;display:block;margin-bottom:12px;opacity:0.4;"></i>
+                            <strong>Manuali di Accreditamento OTA</strong><br>
+                            <span style="font-size:13px;">I manuali ufficiali OTA saranno disponibili qui.</span>
+                        </div>
+                    </div>
+                </div>
+
 
             </div>
         </main>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/dompurify@3/dist/purify.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="normativa_db.js?v=9"></script>
-    <script src="backend.js?v=9"></script>
-    <script src="app.js?v=9"></script>
+    <script src="normativa_db.js?v=10"></script>
+    <script src="backend.js?v=10"></script>
+    <script src="app.js?v=10"></script>
 </body>
 </html>
