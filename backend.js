@@ -82,6 +82,120 @@ const Backend = {
         return data;
     },
 
+    // =========================================================
+    // ANAGRAFICA
+    // =========================================================
+
+    /**
+     * Salva o aggiorna l'anagrafica della struttura su Supabase.
+     */
+    async saveAnagrafica(data) {
+        const user = this.getCurrentUser();
+        if (!user) throw new Error('Sessione scaduta.');
+
+        const payload = {
+            user_email:      user.email,
+            tipo_titolare:   data.tipo_titolare   || 'societa',
+            ragione_sociale: data.ragione_sociale  || null,
+            partita_iva:     data.partita_iva      || null,
+            codice_fiscale:  data.codice_fiscale   || null,
+            sede_legale:     data.sede_legale      || null,
+            nome_lr:         data.nome_lr          || null,
+            cognome_lr:      data.cognome_lr       || null,
+            cf_lr:           data.cf_lr            || null,
+            nome_struttura:  data.nome_struttura   || null,
+            indirizzo_op:    data.indirizzo_op     || null,
+            comune:          data.comune           || null,
+            cap:             data.cap              || null,
+            tel_struttura:   data.tel_struttura    || null,
+            email_struttura: data.email_struttura  || null,
+            pec:             data.pec              || null,
+            nome_ds:         data.nome_ds          || null,
+            cognome_ds:      data.cognome_ds       || null,
+            iscrizione_albo: data.iscrizione_albo  || null,
+            specializzazione:data.specializzazione || null,
+            updated_at:      new Date().toISOString()
+        };
+
+        const { error } = await supabase
+            .from('anagrafiche')
+            .upsert(payload, { onConflict: 'user_email' });
+
+        if (error) {
+            console.error('[Backend] Errore saveAnagrafica:', error);
+            throw new Error(error.message || 'Errore salvataggio anagrafica.');
+        }
+        console.log('[Backend] Anagrafica salvata per:', user.email);
+        return true;
+    },
+
+    /**
+     * Legge l'anagrafica salvata dell'utente corrente.
+     */
+    async getAnagrafica() {
+        const user = this.getCurrentUser();
+        if (!user) return null;
+
+        const { data, error } = await supabase
+            .from('anagrafiche')
+            .select('*')
+            .eq('user_email', user.email)
+            .single();
+
+        if (error && error.code !== 'PGRST116') {
+            console.warn('[Backend] Errore getAnagrafica:', error);
+        }
+        return data || null;
+    },
+
+    /**
+     * Carica un file reale su Supabase Storage e aggiorna il requisito.
+     * @param {string} reqId - ID del requisito
+     * @param {File}   file  - Oggetto File dal browser
+     * @returns {{ url: string, path: string }}
+     */
+    async uploadDocument(reqId, file) {
+        const user = this.getCurrentUser();
+        if (!user) throw new Error('Sessione scaduta.');
+
+        // Percorso: email/reqId/timestamp_nomeFile
+        const ts   = Date.now();
+        const safe = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+        const path = `${user.email}/${reqId}/${ts}_${safe}`;
+
+        const { data: uploadData, error: uploadErr } = await supabase.storage
+            .from('documents')
+            .upload(path, file, { upsert: true, contentType: file.type });
+
+        if (uploadErr) {
+            console.error('[Backend] Errore upload Storage:', uploadErr);
+            throw new Error(uploadErr.message || 'Errore durante il caricamento del file.');
+        }
+
+        // Genera URL firmato (valido 1 anno)
+        const { data: urlData } = await supabase.storage
+            .from('documents')
+            .createSignedUrl(path, 60 * 60 * 24 * 365);
+
+        const signedUrl = urlData?.signedUrl || null;
+
+        // Aggiorna requisito con file_name, file_url, file_size
+        await supabase
+            .from('requirements')
+            .update({
+                stato:     'yellow',
+                file_name: file.name,
+                file_url:  signedUrl || path,
+                file_size: file.size,
+                file_type: file.type
+            })
+            .eq('user_email', user.email)
+            .eq('req_id', reqId);
+
+        console.log(`[Backend] File caricato: ${path}`);
+        return { url: signedUrl, path };
+    },
+
     /**
      * Login via Edge Function /functions/v1/login (bcrypt server-side).
      * NON usa più query diretta con password in chiaro.
@@ -366,9 +480,11 @@ const Backend = {
         if (!user) return false;
 
         const updateData = { stato: newStatus };
-        if (uploadedFile?.name) {
-            updateData.file_name = uploadedFile.name;
-        }
+        if (uploadedFile?.name)  updateData.file_name = uploadedFile.name;
+        if (uploadedFile?.url)   updateData.file_url  = uploadedFile.url;
+        if (uploadedFile?.size)  updateData.file_size = uploadedFile.size;
+        if (uploadedFile?.type)  updateData.file_type = uploadedFile.type;
+        if (newStatus === 'green') updateData.validated_at = new Date().toISOString();
 
         const { error } = await supabase
             .from('requirements')
@@ -378,6 +494,23 @@ const Backend = {
 
         if (error) console.error('[Backend] Errore aggiornamento stato:', error);
         return !error;
+    },
+
+    /**
+     * Rinnova una scadenza caricando un nuovo file reale.
+     */
+    async rinnovaScadenzaConFile(reqId, file) {
+        await this.uploadDocument(reqId, file);
+        await this.updateRequirementStatus(reqId, 'green', {
+            name: file.name, size: file.size, type: file.type
+        });
+        // Imposta validated_at a oggi per ricalcolare la scadenza
+        await supabase
+            .from('requirements')
+            .update({ validated_at: new Date().toISOString() })
+            .eq('user_email', this.getCurrentUser()?.email)
+            .eq('req_id', reqId);
+        return true;
     },
 
     async forceRequirementValidationDate(reqId) {

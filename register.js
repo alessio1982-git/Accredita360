@@ -85,7 +85,9 @@ const registerApp = {
                 requestedRole,
                 telefono
             );
-            // Effettua subito il logout
+            // Invia email di benvenuto
+            await B.sendWelcomeEmail(nome, email, 'persona_fisica').catch(() => {});
+            // Effettua subito il logout (account in pending — attende approvazione admin)
             B.logout();
             this._showSuccess(email);
         } catch (e) {

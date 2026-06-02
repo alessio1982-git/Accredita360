@@ -1,4 +1,4 @@
-// Helper sicurezza XSS — sanitizza tutti i dati prima di inserirli nel DOM
+﻿// Helper sicurezza XSS — sanitizza tutti i dati prima di inserirli nel DOM
 const _s = (str) => (typeof DOMPurify !== 'undefined' ? DOMPurify.sanitize(String(str ?? '')) : String(str ?? '').replace(/</g,'&lt;').replace(/>/g,'&gt;'));
 
 // Stato dell'applicazione
@@ -292,29 +292,33 @@ const app = {
     navigate(viewId) {
         // Aggiorna titolo
         const titles = {
-            'dashboard': 'Dashboard',
-            'profiling': 'Profilazione Struttura',
-            'gap-analysis': 'Gap Analysis (Semaforo)',
-            'documents': 'Fascicolo Documentale',
-            'maintenance': 'Mantenimento Accreditamento',
-            'consultants': 'Area Consulenti',
-            'normativa': 'Quadro Normativo',
+            'dashboard':     'Dashboard',
+            'anagrafica':    'Anagrafica e Struttura',
+            'profiling':     'Profilazione Struttura',
+            'gap-analysis':  'Gap Analysis (Semaforo)',
+            'documents':     'Fascicolo Documentale',
+            'maintenance':   'Mantenimento Accreditamento',
+            'consultants':   'Area Consulenti',
+            'normativa':     'Quadro Normativo',
             'procedure-ota': 'Procedure OTA',
-            'panoramica': 'Panoramica',
-            'login': 'Accesso'
+            'panoramica':    'Panoramica',
+            'login':         'Accesso'
         };
         document.getElementById('view-title').textContent = titles[viewId] || viewId;
 
         // Cambia vista
         const views = document.querySelectorAll('.view');
         views.forEach(v => v.classList.remove('active-view'));
-        
-        const targetView = document.getElementById(`view-${viewId}`);
-        if(targetView) {
+
+        const targetView = document.getElementById(iew- + viewId);
+        if (targetView) {
             targetView.classList.add('active-view');
-            if (viewId === 'panoramica') this.renderPanIterTimeline();
+            // Hook: azioni da eseguire all'ingresso in una vista
+            if (viewId === 'panoramica')  this.renderPanIterTimeline();
+            if (viewId === 'anagrafica')  this.loadAnagrafica().catch(console.warn);
+            if (viewId === 'maintenance') this.renderMaintenanceView();
         } else {
-            alert("Modulo in fase di sviluppo.");
+            console.warn('[Navigate] Vista non trovata:', viewId);
         }
     },
 
@@ -518,40 +522,81 @@ const app = {
     },
 
     async uploadFile(reqId) {
-        // Simulazione caricamento file
-        const fileName = prompt("Inserisci il nome del file da caricare (Simulazione Upload PDF):", "documento.pdf");
-        if(!fileName) return;
+        // ── Crea un <input type="file"> invisibile e lo attiva ──────────────────
+        const input = document.createElement('input');
+        input.type   = 'file';
+        input.accept = '.pdf,.doc,.docx,.jpg,.jpeg,.png';
+        input.style.display = 'none';
+        document.body.appendChild(input);
 
-        // 1. Carica il file e imposta a giallo
-        await Backend.updateRequirementStatus(reqId, 'yellow', { name: fileName });
-        this.renderRequirements('all'); // Mostra il caricamento in corso
-        
-        // 2. Chiede se si vuole validare con AI
-        const useAI = confirm("Vuoi validare questo documento istantaneamente tramite l'Intelligenza Artificiale?");
-        if(useAI) {
-            // Animazione di caricamento
-            document.getElementById('view-title').textContent = "Analisi AI in corso...";
-            
-            // 3. Richiama l'AI
-            const aiResult = await Backend.analyzeDocumentConAI(reqId, fileName);
-            
-            // 4. Mostra risultato
-            if(aiResult.status === 'green') {
-                alert("✅ VALIDAZIONE AI RIUSCITA: " + aiResult.comment);
-            } else if (aiResult.compliance === 'critico') {
-                alert("❌ CRITICITÀ NORMATIVA RILEVATA DALL'AI: " + aiResult.comment + "\n\nConsulta lo Storico Normativa nella Panoramica per i dettagli sull'abrogazione della norma.");
-            } else if (aiResult.compliance === 'attenzione') {
-                alert("⚠️ ATTENZIONE NORMATIVA RILEVATA DALL'AI: " + aiResult.comment + "\n\nIl documento potrebbe non essere allineato agli ultimi aggiornamenti.");
-            } else {
-                alert("❌ ERRORE DOCUMENTALE RILEVATO DALL'AI: " + aiResult.comment);
+        input.onchange = async (e) => {
+            const file = e.target.files[0];
+            document.body.removeChild(input);
+            if (!file) return;
+
+            // Mostra spinner sul pulsante della riga
+            this._setUploadSpinner(reqId, true);
+
+            try {
+                // 1. Upload reale su Supabase Storage
+                const uploadResult = await Backend.uploadDocument(reqId, file);
+
+                // 2. Aggiorna la riga a giallo (Da Integrare)
+                await this.loadData();
+
+                // 3. Chiede se si vuole la validazione AI immediata
+                const useAI = confirm(`📄 "${file.name}" caricato con successo!\n\nVuoi avviare la validazione immediata con AI? (consigliato)`);
+                if (useAI) {
+                    const titleEl = document.getElementById('view-title');
+                    if (titleEl) titleEl.textContent = '🤖 Analisi AI in corso...';
+
+                    const aiResult = await Backend.analyzeDocumentConAI(reqId, file.name);
+
+                    if (titleEl) titleEl.textContent = 'Gap Analysis (Semaforo)';
+
+                    // Mostra notifica inline invece di alert
+                    this._showUploadToast(reqId, aiResult);
+                    await this.loadData();
+                }
+            } catch (err) {
+                console.error('[Upload] Errore:', err);
+                this._showErrorToast(err.message || 'Errore durante il caricamento. Riprova.');
+            } finally {
+                this._setUploadSpinner(reqId, false);
             }
-            
-            document.getElementById('view-title').textContent = "Gap Analysis (Semaforo)";
-            await this.loadData();
-        } else {
-            alert("File caricato in stato 'Da Integrare'. Attenderà la validazione manuale di un consulente.");
-            await this.loadData();
-        }
+        };
+
+        input.click();
+    },
+
+    // Mostra/nasconde spinner sul pulsante upload di una riga specifica
+    _setUploadSpinner(reqId, loading) {
+        const btn = document.querySelector(`[data-upload-id="${reqId}"]`);
+        if (!btn) return;
+        btn.disabled = loading;
+        btn.innerHTML = loading
+            ? `<i class='bx bx-loader-alt bx-spin'></i> Caricamento...`
+            : `<i class='bx bx-upload'></i> Carica File`;
+    },
+
+    // Notifica inline dopo upload + AI
+    _showUploadToast(reqId, aiResult) {
+        const icons  = { green: '✅', yellow: '⚠️', red: '❌' };
+        const icon   = icons[aiResult.status] || '📋';
+        const msg    = aiResult.comment || 'Analisi completata.';
+        const toast  = document.createElement('div');
+        toast.style.cssText = 'position:fixed;bottom:24px;right:24px;background:#1e293b;border:1px solid rgba(255,255,255,0.12);color:#f1f5f9;padding:16px 22px;border-radius:12px;font-size:13px;z-index:9999;max-width:420px;box-shadow:0 8px 32px rgba(0,0,0,0.4);animation:slideUp 0.3s ease;';
+        toast.innerHTML = `<strong>${icon} Risultato AI</strong><br><span style="color:var(--text-muted);">${msg}</span>`;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 6000);
+    },
+
+    _showErrorToast(msg) {
+        const toast = document.createElement('div');
+        toast.style.cssText = 'position:fixed;bottom:24px;right:24px;background:#7f1d1d;border:1px solid #ef4444;color:#fef2f2;padding:16px 22px;border-radius:12px;font-size:13px;z-index:9999;max-width:420px;box-shadow:0 8px 32px rgba(0,0,0,0.4);';
+        toast.innerHTML = `<strong>❌ Errore</strong><br>${msg}`;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 5000);
     },
 
     downloadTemplate(req) {
@@ -752,21 +797,30 @@ const app = {
     },
 
     async rinnovaScadenza(reqId) {
-        const fileName = prompt(`Rinnovo scadenza — Inserisci il nome del nuovo documento:`, 'documento_rinnovato.pdf');
-        if (!fileName) return;
-        await Backend.updateRequirementStatus(reqId, 'green', { name: fileName });
-        // Imposta validatedAt a oggi per ricalcolare la scadenza
-        const savedReqs = JSON.parse(localStorage.getItem('accredita360_requirements') || '{}');
-        const user = Backend.getCurrentUser();
-        if (user && savedReqs[user.email]) {
-            const idx = savedReqs[user.email].findIndex(r => r.id === reqId);
-            if (idx > -1) {
-                savedReqs[user.email][idx].validatedAt = new Date().toISOString();
-                localStorage.setItem('accredita360_requirements', JSON.stringify(savedReqs));
+        // Apre file picker reale
+        const input = document.createElement('input');
+        input.type   = 'file';
+        input.accept = '.pdf,.doc,.docx,.jpg,.jpeg,.png';
+        input.style.display = 'none';
+        document.body.appendChild(input);
+
+        input.onchange = async (e) => {
+            const file = e.target.files[0];
+            document.body.removeChild(input);
+            if (!file) return;
+
+            try {
+                await Backend.rinnovaScadenzaConFile(reqId, file);
+                await this.loadData();
+                this._showUploadToast(reqId, {
+                    status:  'green',
+                    comment: `✅ Scadenza rinnovata. "${file.name}" caricato e scadenza ricalcolata da oggi.`
+                });
+            } catch (err) {
+                this._showErrorToast(err.message || 'Errore rinnovo scadenza.');
             }
-        }
-        await this.loadData();
-        alert(`✅ Scadenza rinnovata. Il documento "${fileName}" è stato aggiornato e la scadenza ricalcolata.`);
+        };
+        input.click();
     },
 
     generaIstanzaAccordo() {
@@ -1359,8 +1413,91 @@ const app = {
         }
     },
 
-    salvaAnagrafica() {
-        alert('Dati Anagrafici salvati con successo nel fascicolo della struttura.');
+    async salvaAnagrafica() {
+        const btn = document.getElementById('anag-save-btn');
+        const msg = document.getElementById('anag-save-msg');
+        if (btn) { btn.disabled = true; btn.innerHTML = `<i class='bx bx-loader-alt bx-spin'></i> Salvataggio...`; }
+
+        try {
+            const tipo = document.getElementById('titolare-tipo')?.value || 'societa';
+
+            // Raccoglie tutti i campi per nome id
+            const gv = id => document.getElementById(id)?.value?.trim() || null;
+
+            const data = {
+                tipo_titolare:    tipo,
+                ragione_sociale:  gv('anag-ragione-sociale'),
+                partita_iva:      gv('anag-partita-iva'),
+                codice_fiscale:   gv('anag-codice-fiscale'),
+                sede_legale:      gv('anag-sede-legale'),
+                nome_lr:          tipo === 'fisica' ? gv('anag-nome-pf')    : gv('anag-nome-lr'),
+                cognome_lr:       tipo === 'fisica' ? gv('anag-cognome-pf') : gv('anag-cognome-lr'),
+                cf_lr:            tipo === 'fisica' ? gv('anag-cf-pf')      : gv('anag-cf-lr'),
+                nome_struttura:   gv('anag-nome-struttura'),
+                indirizzo_op:     gv('anag-indirizzo-op'),
+                comune:           gv('anag-comune'),
+                cap:              gv('anag-cap'),
+                tel_struttura:    gv('anag-tel-struttura') || gv('anag-tel-titolare'),
+                email_struttura:  gv('anag-email-struttura'),
+                pec:              gv('anag-pec'),
+                nome_ds:          gv('anag-nome-ds'),
+                cognome_ds:       gv('anag-cognome-ds'),
+                iscrizione_albo:  gv('anag-iscrizione-albo'),
+                specializzazione: gv('anag-specializzazione'),
+            };
+
+            await Backend.saveAnagrafica(data);
+            app.state.anagrafica = data;
+
+            // Feedback visivo
+            if (msg) { msg.style.display = 'inline-flex'; setTimeout(() => msg.style.display = 'none', 3000); }
+            console.log('[App] Anagrafica salvata su Supabase:', data);
+        } catch (err) {
+            console.error('[App] Errore salvaAnagrafica:', err);
+            this._showErrorToast(err.message || 'Errore salvataggio. Riprova.');
+        } finally {
+            if (btn) { btn.disabled = false; btn.innerHTML = `<i class='bx bx-save'></i> Salva Dati`; }
+        }
+    },
+
+    // Popola i campi anagrafica da Supabase quando l'utente entra nella vista
+    async loadAnagrafica() {
+        try {
+            const data = await Backend.getAnagrafica();
+            if (!data) return;
+            app.state.anagrafica = data;
+            const sv = (id, val) => { const el = document.getElementById(id); if (el && val) el.value = val; };
+
+            // Seleziona tipo
+            const tipoEl = document.getElementById('titolare-tipo');
+            if (tipoEl) { tipoEl.value = data.tipo_titolare || 'societa'; this.toggleTitolareType(tipoEl.value); }
+
+            sv('anag-ragione-sociale', data.ragione_sociale);
+            sv('anag-partita-iva',     data.partita_iva);
+            sv('anag-codice-fiscale',  data.codice_fiscale);
+            sv('anag-sede-legale',     data.sede_legale);
+            sv('anag-nome-lr',         data.nome_lr);
+            sv('anag-cognome-lr',      data.cognome_lr);
+            sv('anag-cf-lr',           data.cf_lr);
+            sv('anag-nome-pf',         data.nome_lr);
+            sv('anag-cognome-pf',      data.cognome_lr);
+            sv('anag-cf-pf',           data.cf_lr);
+            sv('anag-pec',             data.pec);
+            sv('anag-tel-titolare',    data.tel_struttura);
+            sv('anag-nome-struttura',  data.nome_struttura);
+            sv('anag-indirizzo-op',    data.indirizzo_op);
+            sv('anag-comune',          data.comune);
+            sv('anag-cap',             data.cap);
+            sv('anag-tel-struttura',   data.tel_struttura);
+            sv('anag-email-struttura', data.email_struttura);
+            sv('anag-nome-ds',         data.nome_ds);
+            sv('anag-cognome-ds',      data.cognome_ds);
+            sv('anag-iscrizione-albo', data.iscrizione_albo);
+            sv('anag-specializzazione',data.specializzazione);
+            console.log('[App] Anagrafica caricata da Supabase.');
+        } catch (err) {
+            console.warn('[App] loadAnagrafica:', err);
+        }
     },
 
     doLogout() {
