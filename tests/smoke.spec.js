@@ -63,3 +63,41 @@ test('admin.html redirige al login se non autenticati', async ({ page }) => {
   const url = page.url();
   expect(url).toMatch(/login|index/);
 });
+
+// ─── LOGIN & DASHBOARD LOOP TEST ──────────────────────────────
+test('login con successo e verifica assenza loop', async ({ page }) => {
+  page.on('console', msg => console.log(`[Browser Console] ${msg.type()}: ${msg.text()}`));
+  page.on('pageerror', err => console.log(`[Browser PageError] ${err.message}`));
+
+  await page.goto(`${BASE_URL}/login.html`);
+
+  // Seleziona il pannello utente
+  const panel = page.locator('#panel-utente');
+  if (await panel.isVisible()) {
+    await panel.click();
+  }
+
+  // Inserisci credenziali
+  await page.fill('#login-email', 'struttura@demo.it');
+  await page.fill('#login-pwd', 'demo');
+
+  // Clicca accedi
+  await page.click('#login-submit-btn');
+
+  // Aspetta redirect ad app.html
+  await page.waitForURL(/app.html/, { timeout: 10000 });
+
+  // Monitoriamo quante volte la pagina main naviga o si ricarica in 5 secondi
+  let loadCount = 0;
+  page.on('framenavigated', frame => {
+    if (frame === page.mainFrame()) {
+      loadCount++;
+    }
+  });
+
+  await page.waitForTimeout(5000);
+
+  console.log('Load count in 5 secondi:', loadCount);
+  expect(loadCount).toBeLessThanOrEqual(1);
+});
+
