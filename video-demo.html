@@ -1,0 +1,1094 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Accredita360 — Video Presentazione</title>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;800;900&family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+    <style>
+        :root {
+            --primary: #0284c7;
+            --primary-light: #38bdf8;
+            --secondary: #059669;
+            --accent: #06b6d4;
+            --dark: #0f172a;
+            --darker: #020617;
+            --text: #f1f5f9;
+            --text-muted: #94a3b8;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --success: #10b981;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: var(--darker);
+            color: var(--text);
+            font-family: 'Inter', sans-serif;
+            overflow: hidden;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        /* ── SLIDE SYSTEM ──────────────── */
+        .slides-container {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+        }
+
+        .slide {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transform: scale(1.04);
+            transition: opacity 0.9s cubic-bezier(0.4,0,0.2,1), transform 0.9s cubic-bezier(0.4,0,0.2,1);
+            pointer-events: none;
+            padding: 60px 80px;
+            text-align: center;
+        }
+        .slide.active {
+            opacity: 1;
+            transform: scale(1);
+            pointer-events: auto;
+        }
+
+        /* ── BACKGROUNDS ──────────────── */
+        .bg-gradient-1 {
+            background: radial-gradient(ellipse at 30% 40%, rgba(2,132,199,0.25) 0%, transparent 60%),
+                        radial-gradient(ellipse at 70% 60%, rgba(5,150,105,0.15) 0%, transparent 50%),
+                        var(--darker);
+        }
+        .bg-gradient-2 {
+            background: radial-gradient(ellipse at 50% 30%, rgba(6,182,212,0.2) 0%, transparent 50%),
+                        radial-gradient(ellipse at 20% 80%, rgba(139,92,246,0.12) 0%, transparent 50%),
+                        var(--darker);
+        }
+        .bg-gradient-3 {
+            background: radial-gradient(ellipse at 60% 50%, rgba(239,68,68,0.12) 0%, transparent 50%),
+                        radial-gradient(ellipse at 30% 30%, rgba(245,158,11,0.1) 0%, transparent 50%),
+                        var(--darker);
+        }
+        .bg-gradient-4 {
+            background: radial-gradient(ellipse at 40% 40%, rgba(16,185,129,0.2) 0%, transparent 50%),
+                        radial-gradient(ellipse at 70% 70%, rgba(2,132,199,0.15) 0%, transparent 50%),
+                        var(--darker);
+        }
+        .bg-white {
+            background: radial-gradient(ellipse at center, #f0f9ff 0%, #e0f2fe 40%, #bae6fd 100%);
+            color: var(--dark);
+        }
+        .bg-white .text-muted-s { color: #475569; }
+
+        /* ── TYPOGRAPHY ──────────────── */
+        .slide-tag {
+            font-size: 13px;
+            font-weight: 700;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            margin-bottom: 20px;
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        .slide.active .slide-tag {
+            opacity: 1;
+            transform: translateY(0);
+            transition: all 0.7s 0.3s cubic-bezier(0.4,0,0.2,1);
+        }
+
+        .slide-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 64px;
+            font-weight: 800;
+            line-height: 1.1;
+            margin-bottom: 24px;
+            max-width: 1000px;
+            opacity: 0;
+            transform: translateY(30px);
+        }
+        .slide.active .slide-title {
+            opacity: 1;
+            transform: translateY(0);
+            transition: all 0.8s 0.4s cubic-bezier(0.4,0,0.2,1);
+        }
+
+        .slide-subtitle {
+            font-size: 22px;
+            line-height: 1.6;
+            max-width: 750px;
+            font-weight: 400;
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        .slide.active .slide-subtitle {
+            opacity: 1;
+            transform: translateY(0);
+            transition: all 0.7s 0.6s cubic-bezier(0.4,0,0.2,1);
+        }
+
+        .text-gradient {
+            background: linear-gradient(135deg, var(--primary-light), var(--accent), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .text-gradient-warm {
+            background: linear-gradient(135deg, var(--warning), var(--danger));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .text-gradient-green {
+            background: linear-gradient(135deg, var(--success), var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .text-muted-s { color: var(--text-muted); }
+
+        /* ── ANIMATED ELEMENTS ────────── */
+        .slide-content-delayed {
+            opacity: 0;
+            transform: translateY(25px);
+        }
+        .slide.active .slide-content-delayed {
+            opacity: 1;
+            transform: translateY(0);
+            transition: all 0.7s 0.8s cubic-bezier(0.4,0,0.2,1);
+        }
+        .slide-content-delayed-2 {
+            opacity: 0;
+            transform: translateY(25px);
+        }
+        .slide.active .slide-content-delayed-2 {
+            opacity: 1;
+            transform: translateY(0);
+            transition: all 0.7s 1.0s cubic-bezier(0.4,0,0.2,1);
+        }
+
+        /* ── STATS GRID ──────────────── */
+        .stats-row {
+            display: flex;
+            gap: 32px;
+            margin-top: 40px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .stat-block {
+            text-align: center;
+            min-width: 140px;
+        }
+        .stat-big {
+            font-family: 'Playfair Display', serif;
+            font-size: 56px;
+            font-weight: 900;
+            line-height: 1;
+        }
+        .stat-label {
+            font-size: 13px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            margin-top: 6px;
+        }
+
+        /* ── FEATURE CARDS ───────────── */
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin-top: 40px;
+            max-width: 1100px;
+            width: 100%;
+        }
+        .feature-card {
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 16px;
+            padding: 28px 24px;
+            text-align: left;
+            backdrop-filter: blur(10px);
+            transition: all 0.4s;
+        }
+        .feature-card:hover {
+            background: rgba(255,255,255,0.08);
+            transform: translateY(-4px);
+        }
+        .feature-card i {
+            font-size: 32px;
+            margin-bottom: 14px;
+            display: block;
+        }
+        .feature-card h4 {
+            font-family: 'Inter', sans-serif;
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+        .feature-card p {
+            font-size: 13px;
+            color: var(--text-muted);
+            line-height: 1.5;
+        }
+
+        /* ── SEMAFORO DEMO ───────────── */
+        .semaforo-row {
+            display: flex;
+            gap: 20px;
+            margin-top: 36px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .semaforo-card {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 18px 28px;
+            border-radius: 14px;
+            min-width: 260px;
+        }
+        .semaforo-card.red-card {
+            background: rgba(239,68,68,0.1);
+            border: 1px solid rgba(239,68,68,0.25);
+        }
+        .semaforo-card.yellow-card {
+            background: rgba(245,158,11,0.1);
+            border: 1px solid rgba(245,158,11,0.25);
+        }
+        .semaforo-card.green-card {
+            background: rgba(16,185,129,0.1);
+            border: 1px solid rgba(16,185,129,0.25);
+        }
+        .semaforo-dot {
+            width: 18px; height: 18px;
+            border-radius: 50%;
+            flex-shrink: 0;
+            box-shadow: 0 0 12px currentColor;
+        }
+        .semaforo-card.red-card .semaforo-dot { background: var(--danger); color: var(--danger); }
+        .semaforo-card.yellow-card .semaforo-dot { background: var(--warning); color: var(--warning); }
+        .semaforo-card.green-card .semaforo-dot { background: var(--success); color: var(--success); }
+        .semaforo-text h5 { font-size: 15px; font-weight: 700; }
+        .semaforo-text p { font-size: 12px; color: var(--text-muted); }
+
+        /* ── AI FLOW ─────────────────── */
+        .ai-pipeline {
+            display: flex;
+            align-items: center;
+            gap: 0;
+            justify-content: center;
+            margin-top: 40px;
+            flex-wrap: wrap;
+        }
+        .ai-node {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+        .ai-icon-box {
+            width: 72px; height: 72px;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 30px;
+            color: white;
+        }
+        .ai-node-label {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-muted);
+        }
+        .ai-arrow {
+            font-size: 28px;
+            color: rgba(255,255,255,0.15);
+            margin: 0 12px;
+        }
+
+        /* ── SECURITY BADGES ─────────── */
+        .security-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            margin-top: 36px;
+            max-width: 900px;
+        }
+        .sec-badge {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            padding: 20px;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 14px;
+        }
+        .sec-badge i {
+            font-size: 36px;
+            color: var(--accent);
+        }
+        .sec-badge span {
+            font-size: 12px;
+            font-weight: 600;
+            text-align: center;
+            line-height: 1.3;
+        }
+
+        /* ── PROGRESS BAR ────────────── */
+        .slide-progress {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            z-index: 100;
+            transition: width 0.4s ease;
+            box-shadow: 0 0 12px rgba(2,132,199,0.5);
+        }
+
+        /* ── SLIDE COUNTER ───────────── */
+        .slide-counter {
+            position: fixed;
+            bottom: 24px;
+            right: 40px;
+            font-size: 13px;
+            font-weight: 600;
+            color: rgba(255,255,255,0.3);
+            z-index: 100;
+            font-family: 'Inter', sans-serif;
+        }
+        .bg-white ~ .slide-counter { color: rgba(0,0,0,0.2); }
+
+        /* ── LOGO WATERMARK ──────────── */
+        .logo-watermark {
+            position: fixed;
+            top: 28px;
+            left: 36px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            z-index: 100;
+            opacity: 0.7;
+        }
+        .logo-watermark img {
+            height: 40px;
+            border-radius: 8px;
+        }
+        .logo-watermark span {
+            font-family: 'Playfair Display', serif;
+            font-size: 18px;
+            font-weight: 800;
+            color: var(--primary-light);
+        }
+
+        /* ── PULSE RING ──────────────── */
+        @keyframes pulseRing {
+            0% { transform: scale(1); opacity: 0.6; }
+            100% { transform: scale(1.8); opacity: 0; }
+        }
+        .pulse-ring {
+            position: absolute;
+            border-radius: 50%;
+            border: 2px solid var(--primary-light);
+            animation: pulseRing 2s ease-out infinite;
+        }
+
+        /* ── TWO COLUMN LAYOUT ────────── */
+        .two-col {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 60px;
+            align-items: center;
+            max-width: 1100px;
+            width: 100%;
+            text-align: left;
+        }
+        .two-col .col-text h3 {
+            font-family: 'Playfair Display', serif;
+            font-size: 42px;
+            font-weight: 800;
+            margin-bottom: 16px;
+            line-height: 1.15;
+        }
+        .two-col .col-text p {
+            font-size: 16px;
+            color: var(--text-muted);
+            line-height: 1.7;
+            margin-bottom: 24px;
+        }
+        .two-col .col-visual {
+            display: flex;
+            justify-content: center;
+        }
+
+        .check-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+        .check-list li {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 15px;
+            font-weight: 500;
+        }
+        .check-list li i {
+            font-size: 22px;
+            color: var(--success);
+            flex-shrink: 0;
+        }
+
+        /* ── COUNTER ANIMATION ────────── */
+        .counter-num {
+            display: inline-block;
+        }
+
+        /* ── FINAL CTA ───────────────── */
+        .final-cta-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 18px 42px;
+            border-radius: 14px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            font-size: 17px;
+            font-weight: 700;
+            text-decoration: none;
+            margin-top: 36px;
+            box-shadow: 0 12px 40px rgba(2,132,199,0.4);
+            transition: all 0.3s;
+        }
+        .final-cta-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 20px 50px rgba(2,132,199,0.5);
+        }
+        /* ── VIDEO PLAYER CONTROLS ───── */
+        .btn-back {
+            position: fixed;
+            top: 28px;
+            right: 36px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            z-index: 1000;
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 600;
+            padding: 10px 18px;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+        .btn-back:hover {
+            color: var(--text);
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.15);
+            transform: translateX(-2px);
+        }
+        .btn-back i {
+            font-size: 18px;
+        }
+
+        .video-controls {
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: rgba(15, 23, 42, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            padding: 6px 14px;
+            border-radius: 30px;
+            z-index: 1000;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            transition: all 0.3s;
+        }
+        .control-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            font-size: 24px;
+            cursor: pointer;
+            width: 38px;
+            height: 38px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: all 0.2s;
+        }
+        .control-btn:hover {
+            color: var(--text);
+            background: rgba(255,255,255,0.08);
+            transform: scale(1.1);
+        }
+        .control-btn:active {
+            transform: scale(0.95);
+        }
+
+        /* ── RESPONSIVE ──────────────── */
+        @media (max-width: 900px) {
+            .slide-title { font-size: 40px; }
+            .slide-subtitle { font-size: 17px; }
+            .features-grid { grid-template-columns: 1fr 1fr; }
+            .security-grid { grid-template-columns: repeat(2, 1fr); }
+            .two-col { grid-template-columns: 1fr; }
+            .stat-big { font-size: 40px; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Logo watermark -->
+    <div class="logo-watermark">
+        <img src="logo.png" alt="Accredita360">
+        <span>Accredita360</span>
+    </div>
+
+    <!-- Exit button -->
+    <a href="index.html" class="btn-back">
+        <i class='bx bx-left-arrow-alt'></i> Torna al Sito
+    </a>
+
+    <!-- Video controls player bar -->
+    <div class="video-controls">
+        <button class="control-btn" id="prev-btn" title="Slide precedente">
+            <i class='bx bx-skip-previous'></i>
+        </button>
+        <button class="control-btn" id="play-btn" title="Riproduci/Pausa">
+            <i class='bx bx-pause' id="play-icon"></i>
+        </button>
+        <button class="control-btn" id="next-btn" title="Prossima slide">
+            <i class='bx bx-skip-next'></i>
+        </button>
+    </div>
+
+    <!-- Progress Bar -->
+    <div class="slide-progress" id="slide-progress" style="width: 10%;"></div>
+
+    <!-- Slide Counter -->
+    <div class="slide-counter" id="slide-counter">1 / 10</div>
+
+    <div class="slides-container" id="slides-container">
+
+        <!-- ══════ SLIDE 1: INTRO ══════ -->
+        <div class="slide bg-gradient-1 active" data-slide="1">
+            <div class="slide-tag text-gradient">Piattaforma RegTech per la Sanità Siciliana</div>
+            <h1 class="slide-title">
+                L'eccellenza nella<br><span class="text-gradient">Compliance Sanitaria</span>
+            </h1>
+            <p class="slide-subtitle text-muted-s">
+                Accredita360 è la prima piattaforma all-in-one che guida le strutture sanitarie siciliane attraverso l'intero iter di autorizzazione, accreditamento istituzionale e convenzionamento con il SSR.
+            </p>
+            <div class="stats-row slide-content-delayed">
+                <div class="stat-block">
+                    <div class="stat-big text-gradient counter-num" data-target="42" data-suffix="+">0</div>
+                    <div class="stat-label text-muted-s">Requisiti Normativi</div>
+                </div>
+                <div class="stat-block">
+                    <div class="stat-big text-gradient counter-num" data-target="8" data-suffix="">0</div>
+                    <div class="stat-label text-muted-s">Tipologie Struttura</div>
+                </div>
+                <div class="stat-block">
+                    <div class="stat-big text-gradient counter-num" data-target="11" data-suffix="">0</div>
+                    <div class="stat-label text-muted-s">Edge Functions</div>
+                </div>
+                <div class="stat-block">
+                    <div class="stat-big text-gradient">AI</div>
+                    <div class="stat-label text-muted-s">Validazione Automatica</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ══════ SLIDE 2: IL PROBLEMA ══════ -->
+        <div class="slide bg-gradient-3" data-slide="2">
+            <div class="slide-tag text-gradient-warm">Il Problema</div>
+            <h1 class="slide-title">
+                La complessità normativa<br><span class="text-gradient-warm">blocca le strutture</span>
+            </h1>
+            <p class="slide-subtitle text-muted-s">
+                Iter autorizzativi frammentati, decine di requisiti da tracciare, scadenze che sfuggono al controllo e ispezioni che colgono impreparati. Il management sanitario merita strumenti migliori.
+            </p>
+            <div class="semaforo-row slide-content-delayed">
+                <div class="semaforo-card red-card">
+                    <div class="semaforo-dot"></div>
+                    <div class="semaforo-text">
+                        <h5>Documenti mancanti</h5>
+                        <p>Requisiti non soddisfatti scoperti solo in fase ispettiva</p>
+                    </div>
+                </div>
+                <div class="semaforo-card yellow-card">
+                    <div class="semaforo-dot"></div>
+                    <div class="semaforo-text">
+                        <h5>Scadenze ignorate</h5>
+                        <p>Certificazioni e verifiche periodiche dimenticate</p>
+                    </div>
+                </div>
+                <div class="semaforo-card red-card">
+                    <div class="semaforo-dot"></div>
+                    <div class="semaforo-text">
+                        <h5>Iter frammentato</h5>
+                        <p>ASP, OTA, SSR: normative sparse e difficili da seguire</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ══════ SLIDE 3: LA SOLUZIONE ══════ -->
+        <div class="slide bg-gradient-4" data-slide="3">
+            <div class="slide-tag text-gradient-green">La Soluzione</div>
+            <h1 class="slide-title">
+                Un ecosistema completo.<br><span class="text-gradient-green">Zero compromessi.</span>
+            </h1>
+            <p class="slide-subtitle text-muted-s">
+                Accredita360 trasforma normative complesse in flussi di lavoro chiari, tracciabili e sicuri. Dall'autorizzazione ASP all'accreditamento OTA, tutto in un'unica piattaforma.
+            </p>
+            <div class="features-grid slide-content-delayed">
+                <div class="feature-card">
+                    <i class='bx bx-brain' style="color: var(--primary-light);"></i>
+                    <h4>Motore Normativo Intelligente</h4>
+                    <p>Genera automaticamente i requisiti basandosi su D.A. 890/2002 e D.A. 20/2024 in base al tipo di struttura.</p>
+                </div>
+                <div class="feature-card">
+                    <i class='bx bx-check-shield' style="color: var(--success);"></i>
+                    <h4>Gap Analysis a Semaforo</h4>
+                    <p>Visualizza immediatamente lo stato di ogni requisito con il sistema 🔴🟡🟢 intuitivo e filtrabile.</p>
+                </div>
+                <div class="feature-card">
+                    <i class='bx bx-cloud-upload' style="color: var(--accent);"></i>
+                    <h4>Upload & Validazione AI</h4>
+                    <p>Carica i documenti e ricevi una validazione automatica di conformità in tempo reale.</p>
+                </div>
+                <div class="feature-card">
+                    <i class='bx bx-folder-open' style="color: var(--warning);"></i>
+                    <h4>Fascicolo Documentale</h4>
+                    <p>Genera istanze PDF pre-compilate per ASP e OTA, pronte per l'invio istituzionale.</p>
+                </div>
+                <div class="feature-card">
+                    <i class='bx bx-calendar-event' style="color: var(--danger);"></i>
+                    <h4>Monitoraggio Scadenze</h4>
+                    <p>Calendario intelligente con alert per rinnovi semestrali, annuali e biennali.</p>
+                </div>
+                <div class="feature-card">
+                    <i class='bx bx-lock-alt' style="color: #8b5cf6;"></i>
+                    <h4>Security by Design</h4>
+                    <p>Crittografia bcrypt, RLS, sessioni sicure a 8 ore, 2FA OTP e GDPR compliance.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- ══════ SLIDE 4: PROFILAZIONE ══════ -->
+        <div class="slide bg-gradient-1" data-slide="4">
+            <div class="slide-tag text-gradient">Step 1</div>
+            <h1 class="slide-title">
+                Profilazione<br><span class="text-gradient">in 30 secondi</span>
+            </h1>
+            <p class="slide-subtitle text-muted-s">
+                3 domande, e il motore normativo genera automaticamente tutti i requisiti previsti dalla legge per la tua specifica tipologia di struttura.
+            </p>
+            <div class="stats-row slide-content-delayed" style="gap: 20px;">
+                <div style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 14px; padding: 20px 28px; text-align: left; min-width: 220px;">
+                    <div style="font-size: 11px; font-weight: 600; color: var(--text-muted); margin-bottom: 6px;">TIPOLOGIA</div>
+                    <div style="font-size: 15px; font-weight: 700;">🏥 Poliambulatorio</div>
+                </div>
+                <div style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 14px; padding: 20px 28px; text-align: left; min-width: 220px;">
+                    <div style="font-size: 11px; font-weight: 600; color: var(--text-muted); margin-bottom: 6px;">ELETTROMEDICALI</div>
+                    <div style="font-size: 15px; font-weight: 700;">⚡ Sì (RX, Ecografi)</div>
+                </div>
+                <div style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 14px; padding: 20px 28px; text-align: left; min-width: 220px;">
+                    <div style="font-size: 11px; font-weight: 600; color: var(--text-muted); margin-bottom: 6px;">OBIETTIVO</div>
+                    <div style="font-size: 15px; font-weight: 700;">🏅 Accreditamento OTA</div>
+                </div>
+            </div>
+            <div class="slide-content-delayed-2" style="margin-top: 32px;">
+                <div style="display: inline-flex; align-items: center; gap: 10px; padding: 14px 28px; border-radius: 12px; background: linear-gradient(135deg, var(--primary), var(--secondary)); font-size: 14px; font-weight: 700;">
+                    <i class='bx bx-check-circle' style="font-size: 20px;"></i> 42 requisiti generati automaticamente
+                </div>
+            </div>
+        </div>
+
+        <!-- ══════ SLIDE 5: GAP ANALYSIS ══════ -->
+        <div class="slide bg-gradient-2" data-slide="5">
+            <div class="slide-tag" style="color: var(--accent);">Step 2</div>
+            <h1 class="slide-title">
+                Gap Analysis con<br><span class="text-gradient">sistema a Semaforo</span>
+            </h1>
+            <p class="slide-subtitle text-muted-s">
+                Ogni requisito è tracciato con uno stato visivo immediato. Filtra per criticità, carica documenti, e ricevi azioni correttive specifiche.
+            </p>
+            <div class="semaforo-row slide-content-delayed">
+                <div class="semaforo-card green-card">
+                    <div class="semaforo-dot"></div>
+                    <div class="semaforo-text">
+                        <h5 style="color: var(--success);">Conforme</h5>
+                        <p>Documento validato e conforme alla normativa</p>
+                    </div>
+                </div>
+                <div class="semaforo-card yellow-card">
+                    <div class="semaforo-dot"></div>
+                    <div class="semaforo-text">
+                        <h5 style="color: var(--warning);">Da Integrare</h5>
+                        <p>Caricato, in attesa di validazione AI o consulente</p>
+                    </div>
+                </div>
+                <div class="semaforo-card red-card">
+                    <div class="semaforo-dot"></div>
+                    <div class="semaforo-text">
+                        <h5 style="color: var(--danger);">Critico</h5>
+                        <p>Documento mancante o non conforme</p>
+                    </div>
+                </div>
+            </div>
+            <div class="slide-content-delayed-2" style="margin-top: 28px; display: flex; gap: 16px; flex-wrap: wrap; justify-content: center;">
+                <div style="padding: 8px 18px; border-radius: 8px; background: rgba(2,132,199,0.15); border: 1px solid rgba(2,132,199,0.3); font-size: 12px; font-weight: 600;">🏢 Autorizzazione ASP · D.A. 890/2002</div>
+                <div style="padding: 8px 18px; border-radius: 8px; background: rgba(16,185,129,0.15); border: 1px solid rgba(16,185,129,0.3); font-size: 12px; font-weight: 600;">🏅 Accreditamento OTA · D.A. 20/2024</div>
+            </div>
+        </div>
+
+        <!-- ══════ SLIDE 6: AI ══════ -->
+        <div class="slide bg-gradient-1" data-slide="6">
+            <div class="slide-tag text-gradient">Intelligenza Artificiale</div>
+            <h1 class="slide-title">
+                Validazione AI<br><span class="text-gradient">in tempo reale</span>
+            </h1>
+            <p class="slide-subtitle text-muted-s">
+                Carica un documento e ricevi istantaneamente una valutazione di conformità normativa. Il motore AI analizza il contenuto e restituisce un esito dettagliato con note e azioni correttive.
+            </p>
+            <div class="ai-pipeline slide-content-delayed">
+                <div class="ai-node">
+                    <div class="ai-icon-box" style="background: var(--primary);">
+                        <i class='bx bx-upload'></i>
+                    </div>
+                    <span class="ai-node-label">Upload</span>
+                </div>
+                <span class="ai-arrow"><i class='bx bx-right-arrow-alt'></i></span>
+                <div class="ai-node">
+                    <div class="ai-icon-box" style="background: #8b5cf6;">
+                        <i class='bx bx-cloud-upload'></i>
+                    </div>
+                    <span class="ai-node-label">Cloud Storage</span>
+                </div>
+                <span class="ai-arrow"><i class='bx bx-right-arrow-alt'></i></span>
+                <div class="ai-node">
+                    <div class="ai-icon-box" style="background: linear-gradient(135deg, var(--warning), var(--danger));">
+                        <i class='bx bx-brain'></i>
+                    </div>
+                    <span class="ai-node-label">Analisi AI</span>
+                </div>
+                <span class="ai-arrow"><i class='bx bx-right-arrow-alt'></i></span>
+                <div class="ai-node">
+                    <div class="ai-icon-box" style="background: var(--success);">
+                        <i class='bx bx-check-double'></i>
+                    </div>
+                    <span class="ai-node-label">Risultato</span>
+                </div>
+            </div>
+            <div class="slide-content-delayed-2" style="margin-top: 28px; display:flex; gap:16px; flex-wrap: wrap; justify-content: center;">
+                <div style="padding: 12px 20px; border-radius: 10px; background: rgba(16,185,129,0.12); border: 1px solid rgba(16,185,129,0.3); font-size: 13px; font-weight: 600;">✅ Conforme</div>
+                <div style="padding: 12px 20px; border-radius: 10px; background: rgba(245,158,11,0.12); border: 1px solid rgba(245,158,11,0.3); font-size: 13px; font-weight: 600;">⚠️ Attenzione Normativa</div>
+                <div style="padding: 12px 20px; border-radius: 10px; background: rgba(239,68,68,0.12); border: 1px solid rgba(239,68,68,0.3); font-size: 13px; font-weight: 600;">❌ Non Conforme</div>
+            </div>
+        </div>
+
+        <!-- ══════ SLIDE 7: FASCICOLO ══════ -->
+        <div class="slide bg-gradient-4" data-slide="7">
+            <div class="slide-tag text-gradient-green">Fascicolo Digitale</div>
+            <h1 class="slide-title">
+                Il tuo dossier<br><span class="text-gradient-green">pronto per l'invio</span>
+            </h1>
+            <p class="slide-subtitle text-muted-s">
+                Tutti i documenti validati vengono aggregati automaticamente nel Fascicolo Documentale, con generazione istantanea di istanze PDF pre-compilate per ASP e OTA.
+            </p>
+            <div class="stats-row slide-content-delayed" style="gap: 24px;">
+                <div style="background: rgba(2,132,199,0.08); border: 1px solid rgba(2,132,199,0.2); border-radius: 16px; padding: 24px 32px; text-align: center; min-width: 200px;">
+                    <i class='bx bx-file-blank' style="font-size: 36px; color: var(--primary-light); display: block; margin-bottom: 8px;"></i>
+                    <div style="font-size: 15px; font-weight: 700;">Istanza ASP</div>
+                    <div style="font-size: 12px; color: var(--text-muted);">D.A. 890/2002</div>
+                </div>
+                <div style="background: rgba(16,185,129,0.08); border: 1px solid rgba(16,185,129,0.2); border-radius: 16px; padding: 24px 32px; text-align: center; min-width: 200px;">
+                    <i class='bx bx-file-blank' style="font-size: 36px; color: var(--success); display: block; margin-bottom: 8px;"></i>
+                    <div style="font-size: 15px; font-weight: 700;">Istanza OTA</div>
+                    <div style="font-size: 12px; color: var(--text-muted);">D.A. 20/2024</div>
+                </div>
+                <div style="background: rgba(139,92,246,0.08); border: 1px solid rgba(139,92,246,0.2); border-radius: 16px; padding: 24px 32px; text-align: center; min-width: 200px;">
+                    <i class='bx bx-archive-in' style="font-size: 36px; color: #8b5cf6; display: block; margin-bottom: 8px;"></i>
+                    <div style="font-size: 15px; font-weight: 700;">Fascicolo ZIP</div>
+                    <div style="font-size: 12px; color: var(--text-muted);">Download completo</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ══════ SLIDE 8: SICUREZZA ══════ -->
+        <div class="slide bg-gradient-2" data-slide="8">
+            <div class="slide-tag" style="color: #8b5cf6;">Sicurezza Enterprise-Grade</div>
+            <h1 class="slide-title">
+                La protezione del dato<br><span class="text-gradient">è il nostro prerequisito</span>
+            </h1>
+            <p class="slide-subtitle text-muted-s">
+                Architettura Security by Design con crittografia avanzata, protezione GDPR e infrastruttura ridondante su server UE.
+            </p>
+            <div class="security-grid slide-content-delayed">
+                <div class="sec-badge">
+                    <i class='bx bx-lock-alt'></i>
+                    <span>Bcrypt<br>Hashing</span>
+                </div>
+                <div class="sec-badge">
+                    <i class='bx bx-shield-quarter'></i>
+                    <span>Row Level<br>Security</span>
+                </div>
+                <div class="sec-badge">
+                    <i class='bx bx-key'></i>
+                    <span>2FA<br>OTP</span>
+                </div>
+                <div class="sec-badge">
+                    <i class='bx bx-timer'></i>
+                    <span>Sessioni<br>8 Ore</span>
+                </div>
+                <div class="sec-badge">
+                    <i class='bx bx-data'></i>
+                    <span>Backup<br>Ridondato</span>
+                </div>
+                <div class="sec-badge">
+                    <i class='bx bx-check-shield'></i>
+                    <span>GDPR<br>Compliant</span>
+                </div>
+                <div class="sec-badge">
+                    <i class='bx bx-globe'></i>
+                    <span>Server<br>UE</span>
+                </div>
+                <div class="sec-badge">
+                    <i class='bx bx-code-alt'></i>
+                    <span>XSS<br>Protection</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- ══════ SLIDE 9: 3 MODELLI ══════ -->
+        <div class="slide bg-gradient-1" data-slide="9">
+            <div class="slide-tag text-gradient">Modelli B2B</div>
+            <h1 class="slide-title">
+                Una soluzione<br><span class="text-gradient">per ogni esigenza</span>
+            </h1>
+            <p class="slide-subtitle text-muted-s">
+                Tre modelli di servizio progettati per adattarsi perfettamente alla struttura, alla dimensione e al livello di autonomia del tuo team.
+            </p>
+            <div class="features-grid slide-content-delayed" style="max-width: 960px;">
+                <div class="feature-card" style="border-color: rgba(2,132,199,0.2);">
+                    <div style="font-size: 11px; font-weight: 700; color: var(--primary-light); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 12px;">SaaS</div>
+                    <h4>Do It Yourself</h4>
+                    <p>Per cliniche con team Qualità interno. Accesso completo alla piattaforma e al motore normativo.</p>
+                </div>
+                <div class="feature-card" style="background: rgba(255,255,255,0.08); border-color: rgba(16,185,129,0.3);">
+                    <div style="font-size: 11px; font-weight: 700; color: var(--success); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 12px;">Premium</div>
+                    <h4>Chiavi in Mano</h4>
+                    <p>Il nostro team gestisce l'intero iter per te. Sopralluogo, Gap Analysis fisica, affiancamento OTA.</p>
+                </div>
+                <div class="feature-card" style="border-color: rgba(139,92,246,0.2);">
+                    <div style="font-size: 11px; font-weight: 700; color: #a78bfa; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 12px;">Retainer</div>
+                    <h4>Mantenimento</h4>
+                    <p>Per strutture già accreditate. Monitoraggio continuo indicatori e audit simulato pre-OTA.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- ══════ SLIDE 10: CTA FINALE ══════ -->
+        <div class="slide bg-gradient-4" data-slide="10">
+            <div class="slide-tag text-gradient-green">Inizia Ora</div>
+            <h1 class="slide-title">
+                Il tuo accreditamento<br><span class="text-gradient-green">inizia oggi.</span>
+            </h1>
+            <p class="slide-subtitle text-muted-s">
+                Unisciti alle strutture sanitarie siciliane che hanno scelto di trasformare la complessità normativa in un percorso chiaro, sicuro e tracciabile.
+            </p>
+            <div class="slide-content-delayed" style="display: flex; gap: 20px; flex-wrap: wrap; justify-content: center; margin-top: 20px;">
+                <a href="register.html?type=utente" class="final-cta-btn">
+                    <i class='bx bx-user-plus' style="font-size: 22px;"></i> Registrati
+                </a>
+                <a href="index.html#contatti" class="final-cta-btn" style="background: rgba(255,255,255,0.08); box-shadow: none; border: 1px solid rgba(255,255,255,0.15);">
+                    <i class='bx bx-envelope' style="font-size: 22px;"></i> Parla con un Consulente
+                </a>
+            </div>
+            <div class="slide-content-delayed-2" style="margin-top: 48px;">
+                <div style="font-size: 14px; color: var(--text-muted);">
+                    <span style="font-weight: 600; color: var(--text);">accredita360s.com</span> · Piattaforma RegTech per l'Accreditamento Sanitario in Sicilia
+                </div>
+                <div style="font-size: 12px; color: var(--text-muted); margin-top: 8px; opacity: 0.6;">
+                    © 2026 Accredita360. Tutti i diritti riservati.
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // ══════════════════════════════════════════════════════════
+        // AUTO-ADVANCING SLIDE SYSTEM WITH SMOOTH PROGRESS & CONTROLS
+        // ══════════════════════════════════════════════════════════
+        const TOTAL_SLIDES = 10;
+        const SLIDE_DURATION = 6000; // 6 seconds per slide
+        let currentSlide = 1;
+        let isPaused = false;
+        let elapsedTime = 0;
+        let mainInterval = null;
+
+        const slides = document.querySelectorAll('.slide');
+        const progressBar = document.getElementById('slide-progress');
+        const counter = document.getElementById('slide-counter');
+        
+        // Player buttons
+        const playBtn = document.getElementById('play-btn');
+        const playIcon = document.getElementById('play-icon');
+        const prevBtn = document.getElementById('prev-btn');
+        const nextBtn = document.getElementById('next-btn');
+
+        function updatePlayIcon() {
+            if (isPaused) {
+                playIcon.className = 'bx bx-play';
+                playBtn.title = "Riproduci";
+            } else {
+                playIcon.className = 'bx bx-pause';
+                playBtn.title = "Pausa";
+            }
+        }
+
+        function goToSlide(n) {
+            if (n < 1 || n > TOTAL_SLIDES) return;
+            currentSlide = n;
+            elapsedTime = 0; // reset slide timer
+
+            slides.forEach(s => s.classList.remove('active'));
+            const target = document.querySelector(`[data-slide="${n}"]`);
+            if (target) target.classList.add('active');
+
+            // Update counter
+            counter.textContent = `${n} / ${TOTAL_SLIDES}`;
+
+            // Update progress bar instantly to the base level
+            let basePercent = ((n - 1) / TOTAL_SLIDES) * 100;
+            progressBar.style.width = `${basePercent}%`;
+
+            // Animate counters on slide 1
+            if (n === 1) {
+                setTimeout(animateCounters, 800);
+            }
+        }
+
+        function nextSlide() {
+            if (currentSlide < TOTAL_SLIDES) {
+                goToSlide(currentSlide + 1);
+            } else {
+                goToSlide(1); // Loop back
+            }
+        }
+
+        function prevSlide() {
+            if (currentSlide > 1) {
+                goToSlide(currentSlide - 1);
+            } else {
+                goToSlide(TOTAL_SLIDES); // Loop back to end
+            }
+        }
+
+        function startPlaybackLoop() {
+            if (mainInterval) clearInterval(mainInterval);
+            mainInterval = setInterval(() => {
+                if (!isPaused) {
+                    elapsedTime += 30;
+                    if (elapsedTime >= SLIDE_DURATION) {
+                        elapsedTime = 0;
+                        nextSlide();
+                    } else {
+                        // Update progress bar smoothly
+                        let basePercent = ((currentSlide - 1) / TOTAL_SLIDES) * 100;
+                        let slideProgress = (elapsedTime / SLIDE_DURATION) * (100 / TOTAL_SLIDES);
+                        progressBar.style.width = `${basePercent + slideProgress}%`;
+                    }
+                }
+            }, 30);
+        }
+
+        function togglePlay() {
+            isPaused = !isPaused;
+            updatePlayIcon();
+        }
+
+        // Button Click Handlers
+        playBtn.addEventListener('click', (e) => {
+            e.stopPropagation(); // Prevent advancing slide on body click
+            togglePlay();
+        });
+
+        prevBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            prevSlide();
+        });
+
+        nextBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            nextSlide();
+        });
+
+        // Counter animation
+        function animateCounters() {
+            document.querySelectorAll('.slide.active .counter-num[data-target]').forEach(el => {
+                const target = parseInt(el.dataset.target);
+                const suffix = el.dataset.suffix || '';
+                let current = 0;
+                const step = Math.max(1, Math.floor(target / 30));
+                const interval = setInterval(() => {
+                    current += step;
+                    if (current >= target) {
+                        current = target;
+                        clearInterval(interval);
+                    }
+                    el.textContent = current + suffix;
+                }, 40);
+            });
+        }
+
+        // Keyboard navigation
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight') {
+                e.preventDefault();
+                nextSlide();
+            }
+            if (e.key === 'ArrowLeft') {
+                e.preventDefault();
+                prevSlide();
+            }
+            if (e.key === ' ' || e.key === 'p' || e.key === 'P') {
+                e.preventDefault();
+                togglePlay();
+            }
+        });
+
+        // Click to advance on body click (except controls or links)
+        document.addEventListener('click', (e) => {
+            if (e.target.tagName !== 'A' && !e.target.closest('.video-controls') && !e.target.closest('.btn-back')) {
+                nextSlide();
+            }
+        });
+
+        // Initialize
+        goToSlide(1);
+        updatePlayIcon();
+        startPlaybackLoop();
+    </script>
+</body>
+</html>
