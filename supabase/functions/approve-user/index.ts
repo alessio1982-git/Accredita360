@@ -42,7 +42,7 @@ serve(async (req) => {
   }
 
   const users = await fetchRes.json();
-  if (!users || users.length === 0) {
+  if (!Array.isArray(users) || users.length === 0) {
     return htmlResponse("Utente non trovato", "Nessun utente trovato con questo ID. Il link potrebbe essere già stato usato.", false);
   }
 

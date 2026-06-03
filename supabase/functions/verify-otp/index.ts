@@ -52,9 +52,16 @@ serve(async (req) => {
       `${supa("otp_codes")}?email=eq.${encodeURIComponent(emailLower)}&used=eq.false&expires_at=gt.${now}&order=created_at.desc&limit=1`,
       { headers }
     );
-    const otpRows: Array<{ id: number; otp_hash: string }> = await otpRes.json();
+    
+    if (!otpRes.ok) {
+      const errText = await otpRes.text();
+      console.error("[verify-otp] Fetch OTP failed:", errText);
+      return jsonError("Errore nel recupero del codice OTP dal database.", 500);
+    }
 
-    if (!otpRows || otpRows.length === 0) {
+    const otpRows = await otpRes.json();
+
+    if (!Array.isArray(otpRows) || otpRows.length === 0) {
       return jsonError("Codice OTP scaduto o non valido. Richiedi un nuovo codice.", 401);
     }
 
@@ -76,12 +83,16 @@ serve(async (req) => {
       `${supa("users")}?email=eq.${encodeURIComponent(emailLower)}&select=id,email,name,role,registration_status`,
       { headers }
     );
-    const users: Array<{
-      id: string; email: string; name: string;
-      role: string; registration_status: string;
-    }> = await userRes.json();
+    
+    if (!userRes.ok) {
+      const errText = await userRes.text();
+      console.error("[verify-otp] Fetch user failed:", errText);
+      return jsonError("Errore nel recupero dell'utente dal database.", 500);
+    }
 
-    if (!users || users.length === 0) {
+    const users = await userRes.json();
+
+    if (!Array.isArray(users) || users.length === 0) {
       return jsonError("Utente non trovato.", 404);
     }
 

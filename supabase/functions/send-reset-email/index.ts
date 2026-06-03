@@ -38,8 +38,15 @@ serve(async (req) => {
       `${SUPABASE_URL}/rest/v1/users?email=eq.${encodeURIComponent(emailLower)}&select=id,email,name,registration_status`,
       { headers: { "apikey": SERVICE_ROLE_KEY, "Authorization": `Bearer ${SERVICE_ROLE_KEY}` } }
     );
+    
+    if (!fetchRes.ok) {
+      const errText = await fetchRes.text();
+      console.error("[send-reset-email] Fetch user failed:", errText);
+      return jsonError("Errore nel recupero dei dati utente dal database.", 500);
+    }
+
     const users = await fetchRes.json();
-    if (!users || users.length === 0) {
+    if (!Array.isArray(users) || users.length === 0) {
       // Per sicurezza rispondiamo sempre OK (evita email enumeration)
       return jsonOk("Se l'email esiste nel sistema, riceverai il link tra pochi minuti.");
     }
