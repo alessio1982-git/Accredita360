@@ -1,5 +1,4 @@
 import { serve }  from "https://deno.land/std@0.168.0/http/server.ts";
-import * as bcrypt from "https://deno.land/x/bcrypt@v0.4.1/mod.ts";
 
 // ============================================================
 // apply-reset-password — Edge Function Accredita360
@@ -9,7 +8,7 @@ import * as bcrypt from "https://deno.land/x/bcrypt@v0.4.1/mod.ts";
 // Flusso:
 //  1. Cerca l'utente con il token fornito
 //  2. Verifica che il token non sia scaduto
-//  3. Aggiorna la password e cancella il token
+//  3. Aggiorna la password (hash via RPC pgcrypto) e cancella il token
 // ============================================================
 
 const SUPABASE_URL     = Deno.env.get("SUPABASE_URL") ?? "";
@@ -48,10 +47,27 @@ serve(async (req) => {
       return jsonError("Il link è scaduto (validità 1 ora). Richiedi un nuovo link.", 400);
     }
 
-    // ── 3. Hash nuova password con bcrypt (cost 12) ─────────
-    const passwordHash = await bcrypt.hash(newPassword);
+    // ── 3. Hash e aggiorna la password via RPC (pgcrypto) ─────
+    const rpcRes = await fetch(
+      `${SUPABASE_URL}/rest/v1/rpc/hash_user_password`,
+      {
+        method: "POST",
+        headers: {
+          "apikey":        SERVICE_ROLE_KEY,
+          "Authorization": `Bearer ${SERVICE_ROLE_KEY}`,
+          "Content-Type":  "application/json"
+        },
+        body: JSON.stringify({ p_email: user.email, p_password: newPassword })
+      }
+    );
 
-    // ── 4. Aggiorna password (hash) e cancella il token ──────
+    if (!rpcRes.ok) {
+      const errText = await rpcRes.text();
+      console.error("[apply-reset-password] rpc/hash_user_password failed:", errText);
+      return jsonError("Errore nel salvataggio della password.", 500);
+    }
+
+    // ── 4. Cancella il token utilizzato ──────────────────────
     await fetch(
       `${SUPABASE_URL}/rest/v1/users?id=eq.${user.id}`,
       {
@@ -63,8 +79,7 @@ serve(async (req) => {
           "Prefer":        "return=minimal",
         },
         body: JSON.stringify({
-          password:             passwordHash,   // ← bcrypt hash, mai in chiaro
-          reset_token:          null,           // cancella token usato
+          reset_token:          null,
           reset_token_expires:  null,
         }),
       }
