@@ -16,23 +16,28 @@ test('homepage si carica correttamente', async ({ page }) => {
 test('pagina login si apre', async ({ page }) => {
   await page.goto(`${BASE_URL}/login.html`);
   await expect(page).toHaveTitle(/Accredita360|Login|Accedi/i);
-  await expect(page.locator('input[type="email"], #login-email')).toBeVisible();
-  await expect(page.locator('input[type="password"], #login-pwd')).toBeVisible();
+  
+  // Clicca sul pannello utente per mostrare i campi
+  await page.click('#panel-utente');
+  await expect(page.locator('#login-email')).toBeVisible();
+  await expect(page.locator('#login-pwd')).toBeVisible();
 });
 
 // ─── LOGIN: credenziali errate mostrano errore ────────────────
 test('login con credenziali errate mostra errore', async ({ page }) => {
   await page.goto(`${BASE_URL}/login.html`);
 
-  // Intercetta il dialog di errore (alert)
-  page.once('dialog', async dialog => {
-    expect(dialog.message()).toMatch(/errore|credenziali|invalid/i);
-    await dialog.accept();
-  });
+  // Clicca sul pannello utente per mostrare i campi
+  await page.click('#panel-utente');
 
-  await page.fill('input[type="email"], #login-email', 'utente.inesistente@test.com');
-  await page.fill('input[type="password"], #login-pwd', 'passwordsbagliata123');
-  await page.click('button[onclick*="doLogin"], button:has-text("Accedi"), button[type="submit"]');
+  await page.fill('#login-email', 'utente.inesistente@test.com');
+  await page.fill('#login-pwd', 'passwordsbagliata123');
+  await page.click('#login-submit-btn');
+
+  // Verifica che compaia il box di errore con il messaggio appropriato
+  const errorBox = page.locator('#login-error');
+  await expect(errorBox).toBeVisible();
+  await expect(errorBox).toContainText(/errat|non corrett|errore/i);
 
   // Attendi che la pagina non si sia spostata (siamo ancora su login)
   await expect(page).toHaveURL(/login/);
@@ -42,8 +47,8 @@ test('login con credenziali errate mostra errore', async ({ page }) => {
 test('pagina registrazione si apre', async ({ page }) => {
   await page.goto(`${BASE_URL}/register.html`);
   await expect(page).toHaveTitle(/Accredita360|Registr/i);
-  await expect(page.locator('input[type="email"], #reg-email')).toBeVisible();
-  await expect(page.locator('input[type="password"], #reg-pwd')).toBeVisible();
+  await expect(page.locator('#reg-email')).toBeVisible();
+  await expect(page.locator('#reg-pwd')).toBeVisible();
 });
 
 // ─── SICUREZZA: app.html redirige se non loggato ─────────────
