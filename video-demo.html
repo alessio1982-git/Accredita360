@@ -944,7 +944,7 @@
         // AUTO-ADVANCING SLIDE SYSTEM WITH SMOOTH PROGRESS & CONTROLS
         // ══════════════════════════════════════════════════════════
         const TOTAL_SLIDES = 10;
-        const SLIDE_DURATION = 6000; // 6 seconds per slide
+        const SLIDE_DURATION = 11000; // 11 seconds per slide (slower, clearer)
         let currentSlide = 1;
         let isPaused = false;
         let elapsedTime = 0;
@@ -1006,14 +1006,25 @@
 
             const utterance = new SpeechSynthesisUtterance(text);
             utterance.lang = 'it-IT';
-            utterance.rate = 1.0;
+            utterance.rate = 0.85; // Slower, clearer speech rate
             utterance.pitch = 1.0;
 
-            // Optional: Find an Italian voice if loaded
+            // Search for a female Italian voice
             const voices = window.speechSynthesis.getVoices();
-            const itVoice = voices.find(v => v.lang.startsWith('it'));
-            if (itVoice) {
-                utterance.voice = itVoice;
+            const itVoices = voices.filter(v => v.lang.startsWith('it') || v.lang.startsWith('IT'));
+            
+            const femaleKeywords = ['elsa', 'lucia', 'alice', 'paola', 'sonia', 'google italiano', 'zira', 'samantha', 'sara', 'cosimo']; // cosimo is male, let's prefer female names
+            let femaleVoice = itVoices.find(v => {
+                const nameLower = v.name.toLowerCase();
+                // Avoid male names like cosimo
+                if (nameLower.includes('cosimo') || nameLower.includes('uomo') || nameLower.includes('male')) return false;
+                return femaleKeywords.some(kw => nameLower.includes(kw)) || nameLower.includes('female');
+            });
+
+            // Fallback to any Italian voice if no female is found
+            const voice = femaleVoice || itVoices[0];
+            if (voice) {
+                utterance.voice = voice;
             }
 
             window.speechSynthesis.speak(utterance);
