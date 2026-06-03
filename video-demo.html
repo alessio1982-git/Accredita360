@@ -574,6 +574,9 @@
         <button class="control-btn" id="play-btn" title="Riproduci/Pausa">
             <i class='bx bx-pause' id="play-icon"></i>
         </button>
+        <button class="control-btn" id="voice-btn" title="Disattiva voce">
+            <i class='bx bx-volume-full' id="voice-icon"></i>
+        </button>
         <button class="control-btn" id="next-btn" title="Prossima slide">
             <i class='bx bx-skip-next'></i>
         </button>
@@ -956,6 +959,24 @@
         const playIcon = document.getElementById('play-icon');
         const prevBtn = document.getElementById('prev-btn');
         const nextBtn = document.getElementById('next-btn');
+        const voiceBtn = document.getElementById('voice-btn');
+        const voiceIcon = document.getElementById('voice-icon');
+
+        // Narrative voiceover texts for each slide
+        const NARRATIVES = {
+            1: "Benvenuti su Accredita360, la prima piattaforma RegTech progettata per guidare le strutture sanitarie siciliane attraverso l'intero iter di accreditamento e autorizzazione.",
+            2: "La complessità burocratica e i continui cambi normativi rallentano il lavoro delle cliniche, esponendo le strutture a ispezioni impreviste e rischi sanzionatori.",
+            3: "Accredita360 offre un ecosistema completo che trasforma i requisiti di legge in flussi operativi chiari, monitorati e sicuri.",
+            4: "Tutto inizia in trenta secondi: rispondendo a poche domande, la piattaforma genera automaticamente la lista esatta dei requisiti per la tua struttura.",
+            5: "Il nostro sistema visivo a semafori ti mostra immediatamente lo stato di conformità di ogni documento, segnalando le criticità in tempo reale.",
+            6: "Caricando un documento, l'intelligenza artificiale lo analizza all'istante, offrendo una validazione di conformità e suggerendo note correttive.",
+            7: "I documenti validati vengono aggregati in un fascicolo digitale pronto per l'invio all'ASP o all'organismo regionale, completo di istanza precompilata.",
+            8: "La sicurezza è al centro di tutto: i tuoi dati sanitari sono protetti da crittografia a livello enterprise e sistemi pienamente conformi al GDPR.",
+            9: "Offriamo tre soluzioni flessibili: dalla licenza software autonoma, fino alla consulenza chiavi in mano con i nostri ingegneri clinici.",
+            10: "Trasforma la burocrazia in un percorso sicuro. Registrati sulla piattaforma o prenota un colloquio con un nostro consulente."
+        };
+
+        let isMuted = false;
 
         function updatePlayIcon() {
             if (isPaused) {
@@ -965,6 +986,37 @@
                 playIcon.className = 'bx bx-pause';
                 playBtn.title = "Pausa";
             }
+        }
+
+        function updateVoiceIcon() {
+            if (isMuted) {
+                voiceIcon.className = 'bx bx-volume-mute';
+                voiceBtn.title = "Attiva voce";
+            } else {
+                voiceIcon.className = 'bx bx-volume-full';
+                voiceBtn.title = "Disattiva voce";
+            }
+        }
+
+        function speakText(text) {
+            // Cancel current speech synthesis
+            window.speechSynthesis.cancel();
+            
+            if (isMuted || isPaused) return;
+
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'it-IT';
+            utterance.rate = 1.0;
+            utterance.pitch = 1.0;
+
+            // Optional: Find an Italian voice if loaded
+            const voices = window.speechSynthesis.getVoices();
+            const itVoice = voices.find(v => v.lang.startsWith('it'));
+            if (itVoice) {
+                utterance.voice = itVoice;
+            }
+
+            window.speechSynthesis.speak(utterance);
         }
 
         function goToSlide(n) {
@@ -982,6 +1034,9 @@
             // Update progress bar instantly to the base level
             let basePercent = ((n - 1) / TOTAL_SLIDES) * 100;
             progressBar.style.width = `${basePercent}%`;
+
+            // Trigger narration
+            speakText(NARRATIVES[n]);
 
             // Animate counters on slide 1
             if (n === 1) {
@@ -1026,6 +1081,23 @@
         function togglePlay() {
             isPaused = !isPaused;
             updatePlayIcon();
+            
+            if (isPaused) {
+                window.speechSynthesis.cancel();
+            } else {
+                speakText(NARRATIVES[currentSlide]);
+            }
+        }
+
+        function toggleMute() {
+            isMuted = !isMuted;
+            updateVoiceIcon();
+            
+            if (isMuted) {
+                window.speechSynthesis.cancel();
+            } else {
+                speakText(NARRATIVES[currentSlide]);
+            }
         }
 
         // Button Click Handlers
@@ -1042,6 +1114,11 @@
         nextBtn.addEventListener('click', (e) => {
             e.stopPropagation();
             nextSlide();
+        });
+
+        voiceBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            toggleMute();
         });
 
         // Counter animation
@@ -1076,6 +1153,10 @@
                 e.preventDefault();
                 togglePlay();
             }
+            if (e.key === 'm' || e.key === 'M') {
+                e.preventDefault();
+                toggleMute();
+            }
         });
 
         // Click to advance on body click (except controls or links)
@@ -1085,9 +1166,15 @@
             }
         });
 
+        // Stop voice synthesis when leaving the page
+        window.addEventListener('beforeunload', () => {
+            window.speechSynthesis.cancel();
+        });
+
         // Initialize
         goToSlide(1);
         updatePlayIcon();
+        updateVoiceIcon();
         startPlaybackLoop();
     </script>
 </body>
