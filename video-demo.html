@@ -944,7 +944,7 @@
         // AUTO-ADVANCING SLIDE SYSTEM WITH SMOOTH PROGRESS & CONTROLS
         // ══════════════════════════════════════════════════════════
         const TOTAL_SLIDES = 10;
-        const SLIDE_DURATION = 11000; // 11 seconds per slide (slower, clearer)
+        const SLIDE_DURATION = 12000; // 12 seconds per slide (slower, clearer)
         let currentSlide = 1;
         let isPaused = false;
         let elapsedTime = 0;
@@ -962,18 +962,18 @@
         const voiceBtn = document.getElementById('voice-btn');
         const voiceIcon = document.getElementById('voice-icon');
 
-        // Narrative voiceover texts for each slide
+        // Narrative voiceover texts for each slide (with punctuation pauses and spelled-out numbers)
         const NARRATIVES = {
-            1: "Benvenuti su Accredita360, la prima piattaforma RegTech progettata per guidare le strutture sanitarie siciliane attraverso l'intero iter di accreditamento e autorizzazione.",
-            2: "La complessità burocratica e i continui cambi normativi rallentano il lavoro delle cliniche, esponendo le strutture a ispezioni impreviste e rischi sanzionatori.",
-            3: "Accredita360 offre un ecosistema completo che trasforma i requisiti di legge in flussi operativi chiari, monitorati e sicuri.",
-            4: "Tutto inizia in trenta secondi: rispondendo a poche domande, la piattaforma genera automaticamente la lista esatta dei requisiti per la tua struttura.",
-            5: "Il nostro sistema visivo a semafori ti mostra immediatamente lo stato di conformità di ogni documento, segnalando le criticità in tempo reale.",
-            6: "Caricando un documento, l'intelligenza artificiale lo analizza all'istante, offrendo una validazione di conformità e suggerendo note correttive.",
-            7: "I documenti validati vengono aggregati in un fascicolo digitale pronto per l'invio all'ASP o all'organismo regionale, completo di istanza precompilata.",
-            8: "La sicurezza è al centro di tutto: i tuoi dati sanitari sono protetti da crittografia a livello enterprise e sistemi pienamente conformi al GDPR.",
-            9: "Offriamo tre soluzioni flessibili: dalla licenza software autonoma, fino alla consulenza chiavi in mano con i nostri ingegneri clinici.",
-            10: "Trasforma la burocrazia in un percorso sicuro. Registrati sulla piattaforma o prenota un colloquio con un nostro consulente."
+            1: "Benvenuti... su Accredita trecentosessanta. La prima piattaforma RegTech, progettata per guidare, in modo chiaro e sicuro, le strutture sanitarie siciliane. Nell'intero percorso di autorizzazione, e accreditamento.",
+            2: "La complessità delle leggi, e i continui cambi normativi, rallentano le cliniche. Esponendo la tua struttura, a ispezioni impreviste, e gravi sanzioni.",
+            3: "Per questo nasce Accredita trecentosessanta. Un ecosistema completo, che semplifica la conformità alle normative. Senza stress, e senza errori.",
+            4: "La configurazione iniziale, richiede solo trenta secondi. Rispondi a tre semplici domande, e la piattaforma genererà per te, la lista esatta dei requisiti normativi richiesti.",
+            5: "La nostra analisi dei requisiti, con sistema visivo a semafori, ti mostra subito cosa è conforme, cosa va integrato, e cosa è critico.",
+            6: "Carica i tuoi documenti. L'intelligenza artificiale, li analizzerà all'istante. Valutando la conformità alle leggi, e fornendo note utili, per correggere ogni errore.",
+            7: "Tutti i file validati, vengono uniti automaticamente nel Fascicolo Digitale. Generando all'istante, le istanze ufficiali pre-compilate, pronte per essere inviate alle autorità.",
+            8: "La sicurezza dei tuoi dati, è la nostra priorità assoluta. Utilizziamo crittografia avanzata, e server protetti, in piena conformità con il regolamento europeo GDPR.",
+            9: "Offriamo tre modelli di servizio su misura. Dalla licenza software in autonomia, alla consulenza completa, gestita direttamente dal nostro team di ingegneri clinici.",
+            10: "Inizia oggi, a semplificare il tuo accreditamento. Registrati ora, o richiedi un colloquio gratuito, con un nostro consulente."
         };
 
         let isMuted = false;
@@ -1006,7 +1006,7 @@
 
             const utterance = new SpeechSynthesisUtterance(text);
             utterance.lang = 'it-IT';
-            utterance.rate = 0.85; // Slower, clearer speech rate
+            utterance.rate = 0.78; // Slower, clearer, and more relaxed speech rate (was 0.85)
             utterance.pitch = 1.0;
 
             // Search for a female Italian voice
