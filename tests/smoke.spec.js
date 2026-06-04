@@ -128,7 +128,10 @@ test('verifica download modelli e istanze', async ({ page }) => {
 
   await page.goto(`${BASE_URL}/app.html`);
 
-  // Aspettiamo che carichi la pagina della gap analysis
+  // Navighiamo alla Gap Analysis per rendere visibile la tabella dei requisiti
+  await page.click('.nav-links li[data-view="gap-analysis"]');
+
+  // Aspettiamo che carichi la pagina della gap analysis e che i requisiti siano visibili
   await page.waitForSelector('#asp-requirements-list tr', { timeout: 15000 });
 
   // 1. Verifica presenza e funzionamento del bottone "Scarica Modello" nella Gap Analysis
