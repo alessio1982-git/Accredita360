@@ -349,7 +349,7 @@
                                         <tr>
                                             <th>Stato</th><th>Requisito</th><th>Categoria</th>
                                             <th>Norma di Riferimento</th><th>Azione Correttiva</th>
-                                            <th>Carica File</th>
+                                            <th>Azioni</th>
                                         </tr>
                                     </thead>
                                     <tbody id="asp-requirements-list"><!-- Injected via JS --></tbody>
@@ -389,7 +389,7 @@
                                         <tr>
                                             <th>Stato</th><th>Requisito</th><th>Categoria</th>
                                             <th>Norma di Riferimento</th><th>Azione Correttiva</th>
-                                            <th>Carica File</th>
+                                            <th>Azioni</th>
                                         </tr>
                                     </thead>
                                     <tbody id="ota-requirements-list"><!-- Injected via JS --></tbody>
@@ -417,7 +417,7 @@
                 <div id="view-documents" class="view">
                     <div class="gap-header">
                         <h3>Fascicolo Autorizzativo &amp; Accreditamento</h3>
-                        <button class="btn btn-primary" onclick="alert('Generazione ZIP in corso...')"><i class='bx bx-archive-in'></i> Scarica Fascicolo Completo</button>
+                        <button class="btn btn-primary" onclick="app.scaricaFascicoloCompleto()"><i class='bx bx-archive-in'></i> Scarica Fascicolo Completo</button>
                     </div>
                     <div class="welcome-card glass-card" style="margin-bottom: 24px;">
                         <p>Questo modulo aggrega tutti i documenti conformi caricati nella Gap Analysis e genera le Istanze pre-compilate da inviare all'ASP o all'Assessorato (OTA).</p>
@@ -450,12 +450,17 @@
                         <div class="stat-card glass-card" style="flex-direction: column; align-items: flex-start; gap: 10px;">
                             <h4 style="color: var(--primary);"><i class='bx bx-file-blank'></i> Istanza Autorizzazione ASP</h4>
                             <p style="font-size: 13px; color: var(--text-muted);">Modulo standard generato in base al D.A. 890/2002.</p>
-                            <button class="btn btn-outline" style="width: 100%">Genera PDF</button>
+                            <button class="btn btn-outline" style="width: 100%" onclick="app.generaIstanzaASP()">Scarica Istanza ASP</button>
                         </div>
                         <div class="stat-card glass-card" style="flex-direction: column; align-items: flex-start; gap: 10px;">
                             <h4 style="color: var(--success);"><i class='bx bx-file-blank'></i> Istanza Accreditamento OTA</h4>
                             <p style="font-size: 13px; color: var(--text-muted);">Modulo precompilato D.A. 20/2024.</p>
-                            <button class="btn btn-outline" style="width: 100%">Genera PDF</button>
+                            <button class="btn btn-outline" style="width: 100%" onclick="app.generaIstanzaOTA()">Scarica Istanza OTA</button>
+                        </div>
+                        <div class="stat-card glass-card" style="flex-direction: column; align-items: flex-start; gap: 10px;">
+                            <h4 style="color: var(--warning);"><i class='bx bx-file-blank'></i> Istanza Convenzionamento</h4>
+                            <p style="font-size: 13px; color: var(--text-muted);">Domanda accordo contrattuale SSN (D.P.Reg. n. 12/2019).</p>
+                            <button class="btn btn-outline" style="width: 100%" onclick="app.generaIstanzaConvenzionamento()">Scarica Convenzionamento</button>
                         </div>
                     </div>
 

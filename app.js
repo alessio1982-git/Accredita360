@@ -562,7 +562,10 @@ const app = {
                 <td><span style="font-size:12px;padding:4px 8px;background:rgba(255,255,255,0.1);border-radius:4px;">${req.cat}</span></td>
                 <td style="font-size:12px;">${req.norma}</td>
                 <td style="font-size:12px;">${azioneCorrettiva}</td>
-                <td>
+                <td style="white-space: nowrap;">
+                    <button class="btn btn-outline" style="padding:6px 12px; margin-right: 4px;" onclick="app.downloadTemplateById('${req.id}')" title="Scarica il modello precompilato">
+                        <i class='bx bx-download'></i>
+                    </button>
                     <button class="btn btn-outline" style="padding:6px 12px;" onclick="app.uploadFile('${req.id}')" title="Carica il documento">
                         <i class='bx bx-upload'></i>
                     </button>
@@ -698,9 +701,24 @@ const app = {
         setTimeout(() => toast.remove(), 5000);
     },
 
-    downloadTemplate(req) {
+    async downloadTemplate(req) {
         const oggi = new Date().toLocaleDateString('it-IT');
-        const tipoDoc = req.desc.replace('Richiesto: ', '');
+        let tipoDoc = (req.desc || '').replace('Richiesto: ', '');
+        if (!tipoDoc) {
+            tipoDoc = 'Documento di Conformità';
+        }
+
+        // Recupero asincrono dell'anagrafica se non presente in memoria
+        let anagrafica = this.state.anagrafica;
+        if (!anagrafica) {
+            try {
+                anagrafica = await Backend.getAnagrafica();
+                this.state.anagrafica = anagrafica;
+            } catch (e) {
+                console.warn('[downloadTemplate] Errore caricamento anagrafica:', e);
+            }
+        }
+        anagrafica = anagrafica || {};
 
         // Genera il contenuto del documento Word (HTML interpretabile da Word)
         const docContent = `
@@ -755,14 +773,14 @@ const app = {
 
   <div class="section-title">DATI DELLA STRUTTURA SANITARIA</div>
   <table>
-    <tr><th colspan="2">Sezione da compilare a cura del Legale Rappresentante</th></tr>
-    <tr><td class="label">Ragione Sociale</td><td><div class="field-empty">&nbsp;</div></td></tr>
-    <tr><td class="label">Codice Fiscale/P.IVA</td><td><div class="field-empty">&nbsp;</div></td></tr>
-    <tr><td class="label">Sede Legale</td><td><div class="field-empty">&nbsp;</div></td></tr>
-    <tr><td class="label">Tipologia Struttura</td><td><div class="field-empty">&nbsp;</div></td></tr>
-    <tr><td class="label">Direttore Sanitario</td><td><div class="field-empty">&nbsp;</div></td></tr>
-    <tr><td class="label">Legale Rappresentante</td><td><div class="field-empty">&nbsp;</div></td></tr>
-    <tr><td class="label">Recapito</td><td><div class="field-empty">&nbsp;</div></td></tr>
+    <tr><th colspan="2">Sezione precompilata con i dati anagrafici della struttura</th></tr>
+    <tr><td class="label">Ragione Sociale</td><td>${_s(anagrafica.ragione_sociale || anagrafica.nome_struttura || '') || '<div class="field-empty">&nbsp;</div>'}</td></tr>
+    <tr><td class="label">Codice Fiscale/P.IVA</td><td>${_s(anagrafica.partita_iva || anagrafica.codice_fiscale || '') || '<div class="field-empty">&nbsp;</div>'}</td></tr>
+    <tr><td class="label">Sede Legale</td><td>${_s(anagrafica.sede_legale || (anagrafica.indirizzo_op ? (anagrafica.indirizzo_op + ', ' + anagrafica.comune) : '')) || '<div class="field-empty">&nbsp;</div>'}</td></tr>
+    <tr><td class="label">Tipologia Struttura</td><td>${_s(anagrafica.nome_struttura || '') || '<div class="field-empty">&nbsp;</div>'}</td></tr>
+    <tr><td class="label">Direttore Sanitario</td><td>${_s(anagrafica.nome_ds ? (anagrafica.nome_ds + ' ' + anagrafica.cognome_ds + (anagrafica.iscrizione_albo ? ' - Albo: ' + anagrafica.iscrizione_albo : '')) : '') || '<div class="field-empty">&nbsp;</div>'}</td></tr>
+    <tr><td class="label">Legale Rappresentante</td><td>${_s(anagrafica.nome_lr ? (anagrafica.nome_lr + ' ' + anagrafica.cognome_lr + (anagrafica.cf_lr ? ' - C.F. ' + anagrafica.cf_lr : '')) : '') || '<div class="field-empty">&nbsp;</div>'}</td></tr>
+    <tr><td class="label">Recapito</td><td>${_s(anagrafica.tel_struttura || anagrafica.email_struttura || '') || '<div class="field-empty">&nbsp;</div>'}</td></tr>
   </table>
 
   <div class="section-title">DICHIARAZIONE DI CONFORMITÀ</div>
@@ -784,12 +802,12 @@ const app = {
       <td style="width:50%">
         <strong>Legale Rappresentante</strong><br><br>
         Luogo e Data: _________________ ${oggi}<br><br><br>
-        Firma: _______________________________
+        Firma: ${_s(anagrafica.nome_lr ? (anagrafica.nome_lr + ' ' + anagrafica.cognome_lr) : '_______________________________')}
       </td>
       <td style="width:50%">
         <strong>Direttore Sanitario</strong><br><br>
         Luogo e Data: _________________ ${oggi}<br><br><br>
-        Firma: _______________________________
+        Firma: ${_s(anagrafica.nome_ds ? (anagrafica.nome_ds + ' ' + anagrafica.cognome_ds) : '_______________________________')}
       </td>
     </tr>
     <tr>
@@ -2034,6 +2052,299 @@ app.navigate = function(viewId) {
     document.querySelectorAll('.nav-links li').forEach(li => {
         li.classList.toggle('active', li.dataset.view === normalized);
     });
+};
+
+// =============================================================================
+// FUNZIONI DI GENERAZIONE ISTANZE E MODELLI PRECOMPILATI
+// =============================================================================
+
+app._downloadDocFile = function(filename, content) {
+    const blob = new Blob([content], { type: 'application/msword' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+};
+
+app.downloadTemplateById = function(reqId) {
+    const req = appState.requirements.find(r => r.id === reqId);
+    if (req) {
+        this.downloadTemplate(req);
+    } else {
+        this._showErrorToast('Requisito non trovato.');
+    }
+};
+
+app.generaIstanzaASP = async function() {
+    let anagrafica = this.state.anagrafica;
+    if (!anagrafica) {
+        try { anagrafica = await Backend.getAnagrafica(); this.state.anagrafica = anagrafica; } catch(e) {}
+    }
+    anagrafica = anagrafica || {};
+    const oggi = new Date().toLocaleDateString('it-IT');
+    
+    const docContent = `
+<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+<head>
+  <meta charset='UTF-8'>
+  <title>Istanza Autorizzazione ASP</title>
+  <style>
+    body { font-family: 'Arial', sans-serif; margin: 50px; color: #1e293b; line-height: 1.5; }
+    .header { text-align: right; font-size: 12px; color: #64748b; margin-bottom: 40px; }
+    .destinatario { margin-left: 50%; font-weight: bold; margin-bottom: 40px; font-size: 14px; }
+    h1 { font-size: 18px; font-weight: bold; text-align: center; text-transform: uppercase; margin-bottom: 30px; color: #1e3a8a; }
+    .sezione { font-weight: bold; font-size: 13px; color: #1e3a8a; margin-top: 20px; margin-bottom: 10px; border-bottom: 1px solid #cbd5e1; padding-bottom: 4px; }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+    td { padding: 8px 10px; border: 1px solid #cbd5e1; font-size: 12px; }
+    .label { font-weight: bold; background: #f8fafc; width: 180px; }
+    .signature-table { margin-top: 50px; border: none; }
+    .signature-table td { border: none; padding: 20px; text-align: center; }
+  </style>
+</head>
+<body>
+  <div class="header">Spett.le Azienda Sanitaria Provinciale territorialmente competente</div>
+  <div class="destinatario">
+    All'Assessorato della Salute della Regione Siciliana<br>
+    Dipartimento Attività Sanitarie ed Osservatorio Epidemiologico<br>
+    e p.c. Spett.le Azienda Sanitaria Provinciale (A.S.P.)<br>
+    Sede di Competenza
+  </div>
+
+  <h1>Istanza di Rilascio Autorizzazione all'Esercizio di Attività Sanitaria<br>(ai sensi del D.A. 890/2002)</h1>
+
+  <div class="sezione">DATI DEL DICHIARANTE</div>
+  <p style="font-size:12px;">
+    Il sottoscritto <strong>${_s(anagrafica.nome_lr ? (anagrafica.nome_lr + ' ' + anagrafica.cognome_lr) : '_________________________')}</strong>, 
+    in qualità di Legale Rappresentante del soggetto gestore sotto indicato, C.F. <strong>${_s(anagrafica.cf_lr || '_________________________')}</strong>,
+    nato a ___________________ il ____________, residente in ______________ via ___________________ n. ___,
+  </p>
+
+  <div class="sezione">DATI DELLA STRUTTURA SANITARIA E SOGGETTO GESTORE</div>
+  <table>
+    <tr><td class="label">Soggetto Gestore / Ragione Sociale</td><td><strong>${_s(anagrafica.ragione_sociale || anagrafica.nome_struttura || '_________________________')}</strong></td></tr>
+    <tr><td class="label">Partita IVA / Codice Fiscale</td><td>${_s(anagrafica.partita_iva || anagrafica.codice_fiscale || '_________________________')}</td></tr>
+    <tr><td class="label">Sede Legale</td><td>${_s(anagrafica.sede_legale || '_________________________')}</td></tr>
+    <tr><td class="label">Sede Operativa / Struttura</td><td>${_s(anagrafica.nome_struttura || '_________________________')}</td></tr>
+    <tr><td class="label">Indirizzo Sede Operativa</td><td>${_s(anagrafica.indirizzo_op || '_________________________')} - CAP ${_s(anagrafica.cap || '_____')} ${_s(anagrafica.comune || '_________')}</td></tr>
+    <tr><td class="label">Direttore Sanitario</td><td>Dr. ${_s(anagrafica.nome_ds ? (anagrafica.nome_ds + ' ' + anagrafica.cognome_ds) : '_________________________')} (Iscr. Albo: ${_s(anagrafica.iscrizione_albo || '__________')})</td></tr>
+    <tr><td class="label">Recapiti Telefonici / Pec</td><td>Tel: ${_s(anagrafica.tel_struttura || '__________')} &nbsp;|&nbsp; PEC: ${_s(anagrafica.pec || '__________')}</td></tr>
+  </table>
+
+  <h1>CHIEDE</h1>
+  <p style="font-size:12px; text-align:justify;">
+    il rilascio dell'<strong>Autorizzazione all'Esercizio</strong> per la struttura sanitaria sopra indicata, ai sensi delle disposizioni contenute nel <strong>D.A. 17 giugno 2002 n. 890</strong> e successive modifiche ed integrazioni, per l'erogazione di prestazioni sanitarie nella disciplina di: <strong>${_s(anagrafica.specializzazione || '_________________________')}</strong>.
+  </p>
+
+  <h1>DICHIARA SOTTO LA PROPRIA RESPONSABILITÀ</h1>
+  <p style="font-size:12px; text-align:justify;">
+    che la struttura possiede tutti i requisiti minimi strutturali, impiantistici, tecnologici ed organizzativi previsti dal D.A. 890/2002 per la tipologia di appartenenza. Di essere a conoscenza del fatto che l'istanza è soggetta a verifiche ispettive e sopralluogo tecnico da parte del Nucleo di Valutazione dell'ASP competente per territorio.
+  </p>
+
+  <table class="signature-table">
+    <tr>
+      <td style="width:50%">
+        <strong>Il Direttore Sanitario</strong><br><br>
+        _______________________________<br><br>
+        Dr. ${_s(anagrafica.nome_ds ? (anagrafica.nome_ds + ' ' + anagrafica.cognome_ds) : '_________________________')}
+      </td>
+      <td style="width:50%">
+        <strong>Il Legale Rappresentante</strong><br><br>
+        _______________________________<br><br>
+        ${_s(anagrafica.nome_lr ? (anagrafica.nome_lr + ' ' + anagrafica.cognome_lr) : '_________________________')}
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+
+    this._downloadDocFile('Istanza_Autorizzazione_ASP.doc', docContent);
+};
+
+app.generaIstanzaOTA = async function() {
+    let anagrafica = this.state.anagrafica;
+    if (!anagrafica) {
+        try { anagrafica = await Backend.getAnagrafica(); this.state.anagrafica = anagrafica; } catch(e) {}
+    }
+    anagrafica = anagrafica || {};
+    const oggi = new Date().toLocaleDateString('it-IT');
+    
+    const docContent = `
+<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+<head>
+  <meta charset='UTF-8'>
+  <title>Istanza Accreditamento OTA</title>
+  <style>
+    body { font-family: 'Arial', sans-serif; margin: 50px; color: #1e293b; line-height: 1.5; }
+    .header { text-align: right; font-size: 12px; color: #64748b; margin-bottom: 40px; }
+    .destinatario { margin-left: 50%; font-weight: bold; margin-bottom: 40px; font-size: 14px; }
+    h1 { font-size: 18px; font-weight: bold; text-align: center; text-transform: uppercase; margin-bottom: 30px; color: #047857; }
+    .sezione { font-weight: bold; font-size: 13px; color: #047857; margin-top: 20px; margin-bottom: 10px; border-bottom: 1px solid #cbd5e1; padding-bottom: 4px; }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+    td { padding: 8px 10px; border: 1px solid #cbd5e1; font-size: 12px; }
+    .label { font-weight: bold; background: #f8fafc; width: 180px; }
+    .signature-table { margin-top: 50px; border: none; }
+    .signature-table td { border: none; padding: 20px; text-align: center; }
+  </style>
+</head>
+<body>
+  <div class="header">Spett.le Organismo Tecnico di Autovalutazione (OTA) Sicilia</div>
+  <div class="destinatario">
+    All'Assessorato della Salute della Regione Siciliana<br>
+    Dipartimento per la Pianificazione Strategica<br>
+    Servizio 1 - Accreditamento Istituzionale OTA<br>
+    Palermo
+  </div>
+
+  <h1>Istanza di Rilascio Accreditamento Istituzionale<br>(ai sensi del D.A. n. 20 del 9 gennaio 2024)</h1>
+
+  <div class="sezione">DATI DEL DICHIARANTE</div>
+  <p style="font-size:12px;">
+    Il sottoscritto <strong>${_s(anagrafica.nome_lr ? (anagrafica.nome_lr + ' ' + anagrafica.cognome_lr) : '_________________________')}</strong>, 
+    in qualità di Legale Rappresentante della struttura sanitaria gestita sotto indicata, C.F. <strong>${_s(anagrafica.cf_lr || '_________________________')}</strong>,
+  </p>
+
+  <div class="sezione">DATI DELLA STRUTTURA SANITARIA ED ESTREMI DELL'AUTORIZZAZIONE</div>
+  <table>
+    <tr><td class="label">Soggetto Gestore / Ragione Sociale</td><td><strong>${_s(anagrafica.ragione_sociale || anagrafica.nome_struttura || '_________________________')}</strong></td></tr>
+    <tr><td class="label">Partita IVA / Codice Fiscale</td><td>${_s(anagrafica.partita_iva || anagrafica.codice_fiscale || '_________________________')}</td></tr>
+    <tr><td class="label">Sede Operativa / Struttura</td><td>${_s(anagrafica.nome_struttura || '_________________________')}</td></tr>
+    <tr><td class="label">Indirizzo Sede Operativa</td><td>${_s(anagrafica.indirizzo_op || '_________________________')} - CAP ${_s(anagrafica.cap || '_____')} ${_s(anagrafica.comune || '_________')}</td></tr>
+    <tr><td class="label">Direttore Sanitario</td><td>Dr. ${_s(anagrafica.nome_ds ? (anagrafica.nome_ds + ' ' + anagrafica.cognome_ds) : '_________________________')} (Albo: ${_s(anagrafica.iscrizione_albo || '__________')})</td></tr>
+    <tr><td class="label">Autorizzazione Sanitaria ASP</td><td>Rilasciata con Provvedimento n. _________________ del ______________</td></tr>
+  </table>
+
+  <h1>CHIEDE</h1>
+  <p style="font-size:12px; text-align:justify;">
+    la concessione dell'<strong>Accreditamento Istituzionale</strong> ai sensi del <strong>D.A. n. 20/2024 (Requisiti OTA)</strong> per l'erogazione di prestazioni sanitarie a carico del Servizio Sanitario Regionale.
+  </p>
+
+  <h1>DICHIARA E SI IMPEGNA</h1>
+  <p style="font-size:12px; text-align:justify;">
+    che la struttura adotta formalmente il <strong>Manuale della Qualità e le relative Procedure Operative</strong>, ha attivato il sistema di <strong>Incident Reporting</strong> ed ha redatto il <strong>Piano di Risk Management Annuale</strong>. Si impegna a facilitare lo svolgimento delle visite ispettive disposte dall'Organismo Tecnico di Autovalutazione.
+  </p>
+
+  <table class="signature-table">
+    <tr>
+      <td style="width:50%">
+        <strong>Il Direttore Sanitario</strong><br><br>
+        _______________________________<br><br>
+        Dr. ${_s(anagrafica.nome_ds ? (anagrafica.nome_ds + ' ' + anagrafica.cognome_ds) : '_________________________')}
+      </td>
+      <td style="width:50%">
+        <strong>Il Legale Rappresentante</strong><br><br>
+        _______________________________<br><br>
+        ${_s(anagrafica.nome_lr ? (anagrafica.nome_lr + ' ' + anagrafica.cognome_lr) : '_________________________')}
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+
+    this._downloadDocFile('Istanza_Accreditamento_OTA.doc', docContent);
+};
+
+app.generaIstanzaConvenzionamento = async function() {
+    let anagrafica = this.state.anagrafica;
+    if (!anagrafica) {
+        try { anagrafica = await Backend.getAnagrafica(); this.state.anagrafica = anagrafica; } catch(e) {}
+    }
+    anagrafica = anagrafica || {};
+    const oggi = new Date().toLocaleDateString('it-IT');
+    
+    const docContent = `
+<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+<head>
+  <meta charset='UTF-8'>
+  <title>Domanda di Convenzionamento SSN</title>
+  <style>
+    body { font-family: 'Arial', sans-serif; margin: 50px; color: #1e293b; line-height: 1.5; }
+    .header { text-align: right; font-size: 12px; color: #64748b; margin-bottom: 40px; }
+    .destinatario { margin-left: 50%; font-weight: bold; margin-bottom: 40px; font-size: 14px; }
+    h1 { font-size: 18px; font-weight: bold; text-align: center; text-transform: uppercase; margin-bottom: 30px; color: #b45309; }
+    .sezione { font-weight: bold; font-size: 13px; color: #b45309; margin-top: 20px; margin-bottom: 10px; border-bottom: 1px solid #cbd5e1; padding-bottom: 4px; }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+    td { padding: 8px 10px; border: 1px solid #cbd5e1; font-size: 12px; }
+    .label { font-weight: bold; background: #f8fafc; width: 180px; }
+    .signature-table { margin-top: 50px; border: none; }
+    .signature-table td { border: none; padding: 20px; text-align: center; }
+  </style>
+</head>
+<body>
+  <div class="header">Spett.le ASP territorialmente competente</div>
+  <div class="destinatario">
+    All'Assessorato della Salute della Regione Siciliana<br>
+    Dipartimento Pianificazione Strategica<br>
+    Servizio Convenzionamento e Accordi Contrattuali<br>
+    Palermo
+  </div>
+
+  <h1>Domanda per la Stipula di Accordo Contrattuale (Convenzionamento)<br>(ai sensi del D.P.Reg. n. 12/2019)</h1>
+
+  <div class="sezione">DATI DEL DICHIARANTE</div>
+  <p style="font-size:12px;">
+    Il sottoscritto <strong>${_s(anagrafica.nome_lr ? (anagrafica.nome_lr + ' ' + anagrafica.cognome_lr) : '_________________________')}</strong>, 
+    in qualità di Legale Rappresentante della struttura sanitaria sotto indicata, C.F. <strong>${_s(anagrafica.cf_lr || '_________________________')}</strong>,
+  </p>
+
+  <div class="sezione">DATI DELLA STRUTTURA ACCREDITATA</div>
+  <table>
+    <tr><td class="label">Soggetto Gestore / Ragione Sociale</td><td><strong>${_s(anagrafica.ragione_sociale || anagrafica.nome_struttura || '_________________________')}</strong></td></tr>
+    <tr><td class="label">Partita IVA / Codice Fiscale</td><td>${_s(anagrafica.partita_iva || anagrafica.codice_fiscale || '_________________________')}</td></tr>
+    <tr><td class="label">Sede Operativa / Struttura</td><td>${_s(anagrafica.nome_struttura || '_________________________')}</td></tr>
+    <tr><td class="label">Accreditamento Istituzionale OTA</td><td>Ottenuto con D.D.G. n. _________________ del ______________ (in allegato)</td></tr>
+    <tr><td class="label">Posti Letto / Prestazioni richieste</td><td>Prestazioni ambulatoriali e/o diagnostiche nella specialità di: ${_s(anagrafica.specializzazione || '_________________________')}</td></tr>
+  </table>
+
+  <h1>CHIEDE</h1>
+  <p style="font-size:12px; text-align:justify;">
+    la stipula dell'<strong>Accordo Contrattuale (Convenzionamento)</strong> per l'anno corrente ai sensi del <strong>D.P.Reg. n. 12/2019</strong> per l'assegnazione del budget prestazionale e l'erogazione di prestazioni sanitarie a carico del Servizio Sanitario Regionale.
+  </p>
+
+  <div class="sezione">PROPOSTA PIANO DEI VOLUMI PRESTAZIONALI</div>
+  <table>
+    <tr><th>Prestazione / Branca</th><th>Volume Richiesto (N. prestazioni/anno)</th><th>Note / Capacità Operativa Max</th></tr>
+    <tr><td>${_s(anagrafica.specializzazione || 'Branche autorizzate')}</td><td><div style="min-height:20px;">&nbsp;</div></td><td><div style="min-height:20px;">&nbsp;</div></td></tr>
+    <tr><td>Diagnostica e Visite</td><td><div style="min-height:20px;">&nbsp;</div></td><td><div style="min-height:20px;">&nbsp;</div></td></tr>
+  </table>
+
+  <table class="signature-table">
+    <tr>
+      <td style="width:50%">
+        <strong>Il Direttore Sanitario</strong><br><br>
+        _______________________________<br><br>
+        Dr. ${_s(anagrafica.nome_ds ? (anagrafica.nome_ds + ' ' + anagrafica.cognome_ds) : '_________________________')}
+      </td>
+      <td style="width:50%">
+        <strong>Il Legale Rappresentante</strong><br><br>
+        _______________________________<br><br>
+        ${_s(anagrafica.nome_lr ? (anagrafica.nome_lr + ' ' + anagrafica.cognome_lr) : '_________________________')}
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+
+    this._downloadDocFile('Domanda_Convenzionamento_SSN.doc', docContent);
+};
+
+app.scaricaFascicoloCompleto = async function() {
+    this._showSuccessToast("Generazione del fascicolo completo avviata...");
+    
+    // Download sequenziale delle tre istanze principali
+    await this.generaIstanzaASP();
+    
+    setTimeout(async () => {
+        await this.generaIstanzaOTA();
+    }, 1000);
+
+    setTimeout(async () => {
+        await this.generaIstanzaConvenzionamento();
+        this._showSuccessToast("Fascicolo precompilato scaricato con successo nella cartella Download.");
+    }, 2000);
 };
 
 // Start App

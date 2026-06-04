@@ -106,3 +106,77 @@ test('login con successo e verifica assenza loop', async ({ page }) => {
   expect(loadCount).toBeLessThanOrEqual(1);
 });
 
+test('verifica download modelli e istanze', async ({ page }) => {
+  page.on('console', msg => console.log(`[Browser Console] ${msg.type()}: ${msg.text()}`));
+  page.on('pageerror', err => console.log(`[Browser PageError] ${err.message}`));
+
+  // Imposta sessionStorage per impersonare alessio.arlotta@gmail.com
+  await page.addInitScript(() => {
+    const session = {
+      expiresAt: Date.now() + 8 * 60 * 60 * 1000,
+      createdAt: new Date().toISOString(),
+      user: {
+        id: 'user_alessio_temp',
+        email: 'alessio.arlotta@gmail.com',
+        name: 'Alessio Arlotta',
+        role: 'cliente',
+        registration_status: 'active'
+      }
+    };
+    window.sessionStorage.setItem('accredita360_session_v2', JSON.stringify(session));
+  });
+
+  await page.goto(`${BASE_URL}/app.html`);
+
+  // Aspettiamo che carichi la pagina della gap analysis
+  await page.waitForSelector('#asp-requirements-list tr', { timeout: 15000 });
+
+  // 1. Verifica presenza e funzionamento del bottone "Scarica Modello" nella Gap Analysis
+  const downloadButton = page.locator('#asp-requirements-list tr button[title="Scarica il modello precompilato"]').first();
+  await expect(downloadButton).toBeVisible();
+
+  // Intercettiamo il download del modello
+  const [downloadModello] = await Promise.all([
+    page.waitForEvent('download'),
+    downloadButton.click()
+  ]);
+  expect(downloadModello.suggestedFilename()).toContain('Modello_');
+  expect(downloadModello.suggestedFilename()).toContain('.doc');
+
+  // Navighiamo al Fascicolo Documentale
+  await page.click('.nav-links li[data-view="documents"]');
+  await page.waitForSelector('#view-documents', { timeout: 5000 });
+
+  // 2. Verifica presenza dei pulsanti di generazione istanze nel Fascicolo
+  const btnASP = page.locator('button:has-text("Scarica Istanza ASP")');
+  const btnOTA = page.locator('button:has-text("Scarica Istanza OTA")');
+  const btnConv = page.locator('button:has-text("Scarica Convenzionamento")');
+  const btnCompleto = page.locator('button:has-text("Scarica Fascicolo Completo")');
+
+  await expect(btnASP).toBeVisible();
+  await expect(btnOTA).toBeVisible();
+  await expect(btnConv).toBeVisible();
+  await expect(btnCompleto).toBeVisible();
+
+  // Intercettiamo il download dell'istanza ASP
+  const [downloadASP] = await Promise.all([
+    page.waitForEvent('download'),
+    btnASP.click()
+  ]);
+  expect(downloadASP.suggestedFilename()).toBe('Istanza_Autorizzazione_ASP.doc');
+
+  // Intercettiamo il download dell'istanza OTA
+  const [downloadOTA] = await Promise.all([
+    page.waitForEvent('download'),
+    btnOTA.click()
+  ]);
+  expect(downloadOTA.suggestedFilename()).toBe('Istanza_Accreditamento_OTA.doc');
+
+  // Intercettiamo il download dell'istanza Convenzionamento
+  const [downloadConv] = await Promise.all([
+    page.waitForEvent('download'),
+    btnConv.click()
+  ]);
+  expect(downloadConv.suggestedFilename()).toBe('Domanda_Convenzionamento_SSN.doc');
+});
+
