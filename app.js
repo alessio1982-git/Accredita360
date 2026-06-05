@@ -46,6 +46,7 @@ const app = {
         } else {
             this.setupUI(user);
             await this.loadData();
+            this.startRealtimeBridge();
         }
     },
 
@@ -273,6 +274,7 @@ const app = {
 
     async loadData() {
         appState.requirements = await Backend.getRequirements();
+        await this.checkGlobalStatus();
         this.updateStats();
         this.renderSection('asp', 'all');
 
@@ -551,6 +553,32 @@ const app = {
                     </div>`;
             }
 
+            // Gestione Banner Note Consulente
+            let noteConsulenteBanner = '';
+            if (req.noteConsulente) {
+                const noteColor = req.stato === 'green' ? 'var(--success)' : req.stato === 'red' ? 'var(--danger)' : 'var(--warning)';
+                const noteBg = req.stato === 'green' ? 'rgba(16,185,129,0.08)' : req.stato === 'red' ? 'rgba(239,68,68,0.08)' : 'rgba(245,158,11,0.08)';
+                noteConsulenteBanner = `
+                    <div style="margin-top:8px; font-size:11px; padding:8px 12px; background:${noteBg}; border-left:3px solid ${noteColor}; border-radius:4px; color:var(--text-main);">
+                        <div style="display:flex; align-items:flex-start; gap:6px;">
+                            <i class='bx bx-message-rounded-dots' style="color:${noteColor}; font-size:14px; margin-top:1px;"></i>
+                            <div style="flex:1;">
+                                <strong style="color:${noteColor}; display:block; margin-bottom:2px;">Feedback Consulente</strong>
+                                <span>${req.noteConsulente}</span>
+                            </div>
+                        </div>
+                    </div>`;
+            }
+
+            const isFrozen = !!app.state.frozen;
+            const uploadButtonHtml = isFrozen
+                ? `<button class="btn btn-outline" style="padding:6px 10px; opacity:0.5; cursor:not-allowed;" disabled title="Pratica Certificata (Bloccata)">
+                    <i class='bx bx-lock-alt'></i>
+                   </button>`
+                : `<button class="btn btn-outline" style="padding:6px 10px;" onclick="app.uploadFile('${req.id}')" title="Carica il documento">
+                    <i class='bx bx-upload'></i>
+                   </button>`;
+
             tr.innerHTML = `
                 <td><span class="status-badge status-${req.stato}">${statusIcons[req.stato]}</span></td>
                 <td>
@@ -558,6 +586,7 @@ const app = {
                     ${!req.compliance ? `<div class="req-desc">${req.desc}</div>` : ''}
                     ${fileTag}
                     ${complianceBanner}
+                    ${noteConsulenteBanner}
                 </td>
                 <td><span style="font-size:12px;padding:4px 8px;background:rgba(255,255,255,0.1);border-radius:4px;">${req.cat}</span></td>
                 <td style="font-size:12px;">${req.norma}</td>
@@ -569,9 +598,7 @@ const app = {
                     <button class="btn btn-outline" style="padding:6px 10px; margin-right: 4px; border-color: rgba(239, 68, 68, 0.4); color: #ef4444;" onclick="app.downloadTemplateById('${req.id}', 'pdf')" title="Scarica PDF">
                         <i class='bx bxs-file-pdf'></i> PDF
                     </button>
-                    <button class="btn btn-outline" style="padding:6px 10px;" onclick="app.uploadFile('${req.id}')" title="Carica il documento">
-                        <i class='bx bx-upload'></i>
-                    </button>
+                    ${uploadButtonHtml}
                 </td>`;
             listContainer.appendChild(tr);
         });
@@ -619,6 +646,10 @@ const app = {
     },
 
     async uploadFile(reqId) {
+        if (this.state.frozen) {
+            this._showErrorToast('La pratica è certificata e bloccata. Non è possibile caricare nuovi file.');
+            return;
+        }
         // ── Crea un <input type="file"> invisibile e lo attiva ──────────────────
         const input = document.createElement('input');
         input.type   = 'file';
@@ -910,6 +941,10 @@ const app = {
     },
 
     async rinnovaScadenza(reqId) {
+        if (this.state.frozen) {
+            this._showErrorToast('La pratica è certificata e bloccata. Non è possibile rinnovare le scadenze.');
+            return;
+        }
         // Apre file picker reale
         const input = document.createElement('input');
         input.type   = 'file';
@@ -1527,6 +1562,10 @@ const app = {
     },
 
     async salvaAnagrafica() {
+        if (this.state.frozen) {
+            this._showErrorToast('La pratica è certificata e bloccata. Non è possibile salvare modifiche all\'anagrafica.');
+            return;
+        }
         const btn = document.getElementById('anag-save-btn');
         const msg = document.getElementById('anag-save-msg');
         if (btn) { btn.disabled = true; btn.innerHTML = `<i class='bx bx-loader-alt bx-spin'></i> Salvataggio...`; }
@@ -1631,6 +1670,127 @@ app.state = {
     requiredDocs:  { autorizzazioneSanitaria: [], accreditamentoOta: [], convenzionamento: [] },
     compliantDocs: [],
     processingIds: new Set(),
+    frozen:        false
+};
+
+// ── Blocco Pratica e Real-time Bridge ─────────────────────────────────────────
+app.checkGlobalStatus = async function() {
+    try {
+        const struct = await Backend.getCurrentStructure();
+        const profile = struct?.data || {};
+        const gStatus = profile.global_status || 'IN_CORSO';
+        
+        const banner = document.getElementById('cert-success-banner');
+        const protocolEl = document.getElementById('cert-success-protocol');
+        
+        if (gStatus === 'CERTIFIED_AND_APPROVED') {
+            this.state.frozen = true;
+            if (banner) banner.style.display = 'flex';
+            if (protocolEl) {
+                protocolEl.textContent = `Codice Protocollo: ${profile.certificate_protocol || 'ACC-360-DEFAULT'} | Data di Rilascio: ${profile.certified_at ? new Date(profile.certified_at).toLocaleDateString('it-IT') : '—'}`;
+            }
+            
+            // Disabilita modifica anagrafica
+            const saveBtn = document.getElementById('anag-save-btn');
+            if (saveBtn) {
+                saveBtn.disabled = true;
+                saveBtn.style.opacity = '0.5';
+                saveBtn.style.pointerEvents = 'none';
+            }
+            const selectTitolare = document.getElementById('titolare-tipo');
+            if (selectTitolare) selectTitolare.disabled = true;
+            
+            // Disabilita tutti gli input e select nella vista anagrafica
+            document.querySelectorAll('#view-anagrafica input, #view-anagrafica select, #view-anagrafica textarea').forEach(el => {
+                el.disabled = true;
+                el.style.opacity = '0.7';
+            });
+        } else {
+            this.state.frozen = false;
+            if (banner) banner.style.display = 'none';
+        }
+    } catch (e) {
+        console.error('[App] Errore in checkGlobalStatus:', e);
+    }
+};
+
+app.downloadOfficialCertificate = async function() {
+    try {
+        const struct = await Backend.getCurrentStructure();
+        const profile = struct?.data || {};
+        const certUrl = profile.certificate_url;
+        if (!certUrl) {
+            alert('Certificato non ancora generato o non trovato.');
+            return;
+        }
+        // Scarica il file usando il Data URL
+        const a = document.createElement('a');
+        a.href = certUrl;
+        a.download = `Certificato_Conformita_${struct.user_email}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+    } catch (e) {
+        console.error('[App] Errore durante il download del certificato:', e);
+        alert('Errore durante il download del certificato.');
+    }
+};
+
+app._bridgeInterval = null;
+
+app.startRealtimeBridge = function() {
+    this.stopRealtimeBridge();
+    this._bridgeInterval = setInterval(async () => {
+        const user = Backend.getCurrentUser();
+        if (user && user.role !== 'admin' && user.role !== 'consulente') {
+            try {
+                // Controlla se lo stato della struttura o i requisiti sono cambiati
+                const oldReqsSerialized = JSON.stringify(appState.requirements.map(r => ({ id: r.id, stato: r.stato, noteConsulente: r.noteConsulente, file: r.file })));
+                
+                const struct = await Backend.getCurrentStructure();
+                const wasFrozen = !!this.state.frozen;
+                const isFrozen = struct?.data?.global_status === 'CERTIFIED_AND_APPROVED';
+                
+                const remoteReqs = await Backend.getRequirements();
+                const newReqsSerialized = JSON.stringify(remoteReqs.map(r => ({ id: r.id, stato: r.stato, noteConsulente: r.noteConsulente, file: r.file })));
+                
+                if (oldReqsSerialized !== newReqsSerialized || wasFrozen !== isFrozen) {
+                    console.log('[Bridge Sync] Rilevata variazione dal consulente! Aggiornamento in corso...');
+                    appState.requirements = remoteReqs;
+                    this.updateStats();
+                    await this.checkGlobalStatus();
+                    
+                    // Rinfresca le sezioni visualizzate preservando il filtro
+                    const activeAspFilter = document.querySelector('#gap-page-asp .filter-btn.active')?.dataset.filter || 'all';
+                    this.renderSection('asp', activeAspFilter);
+                    
+                    const activeOtaFilter = document.querySelector('#gap-page-ota .filter-btn.active')?.dataset.filter || 'all';
+                    const otaReqs = appState.requirements.filter(r => r.percorso === 'ota');
+                    if (otaReqs.length > 0) {
+                        this.renderSection('ota', activeOtaFilter);
+                    }
+                    
+                    // Aggiorna scadenze
+                    this.renderMaintenanceView();
+                    
+                    // Aggiorna fascicolo se visibile
+                    const fascicoloEl = document.getElementById('view-documents');
+                    if (fascicoloEl && fascicoloEl.classList.contains('active-view')) {
+                        this.renderCompliantList();
+                    }
+                }
+            } catch (err) {
+                console.warn('[Bridge Sync] Polling fallito:', err.message);
+            }
+        }
+    }, 5000);
+};
+
+app.stopRealtimeBridge = function() {
+    if (this._bridgeInterval) {
+        clearInterval(this._bridgeInterval);
+        this._bridgeInterval = null;
+    }
 };
 
 // ── Alias navigate: accetta sia 'view-dashboard' che 'dashboard' ─────────────

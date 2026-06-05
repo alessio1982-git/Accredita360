@@ -286,6 +286,83 @@
             </div>
 
             <!-- ══════════════════════════════════════
+                 VIEW: Dettaglio Cliente
+            ══════════════════════════════════════ -->
+            <div id="view-dettaglio-cliente" class="view">
+                <div class="gap-header" style="margin-bottom: 20px;">
+                    <div style="display:flex; align-items:center; gap:12px;">
+                        <button class="btn btn-outline" style="padding:6px 12px; font-size:13px;" onclick="consulente.navigate('monitoraggio')">
+                            <i class='bx bx-left-arrow-alt'></i> Indietro
+                        </button>
+                        <h3 id="det-client-name" style="margin:0;">Nome Struttura</h3>
+                    </div>
+                    <span class="status-badge" style="background:rgba(16,185,129,0.12); color:#10b981;" id="det-client-type">Poliambulatorio</span>
+                </div>
+
+                <!-- Anagrafica Card -->
+                <div class="glass-card" style="padding:20px; margin-bottom:24px; display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:16px;">
+                    <div>
+                        <strong style="font-size:12px; color:var(--text-muted); text-transform:uppercase;">Email di Riferimento</strong>
+                        <div style="font-size:14px; font-weight:600; margin-top:4px;" id="det-client-email">—</div>
+                    </div>
+                    <div>
+                        <strong style="font-size:12px; color:var(--text-muted); text-transform:uppercase;">Sede Operativa</strong>
+                        <div style="font-size:14px; font-weight:600; margin-top:4px;" id="det-client-sede">—</div>
+                    </div>
+                    <div>
+                        <strong style="font-size:12px; color:var(--text-muted); text-transform:uppercase;">Direttore Sanitario</strong>
+                        <div style="font-size:14px; font-weight:600; margin-top:4px;" id="det-client-direttore">—</div>
+                    </div>
+                    <div>
+                        <strong style="font-size:12px; color:var(--text-muted); text-transform:uppercase;">Stato Pratica</strong>
+                        <div style="font-size:14px; font-weight:700; margin-top:4px;" id="det-client-status-label">—</div>
+                    </div>
+                </div>
+
+                <!-- Tab Navigazione Percorso -->
+                <div class="proc-tab-nav glass-card" style="margin-bottom:20px;">
+                    <button class="proc-tab-btn active" id="det-tab-asp" onclick="consulente.switchDetTab('asp')"><i class='bx bx-building'></i><span>Requisiti ASP (Autorizzazione)</span></button>
+                    <button class="proc-tab-btn" id="det-tab-ota" onclick="consulente.switchDetTab('ota')"><i class='bx bx-medal'></i><span>Requisiti OTA (Accreditamento)</span></button>
+                </div>
+
+                <!-- Lista Requisiti per la Valutazione -->
+                <div class="checklist-container glass-card" style="margin-bottom:24px; padding:20px;">
+                    <div class="checklist-table-wrapper" style="overflow-x:auto;">
+                        <table class="checklist-table" style="width:100%;">
+                            <thead>
+                                <tr>
+                                    <th style="width:100px;">Stato</th>
+                                    <th>Requisito &amp; Documento Caricato</th>
+                                    <th style="width:140px;">Categoria</th>
+                                    <th style="width:100px;">Riferimento</th>
+                                    <th style="width:380px;">Valutazione e Feedback Consulente</th>
+                                </tr>
+                            </thead>
+                            <tbody id="det-requirements-tbody">
+                                <tr><td colspan="5" style="text-align:center; padding:32px; color:var(--text-muted);">Seleziona un cliente.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Sezione Certificazione Finale -->
+                <div class="glass-card" style="padding:24px; border-left:4px solid var(--success); display:flex; align-items:center; justify-content:space-between; gap:20px; flex-wrap:wrap;">
+                    <div style="flex:1; min-width:280px;">
+                        <h4 style="margin:0 0 8px 0; color:var(--success); font-size:16px;"><i class='bx bx-shield-quarter'></i> Rilascio Certificazione Finale Approvata</h4>
+                        <p style="margin:0; font-size:13px; color:var(--text-muted); line-height:1.5;">
+                            Una volta convalidati positivamente tutti i requisiti della Gap Analysis, è possibile sigillare il fascicolo. L'Agent QA verificherà la conformità delle istanze generate e sbloccherà il sigillo finale.
+                        </p>
+                        <div id="det-qa-alerts" style="margin-top:10px; font-size:12px; color:var(--text-muted);"></div>
+                    </div>
+                    <div style="flex-shrink:0;">
+                        <button class="btn" id="btn-issue-cert" style="background:var(--success); border-color:var(--success); color:#fff; padding:10px 24px; font-weight:700;" disabled onclick="consulente.issueFinalCertification()">
+                            <i class='bx bx-award'></i> Rilascia Certificato
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ══════════════════════════════════════
                  VIEW: Quadro Normativo
             ══════════════════════════════════════ -->
             <div id="view-normativa" class="view">
@@ -396,6 +473,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/dompurify@3/dist/purify.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="normativa_db.js?v=10"></script>
     <script src="backend.js?v=10"></script>
     <script src="consulente.js?v=10"></script>
