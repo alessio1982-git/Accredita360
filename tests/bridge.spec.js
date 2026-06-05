@@ -101,7 +101,7 @@ test('E2E Real-time Bridge workflow between User and Consultant', async ({ brows
   });
   
   await pageConsulente.fill('#mon-search', userEmail);
-  const gestisciBtn = pageConsulente.locator(`button[onclick*="${userEmail}"]`);
+  const gestisciBtn = pageConsulente.locator(`#monitoraggio-grid button[onclick*="${userEmail}"]`);
   await expect(gestisciBtn).toBeVisible({ timeout: 15000 });
   await gestisciBtn.click();
   
