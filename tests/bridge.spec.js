@@ -9,24 +9,8 @@ test('E2E Real-time Bridge workflow between User and Consultant', async ({ brows
   const pageUser = await contextUser.newPage();
   const pageConsulente = await contextConsulente.newPage();
 
-  // 2. Imposta sessioni Supabase tramite sessionStorage per evitare login manuale
   const userEmail = `test.struttura.${Date.now()}@example.com`;
-  
-  // Configura sessione Utente
-  await pageUser.addInitScript(({ email }) => {
-    const session = {
-      expiresAt: Date.now() + 8 * 60 * 60 * 1000,
-      createdAt: new Date().toISOString(),
-      user: {
-        id: `user_test_${Date.now()}`,
-        email: email,
-        name: 'Struttura E2E Test',
-        role: 'cliente',
-        registration_status: 'active'
-      }
-    };
-    window.sessionStorage.setItem('accredita360_session_v2', JSON.stringify(session));
-  }, { email: userEmail });
+  const userPassword = 'password123';
 
   // Configura sessione Consulente
   await pageConsulente.addInitScript(() => {
@@ -44,86 +28,107 @@ test('E2E Real-time Bridge workflow between User and Consultant', async ({ brows
     window.sessionStorage.setItem('accredita360_session_v2', JSON.stringify(session));
   });
 
-  // 3. Naviga alle rispettive pagine
-  await pageUser.goto('https://accredita360s.com/app.html');
-  await pageConsulente.goto('https://accredita360s.com/consulente.html');
-
-  // 4. L'utente esegue la profilazione per generare i requisiti
-  // Naviga alla vista profilazione
-  await pageUser.click('.nav-links li[data-view="profiling"]');
+  // ─── FASE 1: REGISTRAZIONE UTENTE ───
+  await pageUser.goto('https://accredita360s.com/register.html');
+  await pageUser.waitForSelector('#reg-email');
+  await pageUser.fill('#reg-name', 'Struttura E2E Test');
+  await pageUser.fill('#reg-email', userEmail);
+  await pageUser.fill('#reg-pwd', userPassword);
   
-  // Seleziona "Poliambulatorio"
+  // Gestisci dialog alert di avvenuta registrazione
+  pageUser.once('dialog', async dialog => {
+    await dialog.accept();
+  });
+  await pageUser.click('#reg-submit-btn');
+  await pageUser.waitForTimeout(3000); // Attendi inserimento DB
+
+  // ─── FASE 2: APPROVAZIONE CONSULENTE ───
+  await pageConsulente.goto('https://accredita360s.com/consulente.html');
+  await pageConsulente.click('.nav-links li[data-view="clienti"]');
+  
+  // Attendi caricamento clienti pendenti
+  const autorizzaBtn = pageConsulente.locator(`tr:has-text("${userEmail}") button`);
+  await expect(autorizzaBtn).toBeVisible({ timeout: 15000 });
+  
+  // Conferma approvazione
+  pageConsulente.once('dialog', async dialog => {
+    await dialog.accept(); // Accetta conferma
+  });
+  await autorizzaBtn.click();
+
+  // Accetta dialog di successo
+  pageConsulente.once('dialog', async dialog => {
+    await dialog.accept();
+  });
+  await pageConsulente.waitForTimeout(2000);
+
+  // ─── FASE 3: LOGIN UTENTE AUTORIZZATO ───
+  await pageUser.goto('https://accredita360s.com/login.html');
+  await pageUser.click('#panel-utente');
+  await pageUser.fill('#login-email', userEmail);
+  await pageUser.fill('#login-pwd', userPassword);
+  await pageUser.click('#login-submit-btn');
+  await pageUser.waitForURL(/app.html/, { timeout: 15000 });
+
+  // ─── FASE 4: PROFILAZIONE STRUTTURA ───
+  await pageUser.click('.nav-links li[data-view="profiling"]');
   await pageUser.waitForSelector('#struttura-type');
   await pageUser.selectOption('#struttura-type', 'poliambulatorio');
-  
-  // Rispondi alle domande
   await pageUser.selectOption('#struttura-elettro', 'no');
-  await pageUser.selectOption('#struttura-auth', 'no'); // Solo requisiti ASP per semplicità/velocità
+  await pageUser.selectOption('#struttura-auth', 'no');
   
   // Genera Gap Analysis
   await pageUser.click('button:has-text("Salva Profilo e Genera Gap Analysis")');
-  
-  // Attendi la tabella dei requisiti
   await pageUser.waitForSelector('#asp-requirements-list tr');
-  
-  // 5. Il Consulente apre il monitoraggio e gestisce la pratica del nuovo cliente
+
+  // ─── FASE 5: APERTURA MONITORAGGIO CONSULENTE ───
   await pageConsulente.click('.nav-links li[data-view="monitoraggio"]');
   await pageConsulente.waitForSelector('#monitoraggio-grid');
   
-  // Forza ricaricamento dati per vedere il nuovo utente appena profilato
+  // Forza ricaricamento dati per vedere il nuovo utente profilato
   await pageConsulente.evaluate(async () => {
     await window.consulente.loadData();
     window.consulente.renderMonitoraggio();
   });
   
-  // Cerca la struttura appena registrata
   await pageConsulente.fill('#mon-search', userEmail);
   const gestisciBtn = pageConsulente.locator(`button[onclick*="${userEmail}"]`);
   await expect(gestisciBtn).toBeVisible({ timeout: 15000 });
   await gestisciBtn.click();
   
-  // Attendi il dettaglio cliente del consulente
   await pageConsulente.waitForSelector('#det-requirements-tbody tr');
-  
-  // 6. L'utente simula l'upload di un documento
+
+  // ─── FASE 6: CARICAMENTO FILE DA UTENTE & BRIDGE REAL-TIME ───
   const uploadBtn = pageUser.locator('#asp-requirements-list tr button[title="Carica il documento"]').first();
   const [fileChooser] = await Promise.all([
     pageUser.waitForEvent('filechooser'),
     uploadBtn.click()
   ]);
   
-  // Carichiamo un file fittizio
   await fileChooser.setFiles({
     name: 'dichiarazione_conformita.pdf',
     mimeType: 'application/pdf',
     buffer: Buffer.from('PDF test content')
   });
   
-  // Gestisci l'alert del confirm di validazione AI
   pageUser.once('dialog', async dialog => {
-    // Clicchiamo su "Annulla" per non fare la validazione AI e simulare l'attesa del consulente
-    await dialog.dismiss();
+    await dialog.dismiss(); // Non avviare validazione AI per testare il consulente
   });
-  
-  // Attendi che il file sia caricato (il toast scompare o lo stato cambia a yellow)
   await pageUser.waitForTimeout(3000);
-  
-  // 7. Il consulente vede il caricamento del file in tempo reale tramite il bridge
+
+  // ─── FASE 7: NOTA DI RIFIUTO DEL CONSULENTE ───
   const reqRowConsulente = pageConsulente.locator('#det-requirements-tbody tr').first();
   await expect(reqRowConsulente.locator('.status-badge')).toContainText(/In Attesa/i, { timeout: 15000 });
   
-  // Il consulente rifiuta il documento inserendo delle note
   await reqRowConsulente.locator('textarea').fill('Documento illeggibile o incompleto.');
-  
-  // Clicca "Richiedi Modifiche"
   await reqRowConsulente.locator('button:has-text("Richiedi Modifiche")').click();
-  
-  // 8. L'utente riceve il rifiuto e vede le note del consulente in tempo reale
+
+  // ─── FASE 8: RICEZIONE NOTA DA PARTE DELL'UTENTE (BRIDGE) ───
   const reqRowUser = pageUser.locator('#asp-requirements-list tr').first();
   await expect(reqRowUser.locator('.status-badge')).toContainText(/Critico/i, { timeout: 15000 });
   await expect(reqRowUser).toContainText('Documento illeggibile o incompleto.', { timeout: 15000 });
-  
-  // 9. L'utente carica nuovamente il documento corretto
+
+  // ─── FASE 9: NUOVO UPLOAD CORRETTO E APPROVAZIONE ───
   const [fileChooser2] = await Promise.all([
     pageUser.waitForEvent('filechooser'),
     uploadBtn.click()
@@ -138,14 +143,14 @@ test('E2E Real-time Bridge workflow between User and Consultant', async ({ brows
   pageUser.once('dialog', async dialog => {
     await dialog.dismiss();
   });
-  
   await pageUser.waitForTimeout(3000);
-  
-  // 10. Il consulente lo approva
+
+  // Approva il documento
   await expect(reqRowConsulente.locator('.status-badge')).toContainText(/In Attesa/i, { timeout: 15000 });
   await reqRowConsulente.locator('button:has-text("Approva")').click();
-  
-  // 11. Rendiamo conformi (green) tutti i requisiti rimasti tramite script injection sul consulente per sbloccare la certificazione
+
+  // ─── FASE 10: CONVALIDA COMPLETA E RILASCIO CERTIFICAZIONE ───
+  // Promuovi tutti i requisiti a green per simulare conformità
   await pageConsulente.evaluate(async (email) => {
     const B = window.Backend;
     const allStructures = await B.getAllStructuresWithRequirements();
@@ -156,46 +161,41 @@ test('E2E Real-time Bridge workflow between User and Consultant', async ({ brows
       }
     }
   }, userEmail);
-  
-  // Il consulente ricarica il dettaglio per aggiornare la UI e sbloccare il bottone certificato
+
   await pageConsulente.evaluate(() => window.consulente.loadClientDetails());
-  
-  // Attendi che il bottone di rilascio certificato sia abilitato
+
   const certBtn = pageConsulente.locator('#btn-issue-cert');
   await expect(certBtn).toBeEnabled({ timeout: 15000 });
-  
-  // Il consulente emette la certificazione
+
+  // Rilascia Certificato
   pageConsulente.once('dialog', async dialog => {
-    await dialog.accept(); // Accetta la conferma di emissione
+    await dialog.accept(); // Accetta conferma
   });
   await certBtn.click();
-  
-  // Attendi la notifica di successo sul consulente
+
+  // Accetta notifica di avvenuto rilascio
   pageConsulente.once('dialog', async dialog => {
-    await dialog.accept(); // Accetta l'alert di successo
+    await dialog.accept();
   });
-  
-  // 12. L'utente riceve la notifica e il blocco pratica in tempo reale
+  await pageConsulente.waitForTimeout(2000);
+
+  // ─── FASE 11: BLOCCO PRATICA E DOWNLOAD CERTIFICATO ───
   const successBanner = pageUser.locator('#cert-success-banner');
   await expect(successBanner).toBeVisible({ timeout: 15000 });
   await expect(successBanner).toContainText('Struttura Certificata con Successo!');
-  
-  // Verifica che l'editing sia bloccato (l'upload button è sostituito o disabilitato)
+
+  // Upload disabilitato
   const disabledUploadBtn = pageUser.locator('#asp-requirements-list tr button[disabled]');
   await expect(disabledUploadBtn).toBeVisible();
-  
-  // Verifica che salvare l'anagrafica mostri un errore di blocco
+
+  // Salvataggio anagrafica bloccato
   await pageUser.click('.nav-links li[data-view="anagrafica"]');
   await pageUser.waitForSelector('#view-anagrafica');
-  
-  // Clicca Salva Anagrafica
   await pageUser.click('#anag-save-btn');
-  
-  // Deve comparire il toast di errore
+
   const errorToast = pageUser.locator('text=La pratica è certificata e bloccata');
   await expect(errorToast).toBeVisible();
 
-  // Pulisci i contesti
   await contextUser.close();
   await contextConsulente.close();
 });
