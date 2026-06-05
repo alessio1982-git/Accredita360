@@ -61,28 +61,34 @@ const Backend = {
      * Approva un utente e avvia la funzione di notifica email.
      */
     async approveUser(userEmail) {
-        const { data, error } = await supabase
+        // 1. Trova l'utente per email per ottenerne l'ID UUID
+        const { data: user, error: findErr } = await supabase
             .from('users')
-            .update({ registration_status: 'active' })
+            .select('id, name')
             .eq('email', userEmail)
-            .select()
             .single();
 
-        if (error) {
-            console.error('[Backend] Errore approveUser:', error);
-            throw new Error('Errore durante l\'approvazione dell\'utente.');
+        if (findErr || !user) {
+            console.error('[Backend] Errore ricerca utente per approvazione:', findErr);
+            throw new Error('Utente non trovato.');
         }
 
-        // Avvia notifica email
-        try {
-            await supabase.functions.invoke('send-approval-email', {
-                body: { userEmail: userEmail, userName: data.name }
-            });
-        } catch(e) {
-            console.warn('[Email] Errore invio email di approvazione:', e);
+        // 2. Richiama l'Edge Function di approvazione per eseguire l'update con privilegi di sistema
+        const resp = await fetch(`${SUPABASE_URL}/functions/v1/approve-user?userId=${user.id}`, {
+            headers: {
+                'apikey':        SUPABASE_KEY,
+                'Authorization': 'Bearer ' + SUPABASE_KEY
+            }
+        });
+
+        if (!resp.ok) {
+            const errText = await resp.text();
+            console.error('[Backend] Errore invocazione Edge Function approve-user:', errText);
+            throw new Error("Errore durante l'approvazione dell'utente tramite Edge Function.");
         }
 
-        return data;
+        // Ritorna un oggetto finto o parziale coerente con la firma precedente
+        return { email: userEmail, name: user.name, registration_status: 'active' };
     },
 
     // =========================================================
