@@ -2077,7 +2077,21 @@ app._downloadFile = function(filename, content, format = 'docx') {
             jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
         };
         
-        html2pdf().from(container).set(opt).save();
+        // Genera il blob da html2pdf per avere controllo completo del download
+        html2pdf().from(container).set(opt).output('blob').then(function(blob) {
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename.replace(/\.docx?$/, '.pdf');
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            setTimeout(() => {
+                URL.revokeObjectURL(url);
+            }, 10000); // Revoca ritardata di 10 secondi per evitare fallimenti download in Chrome
+        }).catch(err => {
+            console.error('[PDF Generation Error]', err);
+        });
     } else {
         let blob;
         if (typeof htmlDocx !== 'undefined') {
@@ -2093,7 +2107,9 @@ app._downloadFile = function(filename, content, format = 'docx') {
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
-        URL.revokeObjectURL(url);
+        setTimeout(() => {
+            URL.revokeObjectURL(url);
+        }, 10000); // Revoca ritardata di 10 secondi per evitare fallimenti download in Chrome
     }
 };
 
