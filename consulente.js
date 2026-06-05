@@ -690,4 +690,5 @@ const consulente = {
     }
 };
 
+window.consulente = consulente;
 document.addEventListener('DOMContentLoaded', () => consulente.init());
