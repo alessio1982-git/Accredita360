@@ -74,8 +74,8 @@ const Backend = {
         }
 
         // 2. Richiama l'Edge Function di approvazione per eseguire l'update con privilegi di sistema
-        // Utilizziamo mode: 'no-cors' ed apikey nella query string per evitare blocchi CORS / preflight
-        await fetch(`${SUPABASE_URL}/functions/v1/approve-user?userId=${user.id}&apikey=${SUPABASE_KEY}`, {
+        // Utilizziamo mode: 'no-cors' per evitare blocchi CORS / preflight
+        await fetch(`${SUPABASE_URL}/functions/v1/approve-user?userId=${user.id}`, {
             method: 'GET',
             mode: 'no-cors'
         });
