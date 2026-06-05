@@ -70,6 +70,12 @@ test('E2E Real-time Bridge workflow between User and Consultant', async ({ brows
   await pageConsulente.click('.nav-links li[data-view="monitoraggio"]');
   await pageConsulente.waitForSelector('#monitoraggio-grid');
   
+  // Forza ricaricamento dati per vedere il nuovo utente appena profilato
+  await pageConsulente.evaluate(async () => {
+    await window.consulente.loadData();
+    window.consulente.renderMonitoraggio();
+  });
+  
   // Cerca la struttura appena registrata
   await pageConsulente.fill('#mon-search', userEmail);
   const gestisciBtn = pageConsulente.locator(`button[onclick*="${userEmail}"]`);
