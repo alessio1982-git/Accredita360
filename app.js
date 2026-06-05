@@ -2079,8 +2079,13 @@ app._downloadFile = function(filename, content, format = 'docx') {
         
         html2pdf().from(container).set(opt).save();
     } else {
-        const mimeType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
-        const blob = new Blob([content], { type: mimeType });
+        let blob;
+        if (typeof htmlDocx !== 'undefined') {
+            blob = htmlDocx.asBlob(content);
+        } else {
+            const mimeType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+            blob = new Blob([content], { type: mimeType });
+        }
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
