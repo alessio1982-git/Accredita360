@@ -49,6 +49,9 @@ test('E2E Real-time Bridge workflow between User and Consultant', async ({ brows
   await pageConsulente.goto('https://accredita360s.com/consulente.html');
 
   // 4. L'utente esegue la profilazione per generare i requisiti
+  // Naviga alla vista profilazione
+  await pageUser.click('.nav-links li[data-view="profiling"]');
+  
   // Seleziona "Poliambulatorio"
   await pageUser.waitForSelector('#struttura-type');
   await pageUser.selectOption('#struttura-type', 'poliambulatorio');
