@@ -2069,12 +2069,6 @@ app._downloadFile = function(filename, content, format = 'docx') {
         container.style.color = '#1e293b';
         container.style.fontFamily = 'Arial, sans-serif';
         
-        // Nascondi il contenitore fuori dallo schermo e inseriscilo nel DOM per calcolare gli stili correttamente
-        container.style.position = 'absolute';
-        container.style.left = '-9999px';
-        container.style.top = '0';
-        document.body.appendChild(container);
-        
         const opt = {
             margin:       [15, 15, 15, 15],
             filename:     filename.replace(/\.docx?$/, '.pdf'),
@@ -2085,9 +2079,6 @@ app._downloadFile = function(filename, content, format = 'docx') {
         
         // Genera il blob da html2pdf per avere controllo completo del download
         html2pdf().from(container).set(opt).output('blob').then(function(blob) {
-            // Rimuovi il contenitore dal DOM una volta eseguito il rendering
-            document.body.removeChild(container);
-            
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
@@ -2100,9 +2091,6 @@ app._downloadFile = function(filename, content, format = 'docx') {
             }, 10000); // Revoca ritardata di 10 secondi per evitare fallimenti download in Chrome
         }).catch(err => {
             console.error('[PDF Generation Error]', err);
-            if (container.parentNode) {
-                document.body.removeChild(container);
-            }
         });
     } else {
         let blob;
