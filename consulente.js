@@ -37,8 +37,8 @@ const consulente = {
         this._B = B;  // salva riferimento per gli altri metodi
         this.setupUI(user);
         this.bindEvents();
-        await this.loadData();
         this.navigate('dashboard-consulente');
+        await this.loadData();
     },
 
     setupUI(user) {
@@ -81,6 +81,15 @@ const consulente = {
         if (viewId !== 'dettaglio-cliente') {
             this.stopRealtimeBridge();
         }
+
+        // Sincronizza active class nella sidebar
+        document.querySelectorAll('.nav-links li').forEach(link => {
+            if (link.dataset.view === viewId) {
+                link.classList.add('active');
+            } else {
+                link.classList.remove('active');
+            }
+        });
 
         document.querySelectorAll('.view').forEach(v => v.classList.remove('active-view'));
         const target = document.getElementById('view-' + viewId);
@@ -126,6 +135,14 @@ const consulente = {
             });
 
             this._buildMonitoraggioData(allStructures);
+
+            // Rerender della vista attiva se dipende dai dati caricati
+            const activeLi = document.querySelector('.nav-links li.active');
+            if (activeLi) {
+                const currentView = activeLi.dataset.view;
+                if (currentView === 'clienti') this.renderClienti();
+                if (currentView === 'monitoraggio') this.renderMonitoraggio();
+            }
 
         } catch(e) {
             console.error('[consulente] Errore caricamento dati:', e);

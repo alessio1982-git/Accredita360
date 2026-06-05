@@ -9,6 +9,11 @@ test('E2E Real-time Bridge workflow between User and Consultant', async ({ brows
   const pageUser = await contextUser.newPage();
   const pageConsulente = await contextConsulente.newPage();
 
+  pageUser.on('console', msg => console.log(`[User Console] ${msg.type()}: ${msg.text()}`));
+  pageUser.on('pageerror', err => console.log(`[User PageError] ${err.message}`));
+  pageConsulente.on('console', msg => console.log(`[Consulente Console] ${msg.type()}: ${msg.text()}`));
+  pageConsulente.on('pageerror', err => console.log(`[Consulente PageError] ${err.message}`));
+
   const userEmail = `test.struttura.${Date.now()}@example.com`;
   const userPassword = 'password123';
 
@@ -31,16 +36,20 @@ test('E2E Real-time Bridge workflow between User and Consultant', async ({ brows
   // ─── FASE 1: REGISTRAZIONE UTENTE ───
   await pageUser.goto('https://accredita360s.com/register.html');
   await pageUser.waitForSelector('#reg-email');
-  await pageUser.fill('#reg-name', 'Struttura E2E Test');
+  await pageUser.fill('#reg-nome', 'Struttura');
+  await pageUser.fill('#reg-cognome', 'E2E Test');
+  await pageUser.fill('#reg-telefono', '3331234567');
   await pageUser.fill('#reg-email', userEmail);
   await pageUser.fill('#reg-pwd', userPassword);
+  await pageUser.fill('#reg-pwd-confirm', userPassword);
+  await pageUser.check('#reg-terms');
   
-  // Gestisci dialog alert di avvenuta registrazione
+  // Gestisci dialog alert di avvenuta registrazione (se presente)
   pageUser.once('dialog', async dialog => {
     await dialog.accept();
   });
   await pageUser.click('#reg-submit-btn');
-  await pageUser.waitForTimeout(3000); // Attendi inserimento DB
+  await pageUser.waitForTimeout(4000); // Attendi inserimento DB
 
   // ─── FASE 2: APPROVAZIONE CONSULENTE ───
   await pageConsulente.goto('https://accredita360s.com/consulente.html');
