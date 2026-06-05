@@ -563,10 +563,13 @@ const app = {
                 <td style="font-size:12px;">${req.norma}</td>
                 <td style="font-size:12px;">${azioneCorrettiva}</td>
                 <td style="white-space: nowrap;">
-                    <button class="btn btn-outline" style="padding:6px 12px; margin-right: 4px;" onclick="app.downloadTemplateById('${req.id}')" title="Scarica il modello precompilato">
-                        <i class='bx bx-download'></i>
+                    <button class="btn btn-outline" style="padding:6px 10px; margin-right: 4px;" onclick="app.downloadTemplateById('${req.id}', 'docx')" title="Scarica DOCX">
+                        <i class='bx bx-file'></i> DOCX
                     </button>
-                    <button class="btn btn-outline" style="padding:6px 12px;" onclick="app.uploadFile('${req.id}')" title="Carica il documento">
+                    <button class="btn btn-outline" style="padding:6px 10px; margin-right: 4px; border-color: rgba(239, 68, 68, 0.4); color: #ef4444;" onclick="app.downloadTemplateById('${req.id}', 'pdf')" title="Scarica PDF">
+                        <i class='bx bxs-file-pdf'></i> PDF
+                    </button>
+                    <button class="btn btn-outline" style="padding:6px 10px;" onclick="app.uploadFile('${req.id}')" title="Carica il documento">
                         <i class='bx bx-upload'></i>
                     </button>
                 </td>`;
@@ -701,7 +704,7 @@ const app = {
         setTimeout(() => toast.remove(), 5000);
     },
 
-    async downloadTemplate(req) {
+    async downloadTemplate(req, format = 'docx') {
         const oggi = new Date().toLocaleDateString('it-IT');
         let tipoDoc = (req.desc || '').replace('Richiesto: ', '');
         if (!tipoDoc) {
@@ -836,16 +839,9 @@ const app = {
 </body>
 </html>`;
 
-        // Crea il file e avvia il download
-        const blob = new Blob([docContent], { type: 'application/msword' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `Modello_${req.id}_${req.titolo.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 40)}.doc`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
+        // Crea il file e avvia il download tramite _downloadFile
+        const filename = `Modello_${req.id}_${req.titolo.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 40)}.docx`;
+        this._downloadFile(filename, docContent, format);
     },
 
     renderMaintenanceView() {
@@ -2020,10 +2016,14 @@ app.renderCompliantList = function(validDocs) {
                 ? `<span style="color:var(--success);font-size:12px;"><i class='bx bx-file'></i> ${_s(file)}</span>`
                 : `<span style="color:var(--text-muted);font-size:12px;">Nessun file</span>`}
             </td>
-            <td>
-                <button class="btn btn-outline" style="padding:5px 10px;font-size:11px;"
-                    onclick="app.downloadTemplate({id:'${doc.id}',titolo:'${titolo}',norma:'${norma}',desc:'',cat:'',stato:'green'})">
-                    <i class='bx bx-download'></i> Modello
+            <td style="white-space: nowrap;">
+                <button class="btn btn-outline" style="padding:5px 8px;font-size:11px;margin-right:4px;"
+                    onclick="app.downloadTemplate({id:'${doc.id}',titolo:'${titolo}',norma:'${norma}',desc:'',cat:'',stato:'green'}, 'docx')">
+                    <i class='bx bx-file'></i> DOCX
+                </button>
+                <button class="btn btn-outline" style="padding:5px 8px;font-size:11px;border-color:rgba(239, 68, 68,0.4);color:#ef4444;"
+                    onclick="app.downloadTemplate({id:'${doc.id}',titolo:'${titolo}',norma:'${norma}',desc:'',cat:'',stato:'green'}, 'pdf')">
+                    <i class='bx bxs-file-pdf'></i> PDF
                 </button>
             </td>
         </tr>`;
@@ -2058,28 +2058,50 @@ app.navigate = function(viewId) {
 // FUNZIONI DI GENERAZIONE ISTANZE E MODELLI PRECOMPILATI
 // =============================================================================
 
-app._downloadDocFile = function(filename, content) {
-    const blob = new Blob([content], { type: 'application/msword' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+app._downloadFile = function(filename, content, format = 'docx') {
+    if (format === 'pdf') {
+        const container = document.createElement('div');
+        container.innerHTML = content;
+        
+        // Applica stili per A4 renderizzato bene
+        container.style.width = '750px';
+        container.style.padding = '20px';
+        container.style.color = '#1e293b';
+        container.style.fontFamily = 'Arial, sans-serif';
+        
+        const opt = {
+            margin:       [15, 15, 15, 15],
+            filename:     filename.replace(/\.docx?$/, '.pdf'),
+            image:        { type: 'jpeg', quality: 0.98 },
+            html2canvas:  { scale: 2, useCORS: true, letterRendering: true },
+            jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        };
+        
+        html2pdf().from(container).set(opt).save();
+    } else {
+        const mimeType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+        const blob = new Blob([content], { type: mimeType });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename.replace(/\.docx?$/, '.docx');
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
 };
 
-app.downloadTemplateById = function(reqId) {
+app.downloadTemplateById = function(reqId, format = 'docx') {
     const req = appState.requirements.find(r => r.id === reqId);
     if (req) {
-        this.downloadTemplate(req);
+        this.downloadTemplate(req, format);
     } else {
         this._showErrorToast('Requisito non trovato.');
     }
 };
 
-app.generaIstanzaASP = async function() {
+app.generaIstanzaASP = async function(format = 'docx') {
     let anagrafica = this.state.anagrafica;
     if (!anagrafica) {
         try { anagrafica = await Backend.getAnagrafica(); this.state.anagrafica = anagrafica; } catch(e) {}
@@ -2161,10 +2183,10 @@ app.generaIstanzaASP = async function() {
 </body>
 </html>`;
 
-    this._downloadDocFile('Istanza_Autorizzazione_ASP.doc', docContent);
+    this._downloadFile('Istanza_Autorizzazione_ASP.docx', docContent, format);
 };
 
-app.generaIstanzaOTA = async function() {
+app.generaIstanzaOTA = async function(format = 'docx') {
     let anagrafica = this.state.anagrafica;
     if (!anagrafica) {
         try { anagrafica = await Backend.getAnagrafica(); this.state.anagrafica = anagrafica; } catch(e) {}
@@ -2244,10 +2266,10 @@ app.generaIstanzaOTA = async function() {
 </body>
 </html>`;
 
-    this._downloadDocFile('Istanza_Accreditamento_OTA.doc', docContent);
+    this._downloadFile('Istanza_Accreditamento_OTA.docx', docContent, format);
 };
 
-app.generaIstanzaConvenzionamento = async function() {
+app.generaIstanzaConvenzionamento = async function(format = 'docx') {
     let anagrafica = this.state.anagrafica;
     if (!anagrafica) {
         try { anagrafica = await Backend.getAnagrafica(); this.state.anagrafica = anagrafica; } catch(e) {}
@@ -2328,22 +2350,22 @@ app.generaIstanzaConvenzionamento = async function() {
 </body>
 </html>`;
 
-    this._downloadDocFile('Domanda_Convenzionamento_SSN.doc', docContent);
+    this._downloadFile('Domanda_Convenzionamento_SSN.docx', docContent, format);
 };
 
-app.scaricaFascicoloCompleto = async function() {
-    this._showSuccessToast("Generazione del fascicolo completo avviata...");
+app.scaricaFascicoloCompleto = async function(format = 'docx') {
+    this._showSuccessToast(`Generazione del fascicolo completo (${format.toUpperCase()}) avviata...`);
     
     // Download sequenziale delle tre istanze principali
-    await this.generaIstanzaASP();
+    await this.generaIstanzaASP(format);
     
     setTimeout(async () => {
-        await this.generaIstanzaOTA();
+        await this.generaIstanzaOTA(format);
     }, 1000);
 
     setTimeout(async () => {
-        await this.generaIstanzaConvenzionamento();
-        this._showSuccessToast("Fascicolo precompilato scaricato con successo nella cartella Download.");
+        await this.generaIstanzaConvenzionamento(format);
+        this._showSuccessToast(`Fascicolo precompilato (${format.toUpperCase()}) scaricato con successo nella cartella Download.`);
     }, 2000);
 };
 

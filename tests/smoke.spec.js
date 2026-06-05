@@ -134,52 +134,92 @@ test('verifica download modelli e istanze', async ({ page }) => {
   // Aspettiamo che carichi la pagina della gap analysis e che i requisiti siano visibili
   await page.waitForSelector('#asp-requirements-list tr', { timeout: 15000 });
 
-  // 1. Verifica presenza e funzionamento del bottone "Scarica Modello" nella Gap Analysis
-  const downloadButton = page.locator('#asp-requirements-list tr button[title="Scarica il modello precompilato"]').first();
-  await expect(downloadButton).toBeVisible();
+  // 1. Verifica presenza e funzionamento dei bottoni "Scarica DOCX" e "Scarica PDF" nella Gap Analysis
+  const downloadDocxBtn = page.locator('#asp-requirements-list tr button[title="Scarica DOCX"]').first();
+  const downloadPdfBtn = page.locator('#asp-requirements-list tr button[title="Scarica PDF"]').first();
+  await expect(downloadDocxBtn).toBeVisible();
+  await expect(downloadPdfBtn).toBeVisible();
 
-  // Intercettiamo il download del modello
-  const [downloadModello] = await Promise.all([
+  // Intercettiamo il download del modello DOCX
+  const [downloadModelloDocx] = await Promise.all([
     page.waitForEvent('download'),
-    downloadButton.click()
+    downloadDocxBtn.click()
   ]);
-  expect(downloadModello.suggestedFilename()).toContain('Modello_');
-  expect(downloadModello.suggestedFilename()).toContain('.doc');
+  expect(downloadModelloDocx.suggestedFilename()).toContain('Modello_');
+  expect(downloadModelloDocx.suggestedFilename()).toContain('.docx');
+
+  // Intercettiamo il download del modello PDF
+  const [downloadModelloPdf] = await Promise.all([
+    page.waitForEvent('download'),
+    downloadPdfBtn.click()
+  ]);
+  expect(downloadModelloPdf.suggestedFilename()).toContain('Modello_');
+  expect(downloadModelloPdf.suggestedFilename()).toContain('.pdf');
 
   // Navighiamo al Fascicolo Documentale
   await page.click('.nav-links li[data-view="documents"]');
   await page.waitForSelector('#view-documents', { timeout: 5000 });
 
   // 2. Verifica presenza dei pulsanti di generazione istanze nel Fascicolo
-  const btnASP = page.locator('button:has-text("Scarica Istanza ASP")');
-  const btnOTA = page.locator('button:has-text("Scarica Istanza OTA")');
-  const btnConv = page.locator('button:has-text("Scarica Convenzionamento")');
-  const btnCompleto = page.locator('button:has-text("Scarica Fascicolo Completo")');
+  const btnASPDocx = page.locator('button[onclick="app.generaIstanzaASP(\'docx\')"]');
+  const btnASPPdf = page.locator('button[onclick="app.generaIstanzaASP(\'pdf\')"]');
+  const btnOTADocx = page.locator('button[onclick="app.generaIstanzaOTA(\'docx\')"]');
+  const btnOTAPdf = page.locator('button[onclick="app.generaIstanzaOTA(\'pdf\')"]');
+  const btnConvDocx = page.locator('button[onclick="app.generaIstanzaConvenzionamento(\'docx\')"]');
+  const btnConvPdf = page.locator('button[onclick="app.generaIstanzaConvenzionamento(\'pdf\')"]');
+  
+  const btnCompletoDocx = page.locator('button[onclick="app.scaricaFascicoloCompleto(\'docx\')"]');
+  const btnCompletoPdf = page.locator('button[onclick="app.scaricaFascicoloCompleto(\'pdf\')"]');
 
-  await expect(btnASP).toBeVisible();
-  await expect(btnOTA).toBeVisible();
-  await expect(btnConv).toBeVisible();
-  await expect(btnCompleto).toBeVisible();
+  await expect(btnASPDocx).toBeVisible();
+  await expect(btnASPPdf).toBeVisible();
+  await expect(btnOTADocx).toBeVisible();
+  await expect(btnOTAPdf).toBeVisible();
+  await expect(btnConvDocx).toBeVisible();
+  await expect(btnConvPdf).toBeVisible();
+  await expect(btnCompletoDocx).toBeVisible();
+  await expect(btnCompletoPdf).toBeVisible();
 
-  // Intercettiamo il download dell'istanza ASP
-  const [downloadASP] = await Promise.all([
+  // Intercettiamo il download dell'istanza ASP DOCX
+  const [downloadASPDocx] = await Promise.all([
     page.waitForEvent('download'),
-    btnASP.click()
+    btnASPDocx.click()
   ]);
-  expect(downloadASP.suggestedFilename()).toBe('Istanza_Autorizzazione_ASP.doc');
+  expect(downloadASPDocx.suggestedFilename()).toBe('Istanza_Autorizzazione_ASP.docx');
 
-  // Intercettiamo il download dell'istanza OTA
-  const [downloadOTA] = await Promise.all([
+  // Intercettiamo il download dell'istanza ASP PDF
+  const [downloadASPPdf] = await Promise.all([
     page.waitForEvent('download'),
-    btnOTA.click()
+    btnASPPdf.click()
   ]);
-  expect(downloadOTA.suggestedFilename()).toBe('Istanza_Accreditamento_OTA.doc');
+  expect(downloadASPPdf.suggestedFilename()).toBe('Istanza_Autorizzazione_ASP.pdf');
 
-  // Intercettiamo il download dell'istanza Convenzionamento
-  const [downloadConv] = await Promise.all([
+  // Intercettiamo il download dell'istanza OTA DOCX
+  const [downloadOTADocx] = await Promise.all([
     page.waitForEvent('download'),
-    btnConv.click()
+    btnOTADocx.click()
   ]);
-  expect(downloadConv.suggestedFilename()).toBe('Domanda_Convenzionamento_SSN.doc');
+  expect(downloadOTADocx.suggestedFilename()).toBe('Istanza_Accreditamento_OTA.docx');
+
+  // Intercettiamo il download dell'istanza OTA PDF
+  const [downloadOTAPdf] = await Promise.all([
+    page.waitForEvent('download'),
+    btnOTAPdf.click()
+  ]);
+  expect(downloadOTAPdf.suggestedFilename()).toBe('Istanza_Accreditamento_OTA.pdf');
+
+  // Intercettiamo il download dell'istanza Convenzionamento DOCX
+  const [downloadConvDocx] = await Promise.all([
+    page.waitForEvent('download'),
+    btnConvDocx.click()
+  ]);
+  expect(downloadConvDocx.suggestedFilename()).toBe('Domanda_Convenzionamento_SSN.docx');
+
+  // Intercettiamo il download dell'istanza Convenzionamento PDF
+  const [downloadConvPdf] = await Promise.all([
+    page.waitForEvent('download'),
+    btnConvPdf.click()
+  ]);
+  expect(downloadConvPdf.suggestedFilename()).toBe('Domanda_Convenzionamento_SSN.pdf');
 });
 
