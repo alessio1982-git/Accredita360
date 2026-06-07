@@ -378,12 +378,26 @@
                         <i class='bx bx-shield-quarter' style='color:#f59e0b;'></i>
                     </div>
                     <h2 style="font-size:20px; font-weight:700; color:var(--text-main); margin-bottom:4px;">Verifica in 2 Passaggi</h2>
-                    <p id="otp-subtitle" style="font-size:13px; color:var(--text-muted);">Inserisci il codice OTP inviato alla tua email</p>
+                    <p id="otp-subtitle" style="font-size:13px; color:var(--text-muted);">Inserisci il codice di sicurezza</p>
                 </div>
 
                 <div id="otp-error" class="error-box" style="display:none;">
                     <i class='bx bx-error-circle' style="font-size:18px; flex-shrink:0;"></i>
                     <span></span>
+                </div>
+
+                <!-- Setup 2FA TOTP (QR Code) -->
+                <div id="totp-setup-container" style="display:none; text-align:center; margin:16px 0;">
+                    <p style="font-size:13px; color:var(--text-muted); margin-bottom:12px; line-height:1.5;">
+                        Scansiona questo QR Code con <strong>Google Authenticator</strong> o un'altra app TOTP per collegare il tuo account:
+                    </p>
+                    <div style="background:#fff; padding:12px; border-radius:16px; display:inline-block; border:1px solid var(--glass-border); margin-bottom:12px;">
+                        <img id="totp-qr" src="" alt="QR Code 2FA" style="width:180px; height:180px; display:block;">
+                    </div>
+                    <div style="font-size:12px; color:var(--text-muted);">
+                        Chiave segreta in chiaro:<br>
+                        <strong id="totp-secret-key" style="font-family:monospace; font-size:14px; color:var(--primary); letter-spacing:1px;"></strong>
+                    </div>
                 </div>
 
                 <!-- 6 caselle OTP -->
@@ -406,10 +420,12 @@
                 </button>
 
                 <div style="text-align:center; margin-top:14px; font-size:13px; color:var(--text-muted);">
-                    Non hai ricevuto il codice?
-                    <a href="#" id="otp-resend-link" onclick="loginApp.resendOtp(); return false;"
-                       style="color:var(--primary); font-weight:600;">Invialo di nuovo</a>
-                    &nbsp;·&nbsp;
+                    <span id="otp-resend-container">
+                        Non hai ricevuto il codice?
+                        <a href="#" id="otp-resend-link" onclick="loginApp.resendOtp(); return false;"
+                           style="color:var(--primary); font-weight:600;">Invialo di nuovo</a>
+                        &nbsp;·&nbsp;
+                    </span>
                     <a href="#" onclick="loginApp.backToLogin(); return false;"
                        style="color:var(--text-muted);">← Torna al login</a>
                 </div>
@@ -589,15 +605,23 @@
                     return showErr(data.message || 'Email o password non corretti.');
                 }
 
-                // ── Admin/Consulente → mostra schermata OTP ──
-                if (data.requires_otp) {
+                // ── Setup 2FA TOTP (Google Authenticator) ──
+                if (data.requires_totp_setup) {
                     setLoading(false);
                     this.pendingEmail = data.email;
-                    this._showOtpCard(data.email);
+                    this._showOtpCard(data.email, true, data.secret);
                     return;
                 }
 
-                // ── Utente normale → sessione con scadenza ───
+                // ── Verifica 2FA TOTP standard ──
+                if (data.requires_totp) {
+                    setLoading(false);
+                    this.pendingEmail = data.email;
+                    this._showOtpCard(data.email, false);
+                    return;
+                }
+
+                // ── Utente normale (senza 2FA, se rimasto attivo) ───
                 this._saveSession(data);
                 this._redirectByRole(data);
 
@@ -607,7 +631,7 @@
             }
         },
 
-        _showOtpCard(email) {
+        _showOtpCard(email, isSetup = false, secret = '') {
             // Nascondi form login, mostra card OTP
             const formArea = document.getElementById('login-form-area');
             formArea.querySelectorAll('.form-group, #login-submit-btn, .divider, .form-footer, #login-error').forEach(el => {
@@ -615,7 +639,24 @@
             });
             const otpCard = document.getElementById('otp-card');
             otpCard.style.display = 'block';
-            document.getElementById('otp-subtitle').textContent = `Codice OTP inviato a ${email} — valido 10 minuti`;
+
+            const setupContainer = document.getElementById('totp-setup-container');
+            const resendLink = document.getElementById('otp-resend-container');
+
+            if (isSetup) {
+                setupContainer.style.display = 'block';
+                if (resendLink) resendLink.style.display = 'none';
+
+                const otpAuthUrl = `otpauth://totp/Accredita360:${email}?secret=${secret}&issuer=Accredita360`;
+                document.getElementById('totp-qr').src = `https://chart.googleapis.com/chart?cht=qr&chs=200x200&chl=${encodeURIComponent(otpAuthUrl)}`;
+                document.getElementById('totp-secret-key').textContent = secret;
+                document.getElementById('otp-subtitle').textContent = "Configura l'app Google Authenticator e inserisci il codice a 6 cifre";
+            } else {
+                setupContainer.style.display = 'none';
+                if (resendLink) resendLink.style.display = 'none';
+                document.getElementById('otp-subtitle').textContent = "Inserisci il codice generato dall'app Google Authenticator";
+            }
+
             // Focus prima cifra
             setTimeout(() => {
                 const first = document.querySelector('.otp-digit');
@@ -679,12 +720,13 @@
 
         backToLogin() {
             this.pendingEmail = null;
-            document.getElementById('otp-card').style.display = 'none';
             const formArea = document.getElementById('login-form-area');
             formArea.querySelectorAll('.form-group, #login-submit-btn, .divider, .form-footer').forEach(el => {
-                el.style.display = '';
+                el.style.display = 'block';
             });
-            hideErr();
+            document.getElementById('otp-card').style.display = 'none';
+            document.getElementById('totp-setup-container').style.display = 'none';
+            hideOtpErr();
         },
 
         _saveSession(user) {

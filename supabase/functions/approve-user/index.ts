@@ -18,6 +18,13 @@ const FROM_EMAIL       = "noreply@accredita360s.com";
 const FROM_NAME        = "Accredita360 Portal";
 const SITE_URL         = "https://accredita360s.com";
 
+function generateBase32Secret(length = 16): string {
+  const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
+  const arr = new Uint8Array(length);
+  crypto.getRandomValues(arr);
+  return Array.from(arr).map(v => alphabet[v % alphabet.length]).join("");
+}
+
 serve(async (req) => {
   const url    = new URL(req.url);
   const userId = url.searchParams.get("userId");
@@ -57,7 +64,8 @@ serve(async (req) => {
     );
   }
 
-  // ── 2. Aggiorna status → 'active' ────────────────────────
+  // ── 2. Aggiorna status → 'active' e genera TOTP Secret ────
+  const totpSecret = generateBase32Secret();
   const updateRes = await fetch(
     `${SUPABASE_URL}/rest/v1/users?id=eq.${encodeURIComponent(userId)}`,
     {
@@ -68,7 +76,7 @@ serve(async (req) => {
         "Content-Type":  "application/json",
         "Prefer":        "return=minimal",
       },
-      body: JSON.stringify({ registration_status: "active" }),
+      body: JSON.stringify({ registration_status: "active", totp_secret: totpSecret, totp_enabled: false }),
     }
   );
 

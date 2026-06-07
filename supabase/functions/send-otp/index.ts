@@ -12,6 +12,10 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 const SUPABASE_URL     = Deno.env.get("SUPABASE_URL") ?? "";
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
 const RESEND_API_KEY   = Deno.env.get("RESEND_API_KEY") ?? "";
+const TWILIO_ACCOUNT_SID = Deno.env.get("TWILIO_ACCOUNT_SID") ?? "";
+const TWILIO_AUTH_TOKEN  = Deno.env.get("TWILIO_AUTH_TOKEN") ?? "";
+const TWILIO_FROM        = Deno.env.get("TWILIO_FROM") ?? "";
+
 const FROM_EMAIL       = "noreply@accredita360s.com";
 const FROM_NAME        = "Accredita360 Portal";
 const OTP_EXPIRY_MINS  = 10;
@@ -26,6 +30,19 @@ async function sha256(text: string): Promise<string> {
   const data    = new TextEncoder().encode(text);
   const hashBuf = await crypto.subtle.digest("SHA-256", data);
   return Array.from(new Uint8Array(hashBuf)).map(b => b.toString(16).padStart(2, "0")).join("");
+}
+
+function formatE164(phone: string): string {
+  let cleaned = phone.replace(/\s+/g, "").replace(/-/g, "");
+  if (cleaned.startsWith("+")) return cleaned;
+  if (cleaned.startsWith("00")) return "+" + cleaned.slice(2);
+  if (cleaned.length === 10 && cleaned.startsWith("3")) {
+    return "+39" + cleaned;
+  }
+  if (cleaned.length === 12 && cleaned.startsWith("39")) {
+    return "+" + cleaned;
+  }
+  return "+" + cleaned;
 }
 
 serve(async (req) => {
@@ -70,9 +87,71 @@ serve(async (req) => {
       body: JSON.stringify({ email: emailLower, otp_hash: otpHash, expires_at: expiresAt }),
     });
 
-    // ── 4. Invia email con OTP via Resend ─────────────────────
-    const displayName = name || emailLower;
-    const html = `<!DOCTYPE html>
+    // ── 3.5. Recupera telefono utente se esiste per invio SMS ──
+    let userPhone = "";
+    let userRole = "";
+    try {
+      const userRes = await fetch(
+        `${SUPABASE_URL}/rest/v1/users?email=eq.${encodeURIComponent(emailLower)}&select=role,telefono`,
+        {
+          headers: {
+            "apikey":        SERVICE_ROLE_KEY,
+            "Authorization": `Bearer ${SERVICE_ROLE_KEY}`,
+            "Content-Type":  "application/json",
+          }
+        }
+      );
+      if (userRes.ok) {
+        const users = await userRes.json();
+        if (Array.isArray(users) && users.length > 0) {
+          userPhone = users[0].telefono || "";
+          userRole  = users[0].role || "";
+        }
+      }
+    } catch (e) {
+      console.error("[send-otp] Errore nel recupero dell'utente dal DB:", e);
+    }
+
+    let smsInviato = false;
+    if (
+      (userRole === "admin" || userRole === "consulente") &&
+      TWILIO_ACCOUNT_SID && TWILIO_AUTH_TOKEN && TWILIO_FROM && userPhone
+    ) {
+      try {
+        const formattedPhone = formatE164(userPhone);
+        const basicAuth = btoa(`${TWILIO_ACCOUNT_SID}:${TWILIO_AUTH_TOKEN}`);
+        const smsBody = new URLSearchParams();
+        smsBody.append("To", formattedPhone);
+        smsBody.append("From", TWILIO_FROM);
+        smsBody.append("Body", `Accredita360: Il tuo codice OTP di accesso e': ${otp}. Valido per 10 minuti.`);
+
+        const twilioRes = await fetch(
+          `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/Messages.json`,
+          {
+            method: "POST",
+            headers: {
+              "Authorization": `Basic ${basicAuth}`,
+              "Content-Type": "application/x-www-form-urlencoded"
+            },
+            body: smsBody.toString()
+          }
+        );
+        if (twilioRes.ok) {
+          smsInviato = true;
+          console.log(`[send-otp] SMS OTP inviato a ${formattedPhone}`);
+        } else {
+          const errText = await twilioRes.text();
+          console.error(`[send-otp] Errore risposta Twilio:`, errText);
+        }
+      } catch (e) {
+        console.error(`[send-otp] Eccezione invio SMS:`, e);
+      }
+    }
+
+    if (!smsInviato) {
+      // ── 4. Invia email con OTP via Resend ─────────────────────
+      const displayName = name || emailLower;
+      const html = `<!DOCTYPE html>
 <html lang="it">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
 <body style="margin:0;padding:0;background:#f8fafc;font-family:'Helvetica Neue',Arial,sans-serif;">
@@ -116,25 +195,29 @@ serve(async (req) => {
 </body>
 </html>`;
 
-    const emailRes = await fetch("https://api.resend.com/emails", {
-      method:  "POST",
-      headers: { "Authorization": `Bearer ${RESEND_API_KEY}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        from:    `${FROM_NAME} <${FROM_EMAIL}>`,
-        to:      [emailLower],
-        subject: `🔐 Il tuo codice di accesso Accredita360: ${otp}`,
-        html,
-      }),
-    });
+      const emailRes = await fetch("https://api.resend.com/emails", {
+        method:  "POST",
+        headers: { "Authorization": `Bearer ${RESEND_API_KEY}`, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          from:    `${FROM_NAME} <${FROM_EMAIL}>`,
+          to:      [emailLower],
+          subject: `🔐 Il tuo codice di accesso Accredita360: ${otp}`,
+          html,
+        }),
+      });
 
-    if (!emailRes.ok) {
-      const err = await emailRes.json();
-      console.error("[send-otp] Errore Resend:", err);
-      return jsonError("Errore nell'invio dell'email OTP.", 500);
+      if (!emailRes.ok) {
+        const err = await emailRes.json();
+        console.error("[send-otp] Errore Resend:", err);
+        return jsonError("Errore nell'invio dell'email OTP.", 500);
+      }
+
+      console.log(`[send-otp] OTP inviato a ${emailLower}, scade: ${expiresAt}`);
+      return jsonOk({ message: `Codice OTP inviato a ${emailLower}.` });
+    } else {
+      console.log(`[send-otp] OTP inviato via SMS a ${formatE164(userPhone)}, scade: ${expiresAt}`);
+      return jsonOk({ message: `Codice OTP inviato via SMS.` });
     }
-
-    console.log(`[send-otp] OTP inviato a ${emailLower}, scade: ${expiresAt}`);
-    return jsonOk({ message: `Codice OTP inviato a ${emailLower}.` });
 
   } catch (err) {
     console.error("[send-otp] Errore interno:", err);
