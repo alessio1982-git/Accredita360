@@ -9,6 +9,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
         :root {
             --primary: #0284c7;
@@ -392,7 +393,7 @@
                         Scansiona questo QR Code con <strong>Google Authenticator</strong> o un'altra app TOTP per collegare il tuo account:
                     </p>
                     <div style="background:#fff; padding:12px; border-radius:16px; display:inline-block; border:1px solid var(--glass-border); margin-bottom:12px;">
-                        <img id="totp-qr" src="" alt="QR Code 2FA" style="width:180px; height:180px; display:block;">
+                        <div id="totp-qr" style="width:180px; height:180px; display:flex; align-items:center; justify-content:center;"></div>
                     </div>
                     <div style="font-size:12px; color:var(--text-muted);">
                         Chiave segreta in chiaro:<br>
@@ -648,7 +649,37 @@
                 if (resendLink) resendLink.style.display = 'none';
 
                 const otpAuthUrl = `otpauth://totp/Accredita360:${email}?secret=${secret}&issuer=Accredita360`;
-                document.getElementById('totp-qr').src = `https://chart.googleapis.com/chart?cht=qr&chs=200x200&chl=${encodeURIComponent(otpAuthUrl)}`;
+                const qrContainer = document.getElementById('totp-qr');
+                qrContainer.innerHTML = '';
+                if (typeof QRCode !== 'undefined') {
+                    try {
+                        new QRCode(qrContainer, {
+                            text: otpAuthUrl,
+                            width: 180,
+                            height: 180,
+                            colorDark : "#0f172a",
+                            colorLight : "#ffffff",
+                            correctLevel : QRCode.CorrectLevel.M
+                        });
+                    } catch (e) {
+                        console.warn('QRCode library error, falling back to image API:', e);
+                        const img = document.createElement('img');
+                        img.src = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(otpAuthUrl)}`;
+                        img.alt = "QR Code 2FA";
+                        img.style.width = "180px";
+                        img.style.height = "180px";
+                        img.style.display = "block";
+                        qrContainer.appendChild(img);
+                    }
+                } else {
+                    const img = document.createElement('img');
+                    img.src = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(otpAuthUrl)}`;
+                    img.alt = "QR Code 2FA";
+                    img.style.width = "180px";
+                    img.style.height = "180px";
+                    img.style.display = "block";
+                    qrContainer.appendChild(img);
+                }
                 document.getElementById('totp-secret-key').textContent = secret;
                 document.getElementById('otp-subtitle').textContent = "Configura l'app Google Authenticator e inserisci il codice a 6 cifre";
             } else {
