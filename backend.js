@@ -42,13 +42,13 @@ const Backend = {
     // =========================================================
 
     /**
-     * Legge tutti gli utenti con stato pending o rejected (sospesi).
+     * Legge tutti gli utenti del sistema (eccetto gli admin) per monitoraggio e gestione.
      */
     async getPendingUsers() {
         const { data, error } = await supabase
             .from('users')
             .select('*')
-            .in('registration_status', ['pending', 'rejected'])
+            .neq('role', 'admin')
             .order('created_at', { ascending: false });
         if (error) {
             console.error('[Backend] Errore getPendingUsers:', error);

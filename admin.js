@@ -109,7 +109,7 @@ const admin = {
         if (regTbody) {
             if (pendingUsers.length === 0) {
                 regTbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:20px; color:var(--text-muted); font-size:13px;">
-                    <i class='bx bx-info-circle'></i> Nessuna richiesta in sospeso o sospesa.
+                    <i class='bx bx-info-circle'></i> Nessun utente registrato nel sistema.
                 </td></tr>`;
             } else {
                 const tipoMap = { persona_fisica: 'Persona Fisica', azienda: 'Azienda / Studio' };
@@ -135,12 +135,21 @@ const admin = {
                                 <i class='bx bx-pause-circle'></i> Sospendi
                             </button>
                         `;
-                    } else {
+                    } else if (u.registration_status === 'rejected') {
                         statusLabel = `<span style="font-size:12px; padding:3px 8px; border-radius:12px; background:rgba(239,68,68,0.12); color:#ef4444; font-weight:600; display:inline-flex; align-items:center; gap:4px;"><i class='bx bx-pause-circle'></i> Sospeso</span>`;
                         actionButtons = `
                             <button class="btn btn-outline" style="padding:6px 10px; font-size:12px; color:var(--success); border-color:var(--success); background:none;"
                                 onclick="admin.approveUser('${_s(u.email)}')">
                                 <i class='bx bx-play-circle'></i> Riattiva
+                            </button>
+                        `;
+                    } else {
+                        // active (Attivo)
+                        statusLabel = `<span style="font-size:12px; padding:3px 8px; border-radius:12px; background:rgba(16,185,129,0.12); color:#10b981; font-weight:600; display:inline-flex; align-items:center; gap:4px;"><i class='bx bx-check-circle'></i> Attivo</span>`;
+                        actionButtons = `
+                            <button class="btn btn-outline" style="padding:6px 10px; font-size:12px; color:var(--warning); border-color:var(--warning); background:none;"
+                                onclick="admin.suspendUser('${_s(u.email)}')">
+                                <i class='bx bx-pause-circle'></i> Sospendi
                             </button>
                         `;
                     }
