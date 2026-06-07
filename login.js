@@ -63,7 +63,7 @@ const loginApp = {
             iconContainer.style.background = "rgba(16,185,129,0.15)";
             title.textContent    = "Accesso Consulente / Amministratore";
             subtitle.textContent = "Area riservata alla gestione delle pratiche e alla supervisione";
-            document.getElementById('login-email').placeholder = "admin@accredita360.it";
+            document.getElementById('login-email').placeholder = "admin@accredita360s.com";
         }
 
         // Pulisce campi e messaggi di errore

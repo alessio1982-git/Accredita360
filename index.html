@@ -536,7 +536,7 @@
             <a href="#contatti">Contatti</a>
         </div>
         <div style="margin-left:auto; display:flex; gap:12px; align-items:center;">
-            <a href="#" class="btn btn-outline open-login-modal-trigger" style="padding:10px 22px; font-size:13px;">
+            <a href="login.html" class="btn btn-outline open-login-modal-trigger" style="padding:10px 22px; font-size:13px;">
               <i class='bx bx-log-in' style="font-size:16px;"></i> Accedi
             </a>
             <button class="btn btn-primary open-register-modal-trigger" style="padding:10px 22px; font-size:13px; border:none; cursor:pointer;">
@@ -673,7 +673,7 @@
                     <li><i class='bx bx-check'></i> Accesso alla piattaforma</li>
                     <li><i class='bx bx-check'></i> Motore normativo</li>
                 </ul>
-                <a href="#" class="btn btn-outline open-login-modal-trigger" style="width: 100%; justify-content: center;">Richiedi Demo</a>
+                <a href="login.html" class="btn btn-outline open-login-modal-trigger" style="width: 100%; justify-content: center;">Richiedi Demo</a>
             </div>
 
             <div class="price-card premium">
@@ -696,7 +696,7 @@
                     <li><i class='bx bx-check'></i> Monitoraggio continuo indicatori</li>
                     <li><i class='bx bx-check'></i> Audit interno simulato pre-OTA</li>
                 </ul>
-                <a href="#" class="btn btn-outline open-login-modal-trigger" style="width: 100%; justify-content: center;">Scopri il Servizio</a>
+                <a href="login.html" class="btn btn-outline open-login-modal-trigger" style="width: 100%; justify-content: center;">Scopri il Servizio</a>
             </div>
         </div>
         </div>
@@ -998,16 +998,12 @@
                     document.getElementById('l-email').placeholder = "struttura@esempio.it";
                 } else {
                     document.getElementById('login-role-consulente').classList.add('active');
-                    document.getElementById('l-email').placeholder = "admin@accredita360.it";
+                    document.getElementById('l-email').placeholder = "admin@accredita360s.com";
                 }
             };
 
             function openLoginModal() {
-                loginModal.classList.add('active');
-                document.body.style.overflow = 'hidden';
-                if (loginError) loginError.style.display = 'none';
-                loginForm.reset();
-                setLoginRole('utente');
+                window.location.href = 'login.html';
             }
 
             function closeLoginModal() {
