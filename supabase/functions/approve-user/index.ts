@@ -28,6 +28,7 @@ function generateBase32Secret(length = 16): string {
 serve(async (req) => {
   const url    = new URL(req.url);
   const userId = url.searchParams.get("userId");
+  const action = url.searchParams.get("action") ?? "approve";
 
   if (!userId) {
     return htmlResponse("Link non valido", "Il link di approvazione non è valido o è scaduto.", false);
@@ -55,7 +56,60 @@ serve(async (req) => {
 
   const user = users[0];
 
-  // ── Già approvato in precedenza ───────────────────────────
+  // ── Gestione Azione: SOSPENDI ──
+  if (action === "suspend") {
+    const updateRes = await fetch(
+      `${SUPABASE_URL}/rest/v1/users?id=eq.${encodeURIComponent(userId)}`,
+      {
+        method: "PATCH",
+        headers: {
+          "apikey":        SERVICE_ROLE_KEY,
+          "Authorization": `Bearer ${SERVICE_ROLE_KEY}`,
+          "Content-Type":  "application/json",
+          "Prefer":        "return=minimal",
+        },
+        body: JSON.stringify({ registration_status: "rejected" }),
+      }
+    );
+
+    if (!updateRes.ok) {
+      console.error("[approve-user] Errore sospensione:", await updateRes.text());
+      return htmlResponse("Errore", "Impossibile sospendere l'account.", false);
+    }
+    console.log(`[approve-user] Account sospeso: ${user.email}`);
+    return htmlResponse(
+      "Account Sospeso ⏸️",
+      `L'account di <strong>${user.name}</strong> (${user.email}) è stato sospeso con successo.`,
+      true
+    );
+  }
+
+  // ── Gestione Azione: ELIMINA ──
+  if (action === "delete") {
+    const deleteRes = await fetch(
+      `${SUPABASE_URL}/rest/v1/users?id=eq.${encodeURIComponent(userId)}`,
+      {
+        method: "DELETE",
+        headers: {
+          "apikey":        SERVICE_ROLE_KEY,
+          "Authorization": `Bearer ${SERVICE_ROLE_KEY}`,
+        },
+      }
+    );
+
+    if (!deleteRes.ok) {
+      console.error("[approve-user] Errore eliminazione:", await deleteRes.text());
+      return htmlResponse("Errore", "Impossibile eliminare l'account.", false);
+    }
+    console.log(`[approve-user] Account eliminato: ${user.email}`);
+    return htmlResponse(
+      "Account Eliminato 🗑️",
+      `L'account di <strong>${user.name}</strong> (${user.email}) è stato eliminato definitivamente.`,
+      true
+    );
+  }
+
+  // ── Già approvato in precedenza (per azione approve) ───────────────────────────
   if (user.registration_status === "active") {
     return htmlResponse(
       "Account già attivo",

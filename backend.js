@@ -42,13 +42,13 @@ const Backend = {
     // =========================================================
 
     /**
-     * Legge tutti gli utenti con stato pending.
+     * Legge tutti gli utenti con stato pending o rejected (sospesi).
      */
     async getPendingUsers() {
         const { data, error } = await supabase
             .from('users')
             .select('*')
-            .eq('registration_status', 'pending')
+            .in('registration_status', ['pending', 'rejected'])
             .order('created_at', { ascending: false });
         if (error) {
             console.error('[Backend] Errore getPendingUsers:', error);
@@ -82,6 +82,52 @@ const Backend = {
 
         // Ritorna un oggetto finto o parziale coerente con la firma precedente
         return { email: userEmail, name: user.name, registration_status: 'active' };
+    },
+
+    /**
+     * Sospende un utente modificando lo stato in 'rejected'.
+     */
+    async suspendUser(userEmail) {
+        const { data: user, error: findErr } = await supabase
+            .from('users')
+            .select('id, name')
+            .eq('email', userEmail)
+            .single();
+
+        if (findErr || !user) {
+            console.error('[Backend] Errore ricerca utente per sospensione:', findErr);
+            throw new Error('Utente non trovato.');
+        }
+
+        await fetch(`${SUPABASE_URL}/functions/v1/approve-user?userId=${user.id}&action=suspend&apikey=${SUPABASE_KEY}`, {
+            method: 'GET',
+            mode: 'no-cors'
+        });
+
+        return { email: userEmail, name: user.name, registration_status: 'rejected' };
+    },
+
+    /**
+     * Elimina definitivamente un utente dal database.
+     */
+    async deleteUser(userEmail) {
+        const { data: user, error: findErr } = await supabase
+            .from('users')
+            .select('id, name')
+            .eq('email', userEmail)
+            .single();
+
+        if (findErr || !user) {
+            console.error('[Backend] Errore ricerca utente per eliminazione:', findErr);
+            throw new Error('Utente non trovato.');
+        }
+
+        await fetch(`${SUPABASE_URL}/functions/v1/approve-user?userId=${user.id}&action=delete&apikey=${SUPABASE_KEY}`, {
+            method: 'GET',
+            mode: 'no-cors'
+        });
+
+        return { email: userEmail, name: user.name };
     },
 
     // =========================================================

@@ -148,8 +148,8 @@
                     </div>
                     <div class="checklist-table-wrapper">
                         <table class="checklist-table">
-                            <thead><tr><th>Utente</th><th>Email</th><th>Tipo</th><th>Data Iscrizione</th><th>Stato</th></tr></thead>
-                            <tbody id="admin-new-registrations"><tr><td colspan="5" style="text-align:center;padding:20px;color:var(--text-muted);"><i class='bx bx-loader-alt'></i> Caricamento...</td></tr></tbody>
+                            <thead><tr><th style="width:40px;text-align:center;"><input type="checkbox" id="select-all-users" onchange="admin.toggleSelectAllUsers(this)" style="cursor:pointer;"></th><th>Utente</th><th>Email</th><th>Tipo</th><th>Data Iscrizione</th><th>Stato</th><th>Azioni</th></tr></thead>
+                            <tbody id="admin-new-registrations"><tr><td colspan="7" style="text-align:center;padding:20px;color:var(--text-muted);"><i class='bx bx-loader-alt'></i> Caricamento...</td></tr></tbody>
                         </table>
                     </div>
                 </div>
@@ -170,7 +170,7 @@
                 <div class="checklist-container glass-card">
                     <div class="checklist-table-wrapper">
                         <table class="checklist-table">
-                            <thead><tr><th>Struttura</th><th>Tipologia</th><th>Requisito</th><th>File Caricato</th><th>Stato</th><th>Note Consulente</th><th>Azioni</th></tr></thead>
+                            <thead><tr><th style="display:flex;align-items:center;gap:8px;"><input type="checkbox" id="select-all-docs" onchange="admin.toggleSelectAllDocs(this)" style="cursor:pointer;"> Struttura</th><th>Tipologia</th><th>Requisito</th><th>File Caricato</th><th>Stato</th><th>Note Consulente</th><th>Azioni</th></tr></thead>
                             <tbody id="consultant-list"></tbody>
                         </table>
                     </div>
