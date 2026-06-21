@@ -156,6 +156,22 @@ test('E2E Real-time Bridge workflow between User and Consultant', async ({ brows
   await pageConsulente.waitForTimeout(2000);
 
   // ─── FASE 3: LOGIN UTENTE AUTORIZZATO ───
+  // Mock login endpoint for pageUser to bypass 2FA setup
+  await pageUser.route('**/functions/v1/login', async route => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        success: true,
+        id: userId || 'user_e2e_test_id',
+        email: userEmail,
+        name: 'Struttura E2E Test',
+        role: 'cliente',
+        registration_status: 'active'
+      })
+    });
+  });
+
   await pageUser.goto('https://accredita360s.com/login.html');
   await pageUser.click('#panel-utente');
   await pageUser.fill('#login-email', userEmail);

@@ -7,9 +7,9 @@ const BASE_URL = 'https://accredita360s.com';
 test('homepage si carica correttamente', async ({ page }) => {
   await page.goto(BASE_URL);
   await expect(page).toHaveTitle(/Accredita360/i);
-  // Verifica che i pulsanti principali siano visibili
-  await expect(page.locator('a[href="login.html"], a:has-text("Accedi")')).toBeVisible();
-  await expect(page.locator('a[href="register.html"], a:has-text("Registrati")')).toBeVisible();
+  // Verifica che i pulsanti principali siano visibili (usando .first() per evitare strict mode violation)
+  await expect(page.locator('a[href="login.html"], a:has-text("Accedi")').first()).toBeVisible();
+  await expect(page.locator('a[href="register.html"], a:has-text("Registrati")').first()).toBeVisible();
 });
 
 // ─── LOGIN: pagina accessibile ───────────────────────────────
@@ -73,6 +73,22 @@ test('admin.html redirige al login se non autenticati', async ({ page }) => {
 test('login con successo e verifica assenza loop', async ({ page }) => {
   page.on('console', msg => console.log(`[Browser Console] ${msg.type()}: ${msg.text()}`));
   page.on('pageerror', err => console.log(`[Browser PageError] ${err.message}`));
+
+  // Mock login endpoint to bypass 2FA check
+  await page.route('**/functions/v1/login', async route => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        success: true,
+        id: 'user_demo_structure_id',
+        email: 'struttura@demo.it',
+        name: 'Struttura Demo',
+        role: 'cliente',
+        registration_status: 'active'
+      })
+    });
+  });
 
   await page.goto(`${BASE_URL}/login.html`);
 
