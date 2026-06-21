@@ -289,8 +289,40 @@ const app = {
         const accordoCard = document.getElementById('accordo-contrattuale-card');
         if (accordoCard) accordoCard.style.display = otaValidati.length > 0 ? 'block' : 'none';
 
+        // Renderizza il badge inquadramento
+        const struct = await Backend.getCurrentStructure();
+        if (struct) {
+            this.renderInquadramentoBadge(struct);
+        }
+
         // Mantenimento dinamico
         this.renderMaintenanceView();
+    },
+
+    renderInquadramentoBadge(struct) {
+        const container = document.getElementById('inquadramento-badge-container');
+        if (!container) return;
+        const features = struct.data?.features || {};
+        const forma = features.formaGiuridica || struct.data?.formaGiuridica || 'societaria';
+        const nProf = features.nProfessionisti || struct.data?.nProfessionisti || 1;
+        const setRequisiti = NormativaDB.Inquadramento_Normativo(struct.type, forma, nProf);
+        
+        const badgeLabel = setRequisiti === 'Allegato_B1_Semplice' 
+            ? 'Allegato B1 - Semplice (D.A. 20/2024)' 
+            : 'Allegato D2 - Complesso (D.A. 20/2024)';
+        const badgeColor = setRequisiti === 'Allegato_B1_Semplice' ? '#10b981' : '#3b82f6';
+        const badgeBg = setRequisiti === 'Allegato_B1_Semplice' ? 'rgba(16,185,129,0.1)' : 'rgba(59,130,246,0.1)';
+        
+        const formaLabel = forma === 'individuale' ? 'Studio Individuale' : 'Società';
+        
+        container.innerHTML = `
+            <span style="font-size: 11px; padding: 4px 10px; background: ${badgeBg}; color: ${badgeColor}; border: 1px solid ${badgeColor}40; border-radius: 20px; font-weight: 700; display: inline-flex; align-items: center; gap: 4px;">
+                <i class='bx bx-shield-quarter'></i> ${badgeLabel}
+            </span>
+            <span style="font-size: 11px; padding: 4px 10px; background: rgba(255,255,255,0.06); color: var(--text-muted); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;">
+                <i class='bx bx-id-card'></i> ${formaLabel} (${nProf} prof.)
+            </span>
+        `;
     },
 
     bindEvents() {
@@ -367,6 +399,15 @@ const app = {
                 </select>
             </div>
             <div class="form-group" id="dynamic-questions" style="display: none;">
+                <label>Qual è la forma giuridica della struttura?</label>
+                <select class="select-box" id="struttura-forma-giuridica" style="margin-bottom: 15px;">
+                    <option value="societaria">Società (Srl, Spa, Snc, Sas, ecc.)</option>
+                    <option value="individuale">Individuale (Studio Monoprofessionale / Persona Fisica)</option>
+                </select>
+
+                <label>Numero di professionisti sanitari operanti nella struttura:</label>
+                <input type="number" class="input-box" id="struttura-n-professionisti" min="1" value="1" style="margin-bottom: 15px; width: 100%; box-sizing: border-box; background: rgba(255,255,255,0.05); color: #fff; border: 1px solid rgba(255,255,255,0.12); padding: 10px 14px; border-radius: 8px;">
+
                 <label>Hai apparecchiature elettromedicali (es. RX, Ecografi)?</label>
                 <select class="select-box" id="struttura-elettro" style="margin-bottom: 15px;">
                     <option value="no">No</option>
@@ -405,13 +446,20 @@ const app = {
         // ── Leggi dati dal form ────────────────────────────────────────────────
         const authEl     = document.getElementById('struttura-auth');
         const elettroEl  = document.getElementById('struttura-elettro');
+        const formaEl    = document.getElementById('struttura-forma-giuridica');
+        const nProfEl    = document.getElementById('struttura-n-professionisti');
+        
         const authData   = authEl   ? authEl.value   : 'no';
         const hasElettro = elettroEl ? elettroEl.value === 'si' : false;
         const wantsAccreditamento = authData === 'si';
+        const formaGiuridica = formaEl ? formaEl.value : 'societaria';
+        const nProfessionisti = nProfEl ? parseInt(nProfEl.value || 1, 10) : 1;
 
         const features = {
             hasElettromedicali: hasElettro,
-            wantsAccreditamento: wantsAccreditamento
+            wantsAccreditamento: wantsAccreditamento,
+            formaGiuridica: formaGiuridica,
+            nProfessionisti: nProfessionisti
         };
 
         // ── Loading state sul pulsante ────────────────────────────────────────
@@ -528,9 +576,11 @@ const app = {
             // Gestione Banner di Compliance
             let complianceBanner = '';
             if (req.compliance && req.compliance !== 'ok') {
-                const color = req.compliance === 'critico' ? 'var(--danger)' : 'var(--warning)';
-                const bg = req.compliance === 'critico' ? 'rgba(239,68,68,0.1)' : 'rgba(245,158,11,0.1)';
-                const icon = req.compliance === 'critico' ? 'bx-error-circle' : 'bx-error';
+                const isRedFlag = req.compliance === 'critico' || req.compliance === 'non_conforme';
+                const label = isRedFlag ? '🚩 Richiesta Correzione Automatica (Flag Rosso AI)' : 'Rilevata non conformità normativa';
+                const color = isRedFlag ? 'var(--danger)' : 'var(--warning)';
+                const bg = isRedFlag ? 'rgba(239,68,68,0.08)' : 'rgba(245,158,11,0.08)';
+                const icon = isRedFlag ? 'bx-error-circle' : 'bx-error';
                 
                 let linkOTA = '';
                 if (req.procedura_ota) {
@@ -542,7 +592,7 @@ const app = {
                         <div style="display:flex; align-items:flex-start; gap:6px;">
                             <i class='bx ${icon}' style="color:${color}; font-size:14px; margin-top:1px;"></i>
                             <div style="flex:1;">
-                                <strong style="color:${color}; display:block; margin-bottom:2px;">Rilevata non conformità normativa</strong>
+                                <strong style="color:${color}; display:block; margin-bottom:2px;">${label}</strong>
                                 <span>${req.desc.split('—').pop() || req.desc}</span>
                                 <div style="margin-top:6px; display:flex; align-items:center;">
                                     <span style="opacity:0.8;">Norma di riferimento: ${req.norma}</span>

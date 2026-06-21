@@ -180,6 +180,24 @@ const NormativaDB = {
         return allSections.find(r => r.id === id) || null;
     },
 
+    Inquadramento_Normativo(structureType, formaGiuridica, nProfessionisti) {
+        // Normalizzazione degli input
+        const type = String(structureType || '').toLowerCase();
+        const forma = String(formaGiuridica || '').toLowerCase();
+        const nProf = parseInt(nProfessionisti || 1, 10);
+
+        if (type === 'poliambulatorio' || type === 'odontoiatria') {
+            if (forma === 'societa' || forma === 'societaria' || nProf > 1) {
+                return 'Allegato_D2_Complessi';
+            } else {
+                return 'Allegato_B1_Semplice';
+            }
+        }
+        
+        // Per RSA, Lab, ADI, Radiologia, Riabilitazione, Casa di Cura
+        return 'Allegato_D2_Complessi';
+    },
+
     generateRequirementsList(structureType, features) {
         let reqs = [];
         reqs = reqs.concat(this.requisitiGenerali);
@@ -197,6 +215,13 @@ const NormativaDB = {
             if (this.requisitiSpecificiOTA[structureType]) {
                 reqs = reqs.concat(this.requisitiSpecificiOTA[structureType]);
             }
+        }
+
+        // Applica l'inquadramento normativo per filtrare i requisiti
+        const setRequisiti = this.Inquadramento_Normativo(structureType, features?.formaGiuridica, features?.nProfessionisti);
+        if (setRequisiti === 'Allegato_B1_Semplice') {
+            const excludedIds = ['GEN_EU_02', 'OTA_02', 'OTA_05', 'OTA_07', 'OTA_11'];
+            reqs = reqs.filter(r => !excludedIds.includes(r.id));
         }
 
         // Rimuovi duplicati

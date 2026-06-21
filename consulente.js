@@ -434,10 +434,24 @@ const consulente = {
                 'domiciliare':'Cure Domiciliari','odontoiatria':'Studio Odontoiatrico',
                 'radiologia':'Diagnostica Immagini','riabilitazione':'Riabilitazione','casa_cura':'Casa di Cura'
             };
-            if (typeEl) typeEl.textContent = tipoLabels[clientData.structure.type] || clientData.structure.type;
+            const profile = clientData.structure.data || {};
+            const features = profile.features || {};
+            const forma = features.formaGiuridica || profile.formaGiuridica || 'societaria';
+            const nProf = features.nProfessionisti || profile.nProfessionisti || 1;
+            const setRequisiti = NormativaDB.Inquadramento_Normativo(clientData.structure.type, forma, nProf);
+            
+            const inquadramentoLabel = setRequisiti === 'Allegato_B1_Semplice' 
+                ? 'Allegato B1 (Semplice) - D.A. 20/2024' 
+                : 'Allegato D2 (Complessi) - D.A. 20/2024';
+            const inquadramentoColor = setRequisiti === 'Allegato_B1_Semplice' ? '#10b981' : '#3b82f6';
+            const inquadramentoBg = setRequisiti === 'Allegato_B1_Semplice' ? 'rgba(16,185,129,0.12)' : 'rgba(59,130,246,0.12)';
+
+            if (typeEl) {
+                const typeLabel = tipoLabels[clientData.structure.type] || clientData.structure.type;
+                typeEl.innerHTML = `${typeLabel} <span style="margin-left: 8px; padding: 2px 6px; font-size: 11px; background: ${inquadramentoBg}; color: ${inquadramentoColor}; border-radius: 4px; border: 1px solid ${inquadramentoColor}30; font-weight: 700;">${inquadramentoLabel}</span>`;
+            }
             if (emailEl) emailEl.textContent = clientData.user.email;
 
-            const profile = clientData.structure.data || {};
             const sedeIndirizzo = profile.indirizzoOperativa || profile.indirizzoLegale || '—';
             const dirSanitario = profile.direttoreSanitario || '—';
 
@@ -499,12 +513,18 @@ const consulente = {
                 : `<div style="font-size:11px;color:var(--text-muted);margin-top:4px;">Nessun documento caricato</div>`;
 
             const noteVal = req.noteConsulente || '';
+            const redFlag = (req.compliance === 'non_conforme' || req.compliance === 'critico')
+                ? `<div style="font-size:11px; margin-top:4px; color:var(--danger); font-weight:600; display:flex; align-items:center; gap:4px;">
+                    <i class='bx bxs-flag-alt'></i> AI: RILEVATA NON CONFORMITÀ (Flag Rosso)
+                   </div>`
+                : '';
 
             return `<tr>
                 <td>${statusBadges[req.stato] || req.stato}</td>
                 <td>
                     <div style="font-weight:600;">${_s(req.titolo)}</div>
                     ${fileLink}
+                    ${redFlag}
                 </td>
                 <td style="font-size:12px;">${_s(req.cat)}</td>
                 <td style="font-size:11px;color:var(--text-muted);">${_s(req.norma)}</td>

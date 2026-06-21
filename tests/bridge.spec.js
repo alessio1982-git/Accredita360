@@ -167,6 +167,8 @@ test('E2E Real-time Bridge workflow between User and Consultant', async ({ brows
   await pageUser.click('.nav-links li[data-view="profiling"]');
   await pageUser.waitForSelector('#struttura-type');
   await pageUser.selectOption('#struttura-type', 'poliambulatorio');
+  await pageUser.selectOption('#struttura-forma-giuridica', 'societaria');
+  await pageUser.fill('#struttura-n-professionisti', '3');
   await pageUser.selectOption('#struttura-elettro', 'no');
   await pageUser.selectOption('#struttura-auth', 'no');
   

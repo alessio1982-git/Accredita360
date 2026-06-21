@@ -514,9 +514,11 @@ const Backend = {
 
         if (!struct) return [];
 
-        const features = struct.data?.features || {
-            hasElettromedicali: false,
-            wantsAccreditamento: false
+        const features = {
+            hasElettromedicali: struct.data?.features?.hasElettromedicali || false,
+            wantsAccreditamento: struct.data?.features?.wantsAccreditamento || false,
+            formaGiuridica: struct.data?.features?.formaGiuridica || struct.data?.formaGiuridica || '',
+            nProfessionisti: struct.data?.features?.nProfessionisti || struct.data?.nProfessionisti || 1
         };
 
         const newReqs = NormativaDB.generateRequirementsList(struct.type, features);
