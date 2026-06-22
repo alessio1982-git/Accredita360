@@ -43,21 +43,39 @@ serve(async (req) => {
       );
     }
 
-    // 2. Cancella i requisiti precedenti
+    // 2. Leggi i requisiti esistenti prima di cancellarli per poter effettuare il merge conservativo
+    const { data: oldReqs } = await supabase
+      .from("requirements")
+      .select("*")
+      .eq("user_email", email);
+
+    // 3. Cancella i requisiti precedenti
     await supabase.from("requirements").delete().eq("user_email", email);
 
-    // 3. Se ci sono requisiti da inserire, li persiste
+    // 4. Se ci sono requisiti da inserire, li persiste eseguendo il merge
     let insertedCount = 0;
     if (requirements && requirements.length > 0) {
-      const toInsert = requirements.map((r: any) => ({
-        user_email:  email,
-        req_id:      r.id,
-        titolo:      r.titolo   || r.id,
-        norma:       r.norma    || "",
-        cat:         r.cat      || "Generale",
-        stato:       r.stato    || "red",
-        desc_text:   r.desc     || "",
-      }));
+      const toInsert = requirements.map((r: any) => {
+        // Cerca corrispondenza nei vecchi requisiti
+        const oldR = (oldReqs || []).find((o: any) => o.req_id === r.id || o.req_id === r.req_id);
+        
+        return {
+          user_email:      email,
+          req_id:          r.id || r.req_id,
+          titolo:          r.titolo   || r.id || r.req_id,
+          norma:           r.norma    || "",
+          cat:             r.cat      || "Generale",
+          stato:           oldR?.stato || r.stato || "red",
+          desc_text:       r.desc     || r.desc_text || "",
+          file_name:       oldR?.file_name || r.file_name || r.file || null,
+          file_url:        oldR?.file_url || r.file_url || null,
+          file_size:       oldR?.file_size || r.file_size || null,
+          file_type:       oldR?.file_type || r.file_type || null,
+          compliance:      oldR?.compliance || r.compliance || null,
+          note_consulente: oldR?.note_consulente || r.note_consulente || r.noteConsulente || null,
+          validated_at:    oldR?.validated_at || r.validated_at || r.validatedAt || null
+        };
+      });
 
       const { error: insErr } = await supabase.from("requirements").insert(toInsert);
       if (insErr) {

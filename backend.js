@@ -397,6 +397,7 @@ const Backend = {
 
     /**
      * Salva il profilo struttura e genera i requisiti.
+    /**
      * Usa la Edge Function save-profiling (service_role) per bypassare RLS.
      * Fallback: salvataggio diretto + generazione locale NormativaDB.
      */
@@ -404,11 +405,26 @@ const Backend = {
         const user = this.getCurrentUser();
         if (!user) return false;
 
+        // 0. Leggi i vecchi requisiti dal DB per la migrazione conservativa
+        let oldReqs = [];
+        try {
+            const { data: dbReqs } = await supabase
+                .from('requirements')
+                .select('*')
+                .eq('user_email', user.email);
+            if (dbReqs) oldReqs = dbReqs;
+        } catch (e) {
+            console.warn('[Backend] Impossibile leggere i vecchi requisiti per la migrazione:', e);
+        }
+
         // Genera i requisiti localmente da NormativaDB (sempre disponibile)
         const features = profilingData?.features || { hasElettromedicali: false, wantsAccreditamento: false };
         const localReqs = (typeof NormativaDB !== 'undefined')
             ? NormativaDB.generateRequirementsList(structureType, features)
             : [];
+
+        // Esegui il merge conservativo (migrazione checklist)
+        const migratedReqs = this._migrateRequirements(oldReqs, localReqs);
 
         // ── Prova prima via Edge Function (service_role server-side) ───────────
         try {
@@ -423,7 +439,7 @@ const Backend = {
                     email:         user.email,
                     structureType,
                     profilingData,
-                    requirements:  localReqs
+                    requirements:  migratedReqs
                 })
             });
             if (resp.ok) {
@@ -457,16 +473,23 @@ const Backend = {
         // 2. Cancella requisiti precedenti
         await supabase.from('requirements').delete().eq('user_email', user.email);
 
-        // 3. Inserisce i nuovi requisiti generati da NormativaDB
-        if (localReqs.length > 0) {
-            const toInsert = localReqs.map(r => ({
-                user_email: user.email,
-                req_id:     r.id,
-                titolo:     r.titolo || r.id,
-                norma:      r.norma  || '',
-                cat:        r.cat    || 'Generale',
-                stato:      r.stato  || 'red',
-                desc_text:  r.desc   || ''
+        // 3. Inserisce i nuovi requisiti generati e migrati da NormativaDB
+        if (migratedReqs.length > 0) {
+            const toInsert = migratedReqs.map(r => ({
+                user_email:      user.email,
+                req_id:          r.id || r.req_id,
+                titolo:          r.titolo || r.id || r.req_id,
+                norma:           r.norma  || '',
+                cat:             r.cat    || 'Generale',
+                stato:           r.stato  || 'red',
+                desc_text:       r.desc   || r.desc_text || '',
+                file_name:       r.file_name || r.file || null,
+                file_url:        r.file_url || null,
+                file_size:       r.file_size || null,
+                file_type:       r.file_type || null,
+                compliance:      r.compliance || null,
+                note_consulente: r.note_consulente || r.noteConsulente || null,
+                validated_at:    r.validated_at || r.validatedAt || null
             }));
             const { error: insErr } = await supabase.from('requirements').insert(toInsert);
             if (insErr) {
@@ -478,6 +501,35 @@ const Backend = {
         }
 
         return true; // Sempre true — i requisiti locali sono pronti anche senza DB
+    },
+
+    /**
+     * Esegue il merge conservativo (migrazione) tra la vecchia lista e la nuova.
+     * Preserva i documenti, lo stato di validazione e le note del consulente.
+     */
+    _migrateRequirements(oldReqs, newReqs) {
+        if (!oldReqs || oldReqs.length === 0) return newReqs;
+
+        return newReqs.map(newR => {
+            const oldR = oldReqs.find(o => o.req_id === newR.id);
+            if (oldR) {
+                return {
+                    ...newR,
+                    stato:           oldR.stato || newR.stato || 'red',
+                    file:            oldR.file_name || null,
+                    file_name:       oldR.file_name || null,
+                    file_url:        oldR.file_url || null,
+                    file_size:       oldR.file_size || null,
+                    file_type:       oldR.file_type || null,
+                    compliance:      oldR.compliance || null,
+                    noteConsulente:  oldR.note_consulente || null,
+                    note_consulente: oldR.note_consulente || null,
+                    validatedAt:     oldR.validated_at || null,
+                    validated_at:    oldR.validated_at || null
+                };
+            }
+            return newR;
+        });
     },
 
 

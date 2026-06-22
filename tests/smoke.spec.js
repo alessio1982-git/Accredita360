@@ -312,3 +312,169 @@ test('consultant filter redflag displays only flagged structures', async ({ page
   await expect(page.locator('#monitoraggio-grid')).toContainText('Flag Rosso AI');
 });
 
+test('migration preserves document state when structure changes complexity', async ({ page }) => {
+  page.on('console', msg => console.log(`[Browser Console] ${msg.type()}: ${msg.text()}`));
+  page.on('pageerror', err => console.log(`[Browser PageError] ${err.message}`));
+
+  // Intercettiamo il file backend.js per servire la versione locale con le modifiche
+  const fs = require('fs');
+  const path = require('path');
+  const localBackendPath = path.join(__dirname, '../backend.js');
+  const localBackendContent = fs.readFileSync(localBackendPath, 'utf8');
+
+  await page.route('**/backend.js*', async route => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/javascript',
+      body: localBackendContent
+    });
+  });
+
+  // Imposta sessionStorage per impersonare alessio.arlotta@gmail.com
+  await page.addInitScript(() => {
+    const session = {
+      expiresAt: Date.now() + 8 * 60 * 60 * 1000,
+      createdAt: new Date().toISOString(),
+      user: {
+        id: 'user_alessio_temp',
+        email: 'alessio.arlotta@gmail.com',
+        name: 'Alessio Arlotta',
+        role: 'cliente',
+        registration_status: 'active'
+      }
+    };
+    window.sessionStorage.setItem('accredita360_session_v2', JSON.stringify(session));
+  });
+
+  // Mock di window.supabase per intercettare le query al database dei requisiti
+  await page.addInitScript(() => {
+    let supabaseInstance = null;
+    let supabaseLib = null;
+
+    Object.defineProperty(window, 'supabase', {
+      get() {
+        if (supabaseInstance) return supabaseInstance;
+        return supabaseLib;
+      },
+      set(val) {
+        if (val && val.createClient) {
+          // Si tratta della libreria CDN caricata
+          supabaseLib = val;
+          const originalCreateClient = val.createClient;
+          supabaseLib.createClient = function() {
+            console.log('[E2E Mock] createClient called');
+            const instance = originalCreateClient.apply(this, arguments);
+            // Intercettiamo il metodo from sull'istanza creata
+            const originalFrom = instance.from;
+            instance.from = function(table) {
+              console.log('[E2E Mock] supabase.from called for table:', table);
+              if (table === 'requirements') {
+                return {
+                  select: function(fields) {
+                    console.log('[E2E Mock] select called for fields:', fields);
+                    return {
+                      eq: function(col, val) {
+                        console.log('[E2E Mock] eq called for col:', col, 'val:', val);
+                        const mockResult = Promise.resolve({
+                          data: [
+                            {
+                              req_id: 'GEN_EU_01',
+                              titolo: 'Informativa e Consenso Privacy Pazienti',
+                              norma: 'GDPR (Reg. UE 2016/679)',
+                              cat: 'Amministrativo',
+                              stato: 'green',
+                              desc_text: 'Descrizione requisito',
+                              file_name: 'mio_documento_importante.pdf',
+                              file_url: 'https://kvthfnkgfbxtjgkqpbwj.supabase.co/storage/v1/object/public/requirements/mio_documento_importante.pdf',
+                              file_size: 1024,
+                              file_type: 'application/pdf',
+                              compliance: 'approvato',
+                              note_consulente: 'Ottimo lavoro, approvato.',
+                              validated_at: new Date().toISOString()
+                            }
+                          ],
+                          error: null
+                        });
+                        mockResult.order = function() {
+                          console.log('[E2E Mock] order called');
+                          return this;
+                        };
+                        return mockResult;
+                      }
+                    };
+                  },
+                  delete: function() {
+                    console.log('[E2E Mock] delete called');
+                    return {
+                      eq: function(col, val) {
+                        console.log('[E2E Mock] delete.eq called');
+                        return Promise.resolve({ data: [], error: null });
+                      }
+                    };
+                  },
+                  insert: function(data) {
+                    console.log('[E2E Mock] insert called with data:', JSON.stringify(data));
+                    return Promise.resolve({ data, error: null });
+                  }
+                };
+              }
+              return originalFrom.apply(instance, arguments);
+            };
+            supabaseInstance = instance;
+            return instance;
+          };
+        } else {
+          // Si tratta del client istanziato o altra assegnazione
+          supabaseInstance = val;
+        }
+      },
+      configurable: true
+    });
+  });
+
+  // Intercettiamo la chiamata API dell'Edge Function /functions/v1/save-profiling
+  let saveProfilingRequestPayload = null;
+  await page.route('**/functions/v1/save-profiling', async route => {
+    const request = route.request();
+    if (request.method() === 'POST') {
+      saveProfilingRequestPayload = request.postDataJSON();
+    }
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ success: true, insertedCount: 28 })
+    });
+  });
+
+  await page.goto(`${BASE_URL}/app.html`);
+
+  // Navighiamo alla pagina di Profilazione Struttura
+  await page.click('.nav-links li[data-view="profiling"]');
+  await page.waitForSelector('#struttura-type');
+
+  // Selezioniamo un tipo di struttura per forzare la rigenerazione/migrazione
+  await page.selectOption('#struttura-type', 'poliambulatorio');
+  await page.selectOption('#struttura-auth', 'si'); // accreditamento OTA
+
+  // Salviamo il profilo, innescando Backend.saveProfiling
+  await page.click('button:has-text("Salva Profilo e Genera Gap Analysis")');
+
+  // Aspettiamo che il salvataggio sia completato (che ci navighi a gap-analysis)
+  await page.waitForURL(/app.html/, { timeout: 15000 });
+
+  // Verifichiamo che la chiamata API save-profiling sia stata effettuata
+  expect(saveProfilingRequestPayload).not.toBeNull();
+  
+  const reqs = saveProfilingRequestPayload.requirements;
+  expect(reqs).toBeDefined();
+  
+  // Il requisito comune 'GEN_EU_01' deve preservare stato, file e note
+  const commonReq = reqs.find(r => (r.id === 'GEN_EU_01' || r.req_id === 'GEN_EU_01'));
+  expect(commonReq).toBeDefined();
+  expect(commonReq.stato).toBe('green');
+  expect(commonReq.file_name).toBe('mio_documento_importante.pdf');
+  expect(commonReq.file_url).toContain('mio_documento_importante.pdf');
+  expect(commonReq.note_consulente).toBe('Ottimo lavoro, approvato.');
+});
+
+
