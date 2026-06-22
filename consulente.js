@@ -214,12 +214,15 @@ const consulente = {
                 statoColor = 'var(--warning)'; statoLabel = 'In Corso'; statoIcon = 'bx-time-five';
             }
 
+            const hasRedFlag = reqs.some(r => r.compliance === 'non_conforme' || r.compliance === 'critico');
+
             return {
                 nome:       item.user.name || item.user.email,
                 email:      item.user.email,
                 tipo:       item.structure ? item.structure.type : '—',
                 total, validated, pending, critical, missing, pct,
-                statoColor, statoLabel, statoIcon
+                statoColor, statoLabel, statoIcon,
+                hasRedFlag
             };
         });
     },
@@ -234,6 +237,7 @@ const consulente = {
         if (filter === 'critical') data = data.filter(d => d.statoLabel === 'Critico');
         if (filter === 'ok')       data = data.filter(d => d.statoLabel === 'Completato');
         if (filter === 'progress') data = data.filter(d => d.statoLabel === 'In Corso');
+        if (filter === 'redflag')  data = data.filter(d => d.hasRedFlag);
 
         const searchVal = document.getElementById('mon-search')?.value?.toLowerCase() || '';
         if (searchVal) data = data.filter(d => d.nome.toLowerCase().includes(searchVal) || d.email.toLowerCase().includes(searchVal));
@@ -261,8 +265,11 @@ const consulente = {
                     <div>
                         <div style="font-weight:700;font-size:15px;margin-bottom:4px;">${_s(d.nome)}</div>
                         <div style="font-size:12px;color:var(--text-muted);">${_s(d.email)}</div>
-                        <div style="font-size:11px;margin-top:4px;padding:2px 8px;background:rgba(59,130,246,0.12);border-radius:4px;display:inline-block;color:var(--primary);">
-                            ${tipoLabels[d.tipo] || d.tipo}
+                        <div style="font-size:11px;margin-top:4px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+                            <span style="padding:2px 8px;background:rgba(59,130,246,0.12);border-radius:4px;color:var(--primary);font-weight:600;display:inline-block;">
+                                ${tipoLabels[d.tipo] || d.tipo}
+                            </span>
+                            ${d.hasRedFlag ? `<span style="padding:2px 8px;background:rgba(239,68,68,0.12);border-radius:4px;color:var(--danger);font-weight:700;display:inline-flex;align-items:center;gap:2px;"><i class='bx bxs-flag-alt'></i> Flag Rosso AI</span>` : ''}
                         </div>
                     </div>
                     <span style="padding:4px 12px;border-radius:20px;background:${d.statoColor}20;color:${d.statoColor};font-size:12px;font-weight:700;display:inline-flex;align-items:center;gap:5px;white-space:nowrap;">

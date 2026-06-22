@@ -239,3 +239,76 @@ test('verifica download modelli e istanze', async ({ page }) => {
   expect(downloadConvPdf.suggestedFilename()).toBe('Domanda_Convenzionamento_SSN.pdf');
 });
 
+test('consultant filter redflag displays only flagged structures', async ({ page }) => {
+  // Imposta sessionStorage per impersonare il consulente
+  await page.addInitScript(() => {
+    const session = {
+      expiresAt: Date.now() + 8 * 60 * 60 * 1000,
+      createdAt: new Date().toISOString(),
+      user: {
+        id: 'user_consulente_test',
+        email: 'consulente@demo.it',
+        name: 'Supervisor Accredita360',
+        role: 'consulente',
+        registration_status: 'active'
+      }
+    };
+    window.sessionStorage.setItem('accredita360_session_v2', JSON.stringify(session));
+  });
+
+  // Mock structures list logic inside client context
+  await page.addInitScript(() => {
+    let realBackend = null;
+    Object.defineProperty(window, 'Backend', {
+      get() { return realBackend; },
+      set(val) {
+        realBackend = val;
+        if (realBackend) {
+          realBackend.getAllStructuresWithRequirements = async () => {
+            return [
+              {
+                user: { id: 'u1', email: 'struttura.redflag@test.it', name: 'Struttura Flag Rosso' },
+                structure: { type: 'poliambulatorio', data: {} },
+                requirements: [
+                  { req_id: 'R1', titolo: 'Req 1', stato: 'yellow', compliance: 'critico' }
+                ]
+              },
+              {
+                user: { id: 'u2', email: 'struttura.normal@test.it', name: 'Struttura Normale' },
+                structure: { type: 'odontoiatria', data: {} },
+                requirements: [
+                  { req_id: 'R2', titolo: 'Req 2', stato: 'green', compliance: 'ok' }
+                ]
+              }
+            ];
+          };
+          realBackend.getPendingUsers = async () => [];
+          realBackend.getAdminStats = async () => ({
+            activeStructures: 2,
+            pendingDocs: 1,
+            validatedDocs: 1,
+            newRegistrations: 0
+          });
+        }
+      },
+      configurable: true
+    });
+  });
+
+  await page.goto(`${BASE_URL}/consulente.html`);
+  await page.click('.nav-links li[data-view="monitoraggio"]');
+  await page.waitForSelector('#monitoraggio-grid');
+
+  // Verifica che entrambe le strutture siano visibili inizialmente
+  await expect(page.locator('#monitoraggio-grid')).toContainText('Struttura Flag Rosso');
+  await expect(page.locator('#monitoraggio-grid')).toContainText('Struttura Normale');
+
+  // Filtra per Flag Rosso
+  await page.selectOption('#mon-filter', 'redflag');
+
+  // Verifica che solo quella con il flag rosso sia visibile
+  await expect(page.locator('#monitoraggio-grid')).toContainText('Struttura Flag Rosso');
+  await expect(page.locator('#monitoraggio-grid')).not.toContainText('Struttura Normale');
+  await expect(page.locator('#monitoraggio-grid')).toContainText('Flag Rosso AI');
+});
+
