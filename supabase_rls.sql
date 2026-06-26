@@ -33,6 +33,15 @@ RETURNS BOOLEAN AS $$
   );
 $$ LANGUAGE sql STABLE SECURITY DEFINER;
 
+CREATE OR REPLACE FUNCTION public.is_active_user()
+RETURNS BOOLEAN AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.users
+    WHERE email = public.current_user_email()
+    AND (registration_status = 'active' OR role = 'admin')
+  );
+$$ LANGUAGE sql STABLE SECURITY DEFINER;
+
 -- ────────────────────────────────────────────────────────────
 -- 3. POLICIES — TABELLA: users
 -- ────────────────────────────────────────────────────────────
@@ -42,9 +51,9 @@ DROP POLICY IF EXISTS "users_select_admin" ON public.users;
 DROP POLICY IF EXISTS "users_insert_reg"   ON public.users;
 DROP POLICY IF EXISTS "users_update_own"   ON public.users;
 
--- Utente vede solo se stesso
+-- Utente vede solo se stesso se attivo o admin
 CREATE POLICY "users_select_own" ON public.users
-  FOR SELECT USING (email = public.current_user_email());
+  FOR SELECT USING (email = public.current_user_email() AND (registration_status = 'active' OR role = 'admin'));
 
 -- Admin vede tutti gli utenti
 CREATE POLICY "users_select_admin" ON public.users
@@ -54,9 +63,9 @@ CREATE POLICY "users_select_admin" ON public.users
 CREATE POLICY "users_insert_reg" ON public.users
   FOR INSERT WITH CHECK (true);
 
--- Utente aggiorna solo il proprio profilo
+-- Utente aggiorna solo il proprio profilo se attivo o admin
 CREATE POLICY "users_update_own" ON public.users
-  FOR UPDATE USING (email = public.current_user_email());
+  FOR UPDATE USING (email = public.current_user_email() AND (registration_status = 'active' OR role = 'admin'));
 
 -- ────────────────────────────────────────────────────────────
 -- 4. POLICIES — TABELLA: structures
@@ -66,21 +75,21 @@ DROP POLICY IF EXISTS "structures_select_admin" ON public.structures;
 DROP POLICY IF EXISTS "structures_insert_own"   ON public.structures;
 DROP POLICY IF EXISTS "structures_update_own"   ON public.structures;
 
--- Utente vede solo la propria struttura
+-- Utente vede solo la propria struttura se attivo o admin
 CREATE POLICY "structures_select_own" ON public.structures
-  FOR SELECT USING (user_email = public.current_user_email());
+  FOR SELECT USING (user_email = public.current_user_email() AND public.is_active_user());
 
 -- Admin vede tutte le strutture
 CREATE POLICY "structures_select_admin" ON public.structures
   FOR SELECT USING (public.is_admin());
 
--- Utente può creare la propria struttura
+-- Utente può creare la propria struttura se attivo o admin
 CREATE POLICY "structures_insert_own" ON public.structures
-  FOR INSERT WITH CHECK (user_email = public.current_user_email());
+  FOR INSERT WITH CHECK (user_email = public.current_user_email() AND public.is_active_user());
 
--- Utente aggiorna solo la propria struttura
+-- Utente aggiorna solo la propria struttura se attivo o admin
 CREATE POLICY "structures_update_own" ON public.structures
-  FOR UPDATE USING (user_email = public.current_user_email());
+  FOR UPDATE USING (user_email = public.current_user_email() AND public.is_active_user());
 
 -- ────────────────────────────────────────────────────────────
 -- 5. POLICIES — TABELLA: requirements
@@ -91,21 +100,21 @@ DROP POLICY IF EXISTS "requirements_insert_own"   ON public.requirements;
 DROP POLICY IF EXISTS "requirements_update_own"   ON public.requirements;
 DROP POLICY IF EXISTS "requirements_update_admin" ON public.requirements;
 
--- Utente vede solo i propri requisiti
+-- Utente vede solo i propri requisiti se attivo o admin
 CREATE POLICY "requirements_select_own" ON public.requirements
-  FOR SELECT USING (user_email = public.current_user_email());
+  FOR SELECT USING (user_email = public.current_user_email() AND public.is_active_user());
 
 -- Admin vede tutti i requisiti
 CREATE POLICY "requirements_select_admin" ON public.requirements
   FOR SELECT USING (public.is_admin());
 
--- Utente inserisce solo i propri requisiti
+-- Utente inserisce solo i propri requisiti se attivo o admin
 CREATE POLICY "requirements_insert_own" ON public.requirements
-  FOR INSERT WITH CHECK (user_email = public.current_user_email());
+  FOR INSERT WITH CHECK (user_email = public.current_user_email() AND public.is_active_user());
 
--- Utente aggiorna solo i propri requisiti (es. upload file)
+-- Utente aggiorna solo i propri requisiti se attivo o admin (es. upload file)
 CREATE POLICY "requirements_update_own" ON public.requirements
-  FOR UPDATE USING (user_email = public.current_user_email());
+  FOR UPDATE USING (user_email = public.current_user_email() AND public.is_active_user());
 
 -- Admin può aggiornare qualsiasi requisito (per validazione)
 CREATE POLICY "requirements_update_admin" ON public.requirements
@@ -119,6 +128,7 @@ GRANT SELECT, INSERT, UPDATE ON public.structures   TO anon;
 GRANT SELECT, INSERT, UPDATE ON public.requirements TO anon;
 GRANT EXECUTE ON FUNCTION public.current_user_email() TO anon;
 GRANT EXECUTE ON FUNCTION public.is_admin()           TO anon;
+GRANT EXECUTE ON FUNCTION public.is_active_user()     TO anon;
 
 -- ────────────────────────────────────────────────────────────
 -- ISTRUZIONI PER L'USO:

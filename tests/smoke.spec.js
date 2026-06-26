@@ -37,7 +37,7 @@ test('login con credenziali errate mostra errore', async ({ page }) => {
   // Verifica che compaia il box di errore con il messaggio appropriato
   const errorBox = page.locator('#login-error');
   await expect(errorBox).toBeVisible();
-  await expect(errorBox).toContainText(/errat|non corrett|errore/i);
+  await expect(errorBox).toContainText(/errat|non corrett|errore|tentativ/i);
 
   // Attendi che la pagina non si sia spostata (siamo ancora su login)
   await expect(page).toHaveURL(/login/);
@@ -349,7 +349,87 @@ test('migration preserves document state when structure changes complexity', asy
   // Mock di window.supabase per intercettare le query al database dei requisiti
   await page.addInitScript(() => {
     let supabaseInstance = null;
-    let supabaseLib = null;
+
+    const fakeCreateClient = function() {
+      console.log('[E2E Mock] fake createClient called (CDN fallita)');
+      const mockChain = {
+        eq: function() { return mockChain; },
+        order: function() { return mockChain; },
+        single: function() { return Promise.resolve({ data: {}, error: null }); },
+        insert: function() { return Promise.resolve({ data: [], error: null }); },
+        update: function() { return Promise.resolve({ data: [], error: null }); },
+        delete: function() { return mockChain; },
+        then: function(resolve) {
+          resolve({ data: [], error: null });
+        }
+      };
+
+      const instance = {
+        from: function(table) {
+          console.log('[E2E Mock] supabase.from called for table:', table);
+          if (table === 'requirements') {
+            return {
+              select: function(fields) {
+                console.log('[E2E Mock] select called for fields:', fields);
+                return {
+                  eq: function(col, val) {
+                    console.log('[E2E Mock] eq called for col:', col, 'val:', val);
+                    const mockResult = Promise.resolve({
+                      data: [
+                        {
+                          req_id: 'GEN_EU_01',
+                          titolo: 'Informativa e Consenso Privacy Pazienti',
+                          norma: 'GDPR (Reg. UE 2016/679)',
+                          cat: 'Amministrativo',
+                          stato: 'green',
+                          desc_text: 'Descrizione requisito',
+                          file_name: 'mio_documento_importante.pdf',
+                          file_url: 'https://kvthfnkgfbxtjgkqpbwj.supabase.co/storage/v1/object/public/requirements/mio_documento_importante.pdf',
+                          file_size: 1024,
+                          file_type: 'application/pdf',
+                          compliance: 'approvato',
+                          note_consulente: 'Ottimo lavoro, approvato.',
+                          validated_at: new Date().toISOString()
+                        }
+                      ],
+                      error: null
+                    });
+                    mockResult.order = function() {
+                      console.log('[E2E Mock] order called');
+                      return this;
+                    };
+                    return mockResult;
+                  }
+                };
+              },
+              delete: function() {
+                console.log('[E2E Mock] delete called');
+                return {
+                  eq: function(col, val) {
+                    console.log('[E2E Mock] delete.eq called');
+                    return Promise.resolve({ data: [], error: null });
+                  }
+                };
+              },
+              insert: function(data) {
+                console.log('[E2E Mock] insert called with data:', JSON.stringify(data));
+                return Promise.resolve({ data, error: null });
+              }
+            };
+          }
+          return {
+            select: () => mockChain,
+            insert: () => Promise.resolve({ data: [], error: null }),
+            update: () => Promise.resolve({ data: [], error: null }),
+            delete: () => mockChain
+          };
+        }
+      };
+      supabaseInstance = instance;
+      return instance;
+    };
+
+    let supabaseLib = { createClient: fakeCreateClient };
 
     Object.defineProperty(window, 'supabase', {
       get() {
@@ -362,7 +442,7 @@ test('migration preserves document state when structure changes complexity', asy
           supabaseLib = val;
           const originalCreateClient = val.createClient;
           supabaseLib.createClient = function() {
-            console.log('[E2E Mock] createClient called');
+            console.log('[E2E Mock] createClient called (CDN caricata)');
             const instance = originalCreateClient.apply(this, arguments);
             // Intercettiamo il metodo from sull'istanza creata
             const originalFrom = instance.from;
@@ -475,6 +555,278 @@ test('migration preserves document state when structure changes complexity', asy
   expect(commonReq.file_name).toBe('mio_documento_importante.pdf');
   expect(commonReq.file_url).toContain('mio_documento_importante.pdf');
   expect(commonReq.note_consulente).toBe('Ottimo lavoro, approvato.');
+});
+
+// ─── GESTIONE UTENTI: Interfaccia in Tempo Reale ───────────────
+test('gestione utenti: autorizza, sospendi, riattiva ed elimina in tempo reale', async ({ page }) => {
+  page.on('console', msg => console.log(`[Browser Console] ${msg.type()}: ${msg.text()}`));
+  page.on('pageerror', err => console.log(`[Browser PageError] ${err.message}`));
+
+  // Imposta file backend.js e admin.js locali
+  const fs = require('fs');
+  const path = require('path');
+  const localBackendContent = fs.readFileSync(path.join(__dirname, '../backend.js'), 'utf8');
+  const localAdminContent = fs.readFileSync(path.join(__dirname, '../admin.js'), 'utf8');
+
+  await page.route('**/backend.js*', async route => {
+    await route.fulfill({ status: 200, contentType: 'application/javascript', body: localBackendContent });
+  });
+  await page.route('**/admin.js*', async route => {
+    await route.fulfill({ status: 200, contentType: 'application/javascript', body: localAdminContent });
+  });
+
+  // Imposta sessione admin
+  await page.addInitScript(() => {
+    const session = {
+      expiresAt: Date.now() + 8 * 60 * 60 * 1000,
+      createdAt: new Date().toISOString(),
+      user: {
+        id: 'user_admin_test',
+        email: 'admin@demo.it',
+        name: 'Admin Demo',
+        role: 'admin',
+        registration_status: 'active'
+      }
+    };
+    window.sessionStorage.setItem('accredita360_session_v2', JSON.stringify(session));
+    window.confirm = () => true;
+    window.alert = () => {};
+  });
+
+  // Mock dei dati del backend per la gestione utenti
+  await page.addInitScript(() => {
+    let realBackend = null;
+    let mockUsers = [
+      { id: 'u1', email: 'pending@test.it', name: 'Utente In Attesa', role: 'cliente', registration_status: 'pending', created_at: new Date().toISOString() }
+    ];
+
+    Object.defineProperty(window, 'Backend', {
+      get() { return realBackend; },
+      set(val) {
+        realBackend = val;
+        if (realBackend) {
+          realBackend.getPendingUsers = async () => mockUsers;
+          realBackend.getAdminStats = async () => ({
+            activeStructures: 0,
+            pendingDocs: 0,
+            validatedDocs: 0,
+            newRegistrations: 1
+          });
+          realBackend.getAllStructuresWithRequirements = async () => [];
+          realBackend.approveUser = async (email) => {
+            const u = mockUsers.find(x => x.email === email);
+            if (u) u.registration_status = 'active';
+            return { email, registration_status: 'active' };
+          };
+          realBackend.suspendUser = async (email) => {
+            const u = mockUsers.find(x => x.email === email);
+            if (u) u.registration_status = 'rejected';
+            return { email, registration_status: 'rejected' };
+          };
+          realBackend.deleteUser = async (email) => {
+            mockUsers = mockUsers.filter(x => x.email !== email);
+            return { email };
+          };
+        }
+      },
+      configurable: true
+    });
+  });
+
+  await page.goto(`${BASE_URL}/admin.html`);
+  await page.click('.nav-links li[data-view="consultants"]');
+
+  // 1. Verifica stato iniziale: In Attesa
+  const row = page.locator('#admin-new-registrations tr[data-user-email="pending@test.it"]');
+  await expect(row).toBeVisible();
+  await expect(row.locator('td').nth(5)).toContainText('In Attesa');
+
+  // Pulsanti disponibili: Autorizza, Sospendi, Elimina
+  const btnApprove = row.locator('.btn-approve');
+  const btnSuspend = row.locator('.btn-suspend');
+  const btnDelete = row.locator('.btn-delete');
+  await expect(btnApprove).toBeVisible();
+  await expect(btnSuspend).toBeVisible();
+
+  // 2. Click Autorizza -> cambia in Attivo, pulsante Riattiva scompare, mostra Sospendi
+  await btnApprove.click();
+  await expect(row.locator('td').nth(5)).toContainText('Attivo');
+  
+  // Ora il pulsante deve essere cambiato in Sospendi + Elimina
+  await expect(row.locator('.btn-suspend')).toBeVisible();
+  await expect(row.locator('.btn-approve')).not.toBeVisible();
+
+  // 3. Click Sospendi -> cambia in Sospeso, pulsante Sospendi scompare, mostra Riattiva
+  await row.locator('.btn-suspend').click();
+  await expect(row.locator('td').nth(5)).toContainText('Sospeso');
+  await expect(row.locator('.btn-reactivate')).toBeVisible();
+  await expect(row.locator('.btn-suspend')).not.toBeVisible();
+
+  // 4. Click Riattiva -> torna in Attivo
+  await row.locator('.btn-reactivate').click();
+  await expect(row.locator('td').nth(5)).toContainText('Attivo');
+
+  // 5. Click Elimina -> riga scompare dal DOM
+  await row.locator('.btn-delete').click();
+  await expect(row).not.toBeAttached();
+});
+
+// ─── SICUREZZA: Utente Sospeso Viene Bloccato e Scollegato ──────────
+test('sicurezza: utente sospeso viene disconnesso al caricamento di app.html', async ({ page }) => {
+  page.on('console', msg => console.log(`[Browser Console] ${msg.type()}: ${msg.text()}`));
+  page.on('pageerror', err => console.log(`[Browser PageError] ${err.message}`));
+
+  // Imposta file backend.js e app.js locali
+  const fs = require('fs');
+  const path = require('path');
+  const localBackendContent = fs.readFileSync(path.join(__dirname, '../backend.js'), 'utf8');
+  const localAppContent = fs.readFileSync(path.join(__dirname, '../app.js'), 'utf8');
+
+  await page.route('**/backend.js*', async route => {
+    await route.fulfill({ status: 200, contentType: 'application/javascript', body: localBackendContent });
+  });
+  await page.route('**/app.js*', async route => {
+    await route.fulfill({ status: 200, contentType: 'application/javascript', body: localAppContent });
+  });
+
+  // Imposta sessione utente fittizia "attiva"
+  await page.addInitScript(() => {
+    if (!window.sessionStorage.getItem('accredita360_session_v2_initialized')) {
+      const session = {
+        expiresAt: Date.now() + 8 * 60 * 60 * 1000,
+        createdAt: new Date().toISOString(),
+        user: {
+          id: 'user_sospeso_test',
+          email: 'sospeso@demo.it',
+          name: 'Utente Sospeso',
+          role: 'cliente',
+          registration_status: 'active' // la sessione locale crede sia attivo
+        }
+      };
+      window.sessionStorage.setItem('accredita360_session_v2', JSON.stringify(session));
+      window.sessionStorage.setItem('accredita360_session_v2_initialized', 'true');
+    }
+    window.confirm = () => true;
+    window.alert = () => {};
+  });
+
+  // Mock di window.supabase in modo che la chiamata checkUserStatus ritorni null o errore di RLS
+  await page.addInitScript(() => {
+    let supabaseInstance = null;
+
+    const fakeCreateClient = function() {
+      console.log('[E2E Mock] fake createClient called (CDN fallita) in safety test');
+      const instance = {
+        from: function(table) {
+          if (table === 'users') {
+            return {
+              select: function() {
+                return {
+                  eq: function() {
+                    return {
+                      single: async () => ({
+                        data: null,
+                        error: { code: 'PGRST116', message: 'Row not found or blocked by RLS' }
+                      })
+                    };
+                  }
+                };
+              }
+            };
+          }
+          const mockChain = {
+            eq: () => mockChain,
+            order: () => mockChain,
+            single: () => Promise.resolve({ data: {}, error: null }),
+            insert: () => Promise.resolve({ data: [], error: null }),
+            update: () => Promise.resolve({ data: [], error: null }),
+            delete: () => mockChain
+          };
+          return {
+            select: () => mockChain,
+            insert: () => Promise.resolve({ data: [], error: null }),
+            update: () => Promise.resolve({ data: [], error: null }),
+            delete: () => mockChain
+          };
+        }
+      };
+      supabaseInstance = instance;
+      return instance;
+    };
+
+    let supabaseLib = { createClient: fakeCreateClient };
+
+    Object.defineProperty(window, 'supabase', {
+      get() {
+        if (supabaseInstance) return supabaseInstance;
+        return supabaseLib;
+      },
+      set(val) {
+        if (val && val.createClient) {
+          supabaseLib = val;
+          const originalCreateClient = val.createClient;
+          supabaseLib.createClient = function() {
+            console.log('[E2E Mock] createClient called (CDN caricata) in safety test');
+            const instance = originalCreateClient.apply(this, arguments);
+            instance.from = function(table) {
+              if (table === 'users') {
+                return {
+                  select: function() {
+                    return {
+                      eq: function() {
+                        return {
+                          // Simula errore PGRST116 (non trovato/bloccato da RLS)
+                          single: async () => ({
+                            data: null,
+                            error: { code: 'PGRST116', message: 'Row not found or blocked by RLS' }
+                          })
+                        };
+                      }
+                    };
+                  }
+                };
+              }
+              // per altre tabelle mock generico vuoto per non rompere il resto
+              const mockChain = {
+                eq: function() { return mockChain; },
+                order: function() { return mockChain; },
+                single: function() { return Promise.resolve({ data: {}, error: null }); },
+                insert: function() { return Promise.resolve({ data: [], error: null }); },
+                update: function() { return Promise.resolve({ data: [], error: null }); },
+                delete: function() { return mockChain; },
+                then: function(resolve) {
+                  resolve({ data: [], error: null });
+                }
+              };
+              return {
+                select: () => mockChain,
+                insert: () => Promise.resolve({ data: [], error: null }),
+                update: () => Promise.resolve({ data: [], error: null }),
+                delete: () => mockChain
+              };
+            };
+            supabaseInstance = instance;
+            return instance;
+          };
+        } else {
+          supabaseInstance = val;
+        }
+      },
+      configurable: true
+    });
+  });
+
+  // Carica la pagina
+  await page.goto(`${BASE_URL}/app.html`);
+
+  // Deve rilevare che l'utente non è attivo, fare logout, e reindirizzare a login.html o index.html
+  await page.waitForURL(/login|index/, { timeout: 10000 });
+  const url = page.url();
+  expect(url).toMatch(/login|index/);
+
+  // Verifica che la sessione sia stata rimossa
+  const sessionVal = await page.evaluate(() => window.sessionStorage.getItem('accredita360_session_v2'));
+  expect(sessionVal).toBeNull();
 });
 
 

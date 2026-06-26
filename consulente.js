@@ -33,6 +33,13 @@ const consulente = {
             window.location.href = 'app.html';
             return;
         }
+        // Controllo stato utente in tempo reale
+        const isActive = await B.checkUserStatus();
+        if (!isActive) {
+            alert('Accesso negato: account sospeso o non più attivo. Contatta l\'amministratore.');
+            this.doLogout();
+            return;
+        }
         // ── SETUP UI ───────────────────────────────────────────────
         this._B = B;  // salva riferimento per gli altri metodi
         this.setupUI(user);

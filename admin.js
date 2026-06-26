@@ -120,48 +120,10 @@ const admin = {
                     const tipoLabel = tipoMap[u.tipo_registrazione] || 'N/D';
                     const tipoIcon  = u.tipo_registrazione === 'azienda' ? 'bx-building' : 'bx-user';
 
-                    let statusLabel = '';
-                    let actionButtons = '';
+                    const statusLabel = this._getRowStatusLabel(u.registration_status);
+                    const actionButtons = this._getRowButtons(u.email, u.registration_status);
 
-                    if (u.registration_status === 'pending') {
-                        statusLabel = `<span style="font-size:12px; padding:3px 8px; border-radius:12px; background:rgba(245,158,11,0.12); color:#f59e0b; font-weight:600; display:inline-flex; align-items:center; gap:4px;"><i class='bx bx-time-five'></i> In Attesa</span>`;
-                        actionButtons = `
-                            <button class="btn btn-outline" style="padding:6px 10px; font-size:12px; color:var(--success); border-color:var(--success); background:none;"
-                                onclick="admin.approveUser('${_s(u.email)}')">
-                                <i class='bx bx-check-circle'></i> Autorizza
-                            </button>
-                            <button class="btn btn-outline" style="padding:6px 10px; font-size:12px; color:var(--warning); border-color:var(--warning); background:none;"
-                                onclick="admin.suspendUser('${_s(u.email)}')">
-                                <i class='bx bx-pause-circle'></i> Sospendi
-                            </button>
-                        `;
-                    } else if (u.registration_status === 'rejected') {
-                        statusLabel = `<span style="font-size:12px; padding:3px 8px; border-radius:12px; background:rgba(239,68,68,0.12); color:#ef4444; font-weight:600; display:inline-flex; align-items:center; gap:4px;"><i class='bx bx-pause-circle'></i> Sospeso</span>`;
-                        actionButtons = `
-                            <button class="btn btn-outline" style="padding:6px 10px; font-size:12px; color:var(--success); border-color:var(--success); background:none;"
-                                onclick="admin.approveUser('${_s(u.email)}')">
-                                <i class='bx bx-play-circle'></i> Riattiva
-                            </button>
-                        `;
-                    } else {
-                        // active (Attivo)
-                        statusLabel = `<span style="font-size:12px; padding:3px 8px; border-radius:12px; background:rgba(16,185,129,0.12); color:#10b981; font-weight:600; display:inline-flex; align-items:center; gap:4px;"><i class='bx bx-check-circle'></i> Attivo</span>`;
-                        actionButtons = `
-                            <button class="btn btn-outline" style="padding:6px 10px; font-size:12px; color:var(--warning); border-color:var(--warning); background:none;"
-                                onclick="admin.suspendUser('${_s(u.email)}')">
-                                <i class='bx bx-pause-circle'></i> Sospendi
-                            </button>
-                        `;
-                    }
-
-                    actionButtons += `
-                        <button class="btn btn-outline" style="padding:6px 10px; font-size:12px; color:var(--danger); border-color:var(--danger); background:none;"
-                            onclick="admin.deleteUser('${_s(u.email)}')">
-                            <i class='bx bx-trash'></i> Elimina
-                        </button>
-                    `;
-
-                    return `<tr>
+                    return `<tr data-user-email="${_s(u.email)}">
                         <td style="text-align:center;"><input type="checkbox" class="user-checkbox" data-email="${_s(u.email)}" style="cursor:pointer;"></td>
                         <td style="font-weight:600;">${_s(u.name || '—')}</td>
                         <td style="font-size:13px; color:var(--text-muted);">${_s(u.email)}<br><small>Ruolo richiesto: ${_s(u.role)}</small></td>
@@ -170,7 +132,7 @@ const admin = {
                         </span></td>
                         <td style="font-size:12px; color:var(--text-muted);">${data}</td>
                         <td>${statusLabel}</td>
-                        <td><div style="display:flex; gap:6px;">${actionButtons}</div></td>
+                        <td>${actionButtons}</td>
                     </tr>`;
                 }).join('');
             }
@@ -263,36 +225,202 @@ const admin = {
         this.renderConsultantsData();
     },
 
-    async approveUser(userEmail) {
+    _getRowButtons(email, status) {
+        let actionButtons = '';
+        if (status === 'pending') {
+            actionButtons = `
+                <button class="btn btn-outline btn-approve" style="padding:6px 10px; font-size:12px; color:var(--success); border-color:var(--success); background:none;"
+                    onclick="admin.approveUser('${_s(email)}', this)">
+                    <i class='bx bx-check-circle'></i> Autorizza
+                </button>
+                <button class="btn btn-outline btn-suspend" style="padding:6px 10px; font-size:12px; color:var(--warning); border-color:var(--warning); background:none;"
+                    onclick="admin.suspendUser('${_s(email)}', this)">
+                    <i class='bx bx-pause-circle'></i> Sospendi
+                </button>
+            `;
+        } else if (status === 'rejected') {
+            actionButtons = `
+                <button class="btn btn-outline btn-reactivate" style="padding:6px 10px; font-size:12px; color:var(--success); border-color:var(--success); background:none;"
+                    onclick="admin.approveUser('${_s(email)}', this)">
+                    <i class='bx bx-play-circle'></i> Riattiva
+                </button>
+            `;
+        } else { // active
+            actionButtons = `
+                <button class="btn btn-outline btn-suspend" style="padding:6px 10px; font-size:12px; color:var(--warning); border-color:var(--warning); background:none;"
+                    onclick="admin.suspendUser('${_s(email)}', this)">
+                    <i class='bx bx-pause-circle'></i> Sospendi
+                </button>
+            `;
+        }
+        actionButtons += `
+            <button class="btn btn-outline btn-delete" style="padding:6px 10px; font-size:12px; color:var(--danger); border-color:var(--danger); background:none;"
+                onclick="admin.deleteUser('${_s(email)}', this)">
+                <i class='bx bx-trash'></i> Elimina
+            </button>
+        `;
+        return `<div style="display:flex; gap:6px;">${actionButtons}</div>`;
+    },
+
+    _getRowStatusLabel(status) {
+        if (status === 'pending') {
+            return `<span style="font-size:12px; padding:3px 8px; border-radius:12px; background:rgba(245,158,11,0.12); color:#f59e0b; font-weight:600; display:inline-flex; align-items:center; gap:4px;"><i class='bx bx-time-five'></i> In Attesa</span>`;
+        } else if (status === 'rejected') {
+            return `<span style="font-size:12px; padding:3px 8px; border-radius:12px; background:rgba(239,68,68,0.12); color:#ef4444; font-weight:600; display:inline-flex; align-items:center; gap:4px;"><i class='bx bx-pause-circle'></i> Sospeso</span>`;
+        } else { // active
+            return `<span style="font-size:12px; padding:3px 8px; border-radius:12px; background:rgba(16,185,129,0.12); color:#10b981; font-weight:600; display:inline-flex; align-items:center; gap:4px;"><i class='bx bx-check-circle'></i> Attivo</span>`;
+        }
+    },
+
+    async updateStatsCounters() {
+        try {
+            const [stats, pendingUsers] = await Promise.all([
+                Backend.getAdminStats(),
+                Backend.getPendingUsers()
+            ]);
+            const setEl = (id, val) => { const e = document.getElementById(id); if (e) e.textContent = val; };
+            setEl('admin-stat-structures',  stats.activeStructures);
+            setEl('admin-stat-new-reg',     pendingUsers.length);
+            setEl('admin-stat-pending',     stats.pendingDocs);
+            setEl('admin-stat-validated',   stats.validatedDocs);
+            setEl('admin-stat-rejected',    stats.rejectedDocs);
+
+            // Dashboard cards
+            setEl('dash-stat-structures', stats.activeStructures);
+            setEl('dash-stat-pending',    stats.pendingDocs);
+            setEl('dash-stat-validated',  stats.validatedDocs);
+            setEl('dash-stat-new-reg',    pendingUsers.length);
+        } catch (err) {
+            console.warn('[Admin] Errore aggiornamento statistiche:', err);
+        }
+    },
+
+    async approveUser(userEmail, btnEl) {
         if (!confirm('Vuoi autorizzare e rilasciare le credenziali per ' + userEmail + '?')) return;
+
+        let row = null;
+        let originalButtonsHtml = '';
+        let buttonsContainer = null;
+
+        if (btnEl) {
+            row = btnEl.closest('tr');
+            if (row) {
+                buttonsContainer = btnEl.parentElement;
+                originalButtonsHtml = buttonsContainer.innerHTML;
+                row.querySelectorAll('button').forEach(b => b.disabled = true);
+                btnEl.innerHTML = `<i class='bx bx-loader-alt bx-spin'></i> Attesa...`;
+            }
+        }
+
         try {
             await Backend.approveUser(userEmail);
             alert('Utente autorizzato con successo. Un\'email di conferma è stata inviata.');
-            this.renderConsultantsData();
+            
+            if (row) {
+                const cells = row.cells;
+                if (cells && cells.length >= 7) {
+                    cells[5].innerHTML = this._getRowStatusLabel('active');
+                    cells[6].innerHTML = this._getRowButtons(userEmail, 'active');
+                }
+                // Aggiorna contatori in background
+                this.updateStatsCounters();
+            } else {
+                this.renderConsultantsData();
+            }
         } catch(e) {
             alert(e.message || 'Errore durante l\'approvazione.');
+            if (row && buttonsContainer) {
+                buttonsContainer.innerHTML = originalButtonsHtml;
+                row.querySelectorAll('button').forEach(b => b.disabled = false);
+            }
         }
     },
 
-    async suspendUser(userEmail) {
+    async suspendUser(userEmail, btnEl) {
         if (!confirm('Vuoi sospendere l\'account per ' + userEmail + '?')) return;
+
+        let row = null;
+        let originalButtonsHtml = '';
+        let buttonsContainer = null;
+
+        if (btnEl) {
+            row = btnEl.closest('tr');
+            if (row) {
+                buttonsContainer = btnEl.parentElement;
+                originalButtonsHtml = buttonsContainer.innerHTML;
+                row.querySelectorAll('button').forEach(b => b.disabled = true);
+                btnEl.innerHTML = `<i class='bx bx-loader-alt bx-spin'></i> Attesa...`;
+            }
+        }
+
         try {
             await Backend.suspendUser(userEmail);
             alert('Utente sospeso con successo.');
-            this.renderConsultantsData();
+            
+            if (row) {
+                const cells = row.cells;
+                if (cells && cells.length >= 7) {
+                    cells[5].innerHTML = this._getRowStatusLabel('rejected');
+                    cells[6].innerHTML = this._getRowButtons(userEmail, 'rejected');
+                }
+                // Aggiorna contatori in background
+                this.updateStatsCounters();
+            } else {
+                this.renderConsultantsData();
+            }
         } catch(e) {
             alert(e.message || 'Errore durante la sospensione.');
+            if (row && buttonsContainer) {
+                buttonsContainer.innerHTML = originalButtonsHtml;
+                row.querySelectorAll('button').forEach(b => b.disabled = false);
+            }
         }
     },
 
-    async deleteUser(userEmail) {
+    async deleteUser(userEmail, btnEl) {
         if (!confirm('ATTENZIONE: Vuoi eliminare definitivamente l\'account per ' + userEmail + '? Questa azione rimuoverà tutti i dati associati.')) return;
+
+        let row = null;
+        let originalButtonsHtml = '';
+        let buttonsContainer = null;
+
+        if (btnEl) {
+            row = btnEl.closest('tr');
+            if (row) {
+                buttonsContainer = btnEl.parentElement;
+                originalButtonsHtml = buttonsContainer.innerHTML;
+                row.querySelectorAll('button').forEach(b => b.disabled = true);
+                btnEl.innerHTML = `<i class='bx bx-loader-alt bx-spin'></i> Attesa...`;
+            }
+        }
+
         try {
             await Backend.deleteUser(userEmail);
             alert('Utente eliminato con successo.');
-            this.renderConsultantsData();
+            
+            if (row) {
+                row.style.transition = 'opacity 0.4s ease';
+                row.style.opacity = '0';
+                setTimeout(() => {
+                    row.remove();
+                    // Se la tabella è vuota, mostra il messaggio di avviso
+                    const tbody = document.getElementById('admin-new-registrations');
+                    if (tbody && tbody.children.length === 0) {
+                        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:20px; color:var(--text-muted); font-size:13px;">
+                            <i class='bx bx-info-circle'></i> Nessun utente registrato nel sistema.
+                        </td></tr>`;
+                    }
+                    this.updateStatsCounters();
+                }, 400);
+            } else {
+                this.renderConsultantsData();
+            }
         } catch(e) {
             alert(e.message || 'Errore durante l\'eliminazione.');
+            if (row && buttonsContainer) {
+                buttonsContainer.innerHTML = originalButtonsHtml;
+                row.querySelectorAll('button').forEach(b => b.disabled = false);
+            }
         }
     },
 

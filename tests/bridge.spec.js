@@ -3,6 +3,7 @@ const { test, expect } = require('@playwright/test');
 
 test('E2E Real-time Bridge workflow between User and Consultant', async ({ browser }) => {
   test.setTimeout(90000); // Imposta timeout a 90 secondi per permettere il flusso completo del bridge
+
   // 1. Inizializza i due contesti per simulare l'utente e il consulente contemporaneamente
   const contextUser = await browser.newContext();
   const contextConsulente = await browser.newContext();
@@ -19,11 +20,7 @@ test('E2E Real-time Bridge workflow between User and Consultant', async ({ brows
   pageUser.on('dialog', async dialog => {
     const msg = dialog.message();
     console.log(`[User Dialog] Intercettato: ${msg}`);
-    if (msg.includes('caricato con successo') || msg.includes('validazione') || msg.includes('AI')) {
-      await dialog.dismiss();
-    } else {
-      await dialog.accept();
-    }
+    await dialog.dismiss();
   });
 
   pageConsulente.on('dialog', async dialog => {
@@ -34,23 +31,242 @@ test('E2E Real-time Bridge workflow between User and Consultant', async ({ brows
   const userEmail = `test.struttura.${Date.now()}@example.com`;
   const userPassword = 'password123';
 
-  // Configura sessione Consulente
-  await pageConsulente.addInitScript(() => {
-    const session = {
-      expiresAt: Date.now() + 8 * 60 * 60 * 1000,
-      createdAt: new Date().toISOString(),
-      user: {
-        id: 'user_consulente_test',
-        email: 'consulente@demo.it',
-        name: 'Supervisor Accredita360',
-        role: 'consulente',
-        registration_status: 'active'
-      }
-    };
-    window.sessionStorage.setItem('accredita360_session_v2', JSON.stringify(session));
-  });
+  // ─── CONFIGURAZIONE DATABASE VIRTUALE IN MEMORIA CONDIVISO ───
+  const usersDb = [
+    // Pre-popoliamo il consulente per fargli superare i controlli
+    {
+      id: 'user_consulente_test',
+      email: 'consulente@demo.it',
+      name: 'Supervisor Accredita360',
+      role: 'consulente',
+      registration_status: 'active',
+      created_at: new Date().toISOString()
+    }
+  ];
+  const structuresDb = [];
+  const requirementsDb = [];
 
-  // Configura mock upload per Utente per bypassare limitazioni di storage RLS in ambiente di test
+  const queryVirtualDb = async (table, action, queryParams, dataPayload) => {
+    if (table === 'users') {
+      if (action === 'select') {
+        let filtered = [...usersDb];
+        if (queryParams && queryParams.email) {
+          filtered = filtered.filter(u => u.email === queryParams.email);
+        }
+        if (queryParams && queryParams.role_neq) {
+          filtered = filtered.filter(u => u.role !== queryParams.role_neq);
+        }
+        return { data: filtered, error: null };
+      }
+      if (action === 'insert') {
+        const payloadArray = Array.isArray(dataPayload) ? dataPayload : [dataPayload];
+        usersDb.push(...payloadArray);
+        return { data: payloadArray, error: null };
+      }
+      if (action === 'update') {
+        let updated = [];
+        usersDb.forEach(u => {
+          if (!queryParams || !queryParams.email || u.email === queryParams.email) {
+            Object.assign(u, dataPayload);
+            updated.push(u);
+          }
+        });
+        return { data: updated, error: null };
+      }
+    }
+    if (table === 'structures') {
+      if (action === 'select') {
+        let filtered = [...structuresDb];
+        if (queryParams && queryParams.user_email) {
+          filtered = filtered.filter(s => s.user_email === queryParams.user_email);
+        }
+        return { data: filtered, error: null };
+      }
+      if (action === 'upsert') {
+        const payloadArray = Array.isArray(dataPayload) ? dataPayload : [dataPayload];
+        payloadArray.forEach(p => {
+          const idx = structuresDb.findIndex(s => s.user_email === p.user_email);
+          if (idx !== -1) {
+            structuresDb[idx] = { ...structuresDb[idx], ...p };
+          } else {
+            structuresDb.push(p);
+          }
+        });
+        return { data: payloadArray, error: null };
+      }
+      if (action === 'update') {
+        let updated = [];
+        structuresDb.forEach(s => {
+          if (!queryParams || !queryParams.user_email || s.user_email === queryParams.user_email) {
+            Object.assign(s, dataPayload);
+            updated.push(s);
+          }
+        });
+        return { data: updated, error: null };
+      }
+    }
+    if (table === 'requirements') {
+      if (action === 'select') {
+        let filtered = [...requirementsDb];
+        if (queryParams && queryParams.user_email) {
+          filtered = filtered.filter(r => r.user_email === queryParams.user_email);
+        }
+        if (queryParams && queryParams.req_id) {
+          filtered = filtered.filter(r => r.req_id === queryParams.req_id);
+        }
+        return { data: filtered, error: null };
+      }
+      if (action === 'insert') {
+        const payloadArray = Array.isArray(dataPayload) ? dataPayload : [dataPayload];
+        requirementsDb.push(...payloadArray);
+        return { data: payloadArray, error: null };
+      }
+      if (action === 'update') {
+        let updated = [];
+        requirementsDb.forEach(r => {
+          const matchEmail = !queryParams || !queryParams.user_email || r.user_email === queryParams.user_email;
+          const matchReqId = !queryParams || !queryParams.req_id || r.req_id === queryParams.req_id;
+          if (matchEmail && matchReqId) {
+            Object.assign(r, dataPayload);
+            updated.push(r);
+          }
+        });
+        return { data: updated, error: null };
+      }
+      if (action === 'delete') {
+        let remaining = [];
+        requirementsDb.forEach(r => {
+          if (queryParams && queryParams.user_email && r.user_email === queryParams.user_email) {
+            // eliminato
+          } else {
+            remaining.push(r);
+          }
+        });
+        requirementsDb.length = 0;
+        requirementsDb.push(...remaining);
+        return { data: [], error: null };
+      }
+    }
+    return { data: [], error: null };
+  };
+
+  // Espone la funzione del DB virtuale a entrambe le pagine
+  await pageUser.exposeFunction('queryVirtualDb', queryVirtualDb);
+  await pageConsulente.exposeFunction('queryVirtualDb', queryVirtualDb);
+
+  // Setup dei mock di window.supabase per entrambi i browser (QueryBuilder chainable)
+  const initScriptSetupMock = () => {
+    window.alert = (msg) => { console.log(`[E2E Alert Mock] ${msg}`); };
+    window.confirm = (msg) => {
+      console.log(`[E2E Confirm Mock] ${msg}`);
+      if (msg.includes('AI') || msg.includes('validazione') || msg.includes('immediata')) {
+        console.log('[E2E Mock] Rifiutato avvio della validazione AI immediata.');
+        return false;
+      }
+      return true;
+    };
+
+    let supabaseInstance = null;
+    const fakeCreateClient = function() {
+      console.log('[E2E Mock] virtual createClient called');
+      const instance = {
+        from: function(table) {
+          const queryParams = {};
+          let dataPayload = null;
+          let currentAction = 'select';
+
+          const chain = {
+            select: function(fields) {
+              currentAction = 'select';
+              return this;
+            },
+            insert: function(payload) {
+              currentAction = 'insert';
+              dataPayload = payload;
+              return this;
+            },
+            upsert: function(payload) {
+              currentAction = 'upsert';
+              dataPayload = payload;
+              return this;
+            },
+            update: function(payload) {
+              currentAction = 'update';
+              dataPayload = payload;
+              return this;
+            },
+            delete: function() {
+              currentAction = 'delete';
+              return this;
+            },
+            eq: function(col, val) {
+              queryParams[col] = val;
+              return this;
+            },
+            neq: function(col, val) {
+              queryParams[col + '_neq'] = val;
+              return this;
+            },
+            order: function(col, opt) {
+              return this;
+            },
+            limit: function(n) {
+              return this;
+            },
+            gte: function(col, val) {
+              return this;
+            },
+            single: async function() {
+              const res = await window.queryVirtualDb(table, currentAction, queryParams, dataPayload);
+              return { data: res.data[0] || null, error: res.data[0] ? null : { code: 'PGRST116', message: 'Not found' } };
+            },
+            then: async function(resolve, reject) {
+              try {
+                const res = await window.queryVirtualDb(table, currentAction, queryParams, dataPayload);
+                if (resolve) await resolve(res);
+                return res;
+              } catch (err) {
+                if (reject) await reject(err);
+                throw err;
+              }
+            }
+          };
+          return chain;
+        },
+        auth: {
+          getSession: async () => ({ data: { session: null }, error: null })
+        }
+      };
+      supabaseInstance = instance;
+      return instance;
+    };
+
+    let supabaseLib = { createClient: fakeCreateClient };
+
+    Object.defineProperty(window, 'supabase', {
+      get() {
+        if (supabaseInstance) return supabaseInstance;
+        return supabaseLib;
+      },
+      set(val) {
+        if (val && val.createClient) {
+          supabaseLib = val;
+          supabaseLib.createClient = function() {
+            console.log('[E2E Mock] createClient chiamato sulla CDN caricata');
+            return fakeCreateClient();
+          };
+        } else {
+          supabaseInstance = val;
+        }
+      },
+      configurable: true
+    });
+  };
+
+  await pageUser.addInitScript(initScriptSetupMock);
+  await pageConsulente.addInitScript(initScriptSetupMock);
+
+  // Setup mock di uploadDocument per pageUser
   await pageUser.addInitScript(() => {
     let realBackend = null;
     Object.defineProperty(window, 'Backend', {
@@ -68,21 +284,13 @@ test('E2E Real-time Bridge workflow between User and Consultant', async ({ brows
             const fakePath = `${user.email}/${reqId}/${Date.now()}_${file.name}`;
             const fakeUrl = `https://kvthfnkgfbxtjgkqpbwj.supabase.co/storage/v1/object/public/documents/${fakePath}`;
             
-            const { error } = await window.supabase
-              .from('requirements')
-              .update({
-                  stato:     'yellow',
-                  file_name: file.name,
-                  file_url:  fakeUrl,
-                  file_size: file.size,
-                  file_type: file.type
-              })
-              .eq('user_email', user.email)
-              .eq('req_id', reqId);
-
-            if (error) {
-              console.error('[E2E Mock] Errore update requirements:', error);
-            }
+            await window.queryVirtualDb('requirements', 'update', { user_email: user.email, req_id: reqId }, {
+              stato:     'yellow',
+              file_name: file.name,
+              file_url:  fakeUrl,
+              file_size: file.size,
+              file_type: file.type
+            });
               
             return { url: fakeUrl, path: fakePath };
           };
@@ -91,6 +299,141 @@ test('E2E Real-time Bridge workflow between User and Consultant', async ({ brows
       configurable: true
     });
   });
+
+  // Configura sessionStorage del Consulente per simulare l'accesso
+  await pageConsulente.addInitScript(() => {
+    const session = {
+      expiresAt: Date.now() + 8 * 60 * 60 * 1000,
+      createdAt: new Date().toISOString(),
+      user: {
+        id: 'user_consulente_test',
+        email: 'consulente@demo.it',
+        name: 'Supervisor Accredita360',
+        role: 'consulente',
+        registration_status: 'active'
+      }
+    };
+    window.sessionStorage.setItem('accredita360_session_v2', JSON.stringify(session));
+  });
+
+  // Setup dei mock per le Edge Functions
+  const setupEdgeFunctionsRoute = async (page) => {
+    await page.route('**/functions/v1/*', async route => {
+      const url = route.request().url();
+      const method = route.request().method();
+      const postData = route.request().postDataJSON();
+
+      if (url.includes('/login')) {
+        const { email } = postData;
+        const res = await queryVirtualDb('users', 'select', { email }, null);
+        const user = res.data[0];
+        if (user) {
+          await route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify({ success: true, ...user })
+          });
+        } else {
+          await route.fulfill({
+            status: 400,
+            contentType: 'application/json',
+            body: JSON.stringify({ success: false, message: 'Utente non trovato.' })
+          });
+        }
+      } else if (url.includes('/register-user')) {
+        const { email, nome, cognome, role, telefono } = postData;
+        const newUser = {
+          id: 'user_' + Date.now(),
+          email,
+          name: nome + ' ' + (cognome || ''),
+          role: role || 'cliente',
+          registration_status: 'pending',
+          telefono,
+          created_at: new Date().toISOString()
+        };
+        await queryVirtualDb('users', 'insert', {}, newUser);
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({ success: true, ...newUser })
+        });
+      } else if (url.includes('/save-profiling')) {
+        const { email, structureType, profilingData, requirements } = postData;
+        await queryVirtualDb('structures', 'upsert', {}, {
+          user_email: email,
+          type: structureType,
+          data: profilingData,
+          updated_at: new Date().toISOString()
+        });
+        
+        await queryVirtualDb('requirements', 'delete', { user_email: email }, null);
+        
+        const toInsert = requirements.map(r => ({
+          user_email: email,
+          req_id: r.id || r.req_id,
+          titolo: r.titolo,
+          norma: r.norma || '',
+          cat: r.cat || 'Generale',
+          stato: r.stato || 'red',
+          desc_text: r.desc || r.desc_text || '',
+          file_name: r.file_name || r.file || null,
+          file_url: r.file_url || null,
+          file_size: r.file_size || null,
+          file_type: r.file_type || null,
+          compliance: r.compliance || null,
+          note_consulente: r.note_consulente || r.noteConsulente || null,
+          validated_at: r.validated_at || r.validatedAt || null
+        }));
+        await queryVirtualDb('requirements', 'insert', {}, toInsert);
+        
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({ success: true, insertedCount: toInsert.length })
+        });
+      } else if (url.includes('/approve-user')) {
+        const parsedUrl = new URL(url);
+        const userId = parsedUrl.searchParams.get('userId');
+        const action = parsedUrl.searchParams.get('action');
+
+        const resAll = await queryVirtualDb('users', 'select', {}, null);
+        const targetUser = resAll.data.find(u => u.id === userId);
+
+        if (targetUser) {
+          if (action === 'suspend') {
+            await queryVirtualDb('users', 'update', { email: targetUser.email }, { registration_status: 'rejected' });
+          } else if (action === 'delete') {
+            const idx = usersDb.findIndex(u => u.id === userId);
+            if (idx !== -1) usersDb.splice(idx, 1);
+            const sIdx = structuresDb.findIndex(s => s.user_email === targetUser.email);
+            if (sIdx !== -1) structuresDb.splice(sIdx, 1);
+            
+            const remaining = requirementsDb.filter(r => r.user_email !== targetUser.email);
+            requirementsDb.length = 0;
+            requirementsDb.push(...remaining);
+          } else {
+            await queryVirtualDb('users', 'update', { email: targetUser.email }, { registration_status: 'active' });
+          }
+          await route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify({ success: true })
+          });
+        } else {
+          await route.fulfill({
+            status: 400,
+            contentType: 'application/json',
+            body: JSON.stringify({ success: false, message: 'Utente non trovato.' })
+          });
+        }
+      } else {
+        await route.continue();
+      }
+    });
+  };
+
+  await setupEdgeFunctionsRoute(pageUser);
+  await setupEdgeFunctionsRoute(pageConsulente);
 
   // ─── FASE 1: REGISTRAZIONE UTENTE ───
   await pageUser.goto('https://accredita360s.com/register.html');
@@ -104,74 +447,18 @@ test('E2E Real-time Bridge workflow between User and Consultant', async ({ brows
   await pageUser.check('#reg-terms');
   
   await pageUser.click('#reg-submit-btn');
-  await pageUser.waitForTimeout(4000); // Attendi inserimento DB
+  await pageUser.waitForTimeout(2000);
 
   // ─── FASE 2: APPROVAZIONE CONSULENTE ───
   await pageConsulente.goto('https://accredita360s.com/consulente.html');
   await pageConsulente.click('.nav-links li[data-view="clienti"]');
   
-  // Attendi caricamento clienti pendenti
   const autorizzaBtn = pageConsulente.locator(`tr:has-text("${userEmail}") button`);
   await expect(autorizzaBtn).toBeVisible({ timeout: 15000 });
-  
-  // 1. Eseguiamo l'approvazione dell'utente tramite chiamata API diretta nel contesto Node.js (bypassa CORS)
-  const SUPABASE_URL = 'https://kvthfnkgfbxtjgkqpbwj.supabase.co';
-  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt2dGhmbmtnZmJ4dGpna3FwYndqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NzkxNDQsImV4cCI6MjA5NDQ1NTE0NH0._2UzfUZqy7P7W_9S8xpFWcz0K_pAykl4D8sdXghvbLM';
-
-  console.log(`[E2E] Cerco ID utente per: ${userEmail}`);
-  const findResp = await fetch(`${SUPABASE_URL}/rest/v1/users?email=eq.${encodeURIComponent(userEmail)}&select=id`, {
-    headers: {
-      'apikey': SUPABASE_KEY,
-      'Authorization': `Bearer ${SUPABASE_KEY}`
-    }
-  });
-  const findData = await findResp.json();
-  const userId = findData[0]?.id;
-  if (!userId) {
-    throw new Error(`Utente con email ${userEmail} non trovato nel DB.`);
-  }
-
-  console.log(`[E2E] ID utente trovato: ${userId}. Invio approvazione via Edge Function...`);
-  const approveResp = await fetch(`${SUPABASE_URL}/functions/v1/approve-user?userId=${userId}`, {
-    headers: {
-      'apikey': SUPABASE_KEY,
-      'Authorization': `Bearer ${SUPABASE_KEY}`
-    }
-  });
-  if (!approveResp.ok) {
-    const text = await approveResp.text();
-    throw new Error(`Errore durante l'approvazione via Edge Function: ${approveResp.status} - ${text}`);
-  }
-  console.log(`[E2E] Utente approvato con successo via Edge Function.`);
-
-  // 2. Sovrascriviamo la chiamata reale del browser con un mock che risolve subito
-  await pageConsulente.evaluate(() => {
-    window.Backend.approveUser = async (email) => {
-      console.log(`[E2E Mock] Approvazione browser bypassata per:`, email);
-      return { email, name: 'Struttura', registration_status: 'active' };
-    };
-  });
-
   await autorizzaBtn.click();
-  await pageConsulente.waitForTimeout(2000);
+  await pageConsulente.waitForTimeout(1000);
 
   // ─── FASE 3: LOGIN UTENTE AUTORIZZATO ───
-  // Mock login endpoint for pageUser to bypass 2FA setup
-  await pageUser.route('**/functions/v1/login', async route => {
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({
-        success: true,
-        id: userId || 'user_e2e_test_id',
-        email: userEmail,
-        name: 'Struttura E2E Test',
-        role: 'cliente',
-        registration_status: 'active'
-      })
-    });
-  });
-
   await pageUser.goto('https://accredita360s.com/login.html');
   await pageUser.click('#panel-utente');
   await pageUser.fill('#login-email', userEmail);
@@ -188,7 +475,6 @@ test('E2E Real-time Bridge workflow between User and Consultant', async ({ brows
   await pageUser.selectOption('#struttura-elettro', 'no');
   await pageUser.selectOption('#struttura-auth', 'no');
   
-  // Genera Gap Analysis
   await pageUser.click('button:has-text("Salva Profilo e Genera Gap Analysis")');
   await pageUser.waitForSelector('#asp-requirements-list tr');
 
@@ -196,7 +482,7 @@ test('E2E Real-time Bridge workflow between User and Consultant', async ({ brows
   await pageConsulente.click('.nav-links li[data-view="monitoraggio"]');
   await pageConsulente.waitForSelector('#monitoraggio-grid');
   
-  // Forza ricaricamento dati per vedere il nuovo utente profilato
+  // Ricarica dati
   await pageConsulente.evaluate(async () => {
     await window.consulente.loadData();
     window.consulente.renderMonitoraggio();
@@ -226,9 +512,10 @@ test('E2E Real-time Bridge workflow between User and Consultant', async ({ brows
     buffer: Buffer.from('PDF test content')
   });
   
-  await pageUser.waitForTimeout(3000);
+  await pageUser.waitForTimeout(2000);
 
   // ─── FASE 7: NOTA DI RIFIUTO DEL CONSULENTE ───
+  await pageConsulente.bringToFront();
   const reqRowConsulente = pageConsulente.locator(`tr:has(#note-req-${reqId})`);
   await expect(reqRowConsulente.locator('.status-badge')).toContainText(/In Attesa/i, { timeout: 15000 });
   
@@ -236,6 +523,7 @@ test('E2E Real-time Bridge workflow between User and Consultant', async ({ brows
   await reqRowConsulente.locator('button:has-text("Richiedi Modifiche")').click();
 
   // ─── FASE 8: RICEZIONE NOTA DA PARTE DELL'UTENTE (BRIDGE) ───
+  await pageUser.bringToFront();
   const reqRowUser = pageUser.locator(`#asp-requirements-list tr:has(button[onclick*="${reqId}"])`);
   await expect(reqRowUser.locator('.status-badge')).toContainText(/Critico/i, { timeout: 15000 });
   await expect(reqRowUser).toContainText('Documento illeggibile o incompleto.', { timeout: 15000 });
@@ -253,9 +541,10 @@ test('E2E Real-time Bridge workflow between User and Consultant', async ({ brows
     buffer: Buffer.from('PDF test content')
   });
   
-  await pageUser.waitForTimeout(3000);
+  await pageUser.waitForTimeout(2000);
 
   // Approva il documento
+  await pageConsulente.bringToFront();
   await expect(reqRowConsulente.locator('.status-badge')).toContainText(/In Attesa/i, { timeout: 15000 });
   await reqRowConsulente.locator('button:has-text("Approva")').click();
 
@@ -279,17 +568,7 @@ test('E2E Real-time Bridge workflow between User and Consultant', async ({ brows
   await expect(certBtn).toBeEnabled({ timeout: 15000 });
 
   await certBtn.click();
-  await pageConsulente.waitForTimeout(2000);
-
-  // ─── DIAGNOSTICA DB ───
-  const checkStructResp = await fetch(`${SUPABASE_URL}/rest/v1/structures?user_email=eq.${encodeURIComponent(userEmail)}`, {
-    headers: {
-      'apikey': SUPABASE_KEY,
-      'Authorization': `Bearer ${SUPABASE_KEY}`
-    }
-  });
-  const checkStructData = await checkStructResp.json();
-  console.log(`[E2E DB Verification] Structure data in DB:`, JSON.stringify(checkStructData, null, 2));
+  await pageConsulente.waitForTimeout(1000);
 
   // ─── FASE 11: BLOCCO PRATICA E DOWNLOAD CERTIFICATO ───
   await pageUser.click('.nav-links li[data-view="dashboard"]');

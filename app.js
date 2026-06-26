@@ -44,6 +44,13 @@ const app = {
             window.location.href = 'login.html';
             return;
         } else {
+            // Controllo stato utente in tempo reale
+            const isActive = await Backend.checkUserStatus();
+            if (!isActive) {
+                alert('Accesso negato: account sospeso o non più attivo. Contatta l\'amministratore.');
+                this.doLogout();
+                return;
+            }
             this.setupUI(user);
             await this.loadData();
             this.startRealtimeBridge();

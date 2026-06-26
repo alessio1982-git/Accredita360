@@ -9,24 +9,38 @@
  *   - Requisiti: tabella `requirements` con mappatura completa NormativaDB
  */
 
+(function() {
 const SUPABASE_URL = 'https://kvthfnkgfbxtjgkqpbwj.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt2dGhmbmtnZmJ4dGpna3FwYndqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NzkxNDQsImV4cCI6MjA5NDQ1NTE0NH0._2UzfUZqy7P7W_9S8xpFWcz0K_pAykl4D8sdXghvbLM';
 
-// Inizializzazione Supabase — semplice e robusta
-var supabase;
-try {
-    if (window.supabase && window.supabase.createClient) {
-        supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-    } else {
-        console.warn('[Backend] Supabase CDN non ancora caricato. Funzionalità DB disabilitate.');
+// Inizializzazione Supabase con polling per gestire il caricamento asincrono della CDN e i mock dei test
+let supabase;
+function checkAndInitSupabase() {
+    if (!supabase && window.supabase) {
+        if (typeof window.supabase.from === 'function') {
+            supabase = window.supabase;
+        } else if (typeof window.supabase.createClient === 'function') {
+            supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        }
     }
-} catch (e) {
-    console.error('[Backend] Errore init Supabase:', e);
-};
+}
+checkAndInitSupabase();
+if (!supabase) {
+    const interval = setInterval(() => {
+        checkAndInitSupabase();
+        if (supabase) clearInterval(interval);
+    }, 50);
+    setTimeout(() => clearInterval(interval), 10000);
+}
 
 const SESSION_KEY = 'accredita360_session_v2';
 
 const Backend = {
+
+    get supabase() {
+        checkAndInitSupabase();
+        return supabase;
+    },
 
     // =========================================================
     // INIZIALIZZAZIONE
@@ -339,6 +353,47 @@ const Backend = {
     logout() {
         sessionStorage.removeItem(SESSION_KEY);
         console.log('[Auth] Sessione terminata.');
+    },
+
+    /**
+     * Verifica lo stato dell'utente sul database in tempo reale.
+     * Ritorna true se l'utente è attivo o admin, false se sospeso o inesistente.
+     */
+    async checkUserStatus() {
+        const user = this.getCurrentUser();
+        if (!user) return false;
+
+        if (!supabase) {
+            return true;
+        }
+
+        try {
+            const { data, error } = await supabase
+                .from('users')
+                .select('registration_status, role')
+                .eq('email', user.email)
+                .single();
+
+            if (error) {
+                console.warn('[Backend] Errore verifica stato utente (potrebbe essere bloccato da RLS):', error.message);
+                // Se l'utente non viene trovato (errore PGRST116) o se RLS blocca la query, data sarà null o ci sarà errore.
+                // In entrambi i casi, neghiamo l'accesso.
+                return false;
+            }
+
+            if (!data) {
+                return false;
+            }
+
+            // L'utente è valido solo se è attivo oppure admin
+            if (data.registration_status !== 'active' && data.role !== 'admin') {
+                return false;
+            }
+            return true;
+        } catch (e) {
+            console.error('[Backend] Eccezione checkUserStatus:', e);
+            return false;
+        }
     },
 
     /**
@@ -922,3 +977,4 @@ const Backend = {
 window.Backend = Backend;
 
 Backend.init();
+})();
