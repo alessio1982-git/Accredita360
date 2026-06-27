@@ -54,6 +54,7 @@ const app = {
             this.setupUI(user);
             await this.loadData();
             this.startRealtimeBridge();
+            window.appInitialized = true;
         }
     },
 
@@ -280,6 +281,54 @@ const app = {
     },
 
     async loadData() {
+        // Recupera profilo utente corrente per controllare lo stato di assegnazione
+        const profile = await Backend.getCurrentUserProfile();
+        const isClient = profile && profile.role === 'cliente';
+        
+        if (isClient) {
+            const isAssigned = profile.stato_assegnazione === 'in_carico';
+            
+            // Gestione dei banner e widget in Dashboard
+            const unassignedBanner = document.getElementById('unassigned-welcome-banner');
+            const assignedWidget = document.getElementById('assigned-consultant-widget');
+            const welcomeCard = document.getElementById('dashboard-welcome-card');
+            const statsGrid = document.querySelector('#view-dashboard .stats-grid');
+            
+            if (isAssigned) {
+                if (unassignedBanner) unassignedBanner.style.display = 'none';
+                if (assignedWidget) {
+                    assignedWidget.style.display = 'flex';
+                    // Recupera info pseudonimizzate del consulente
+                    const consultant = await Backend.getAssignedConsultantPublic(profile.consulente_email_fk);
+                    const codeEl = document.getElementById('consultant-privacy-code');
+                    const emailEl = document.getElementById('consultant-privacy-email');
+                    if (codeEl) codeEl.textContent = 'Operatore: ' + (consultant?.consulente_codice_privacy || 'CONS-N/D');
+                    if (emailEl) emailEl.textContent = consultant?.consulente_email_mascherata || '—';
+                }
+                if (welcomeCard) welcomeCard.style.display = 'block';
+                if (statsGrid) statsGrid.style.display = 'grid';
+            } else {
+                if (unassignedBanner) unassignedBanner.style.display = 'block';
+                if (assignedWidget) assignedWidget.style.display = 'none';
+                if (welcomeCard) welcomeCard.style.display = 'none';
+                if (statsGrid) statsGrid.style.display = 'none';
+            }
+
+            // Gestione visibilità delle voci di menu in sidebar
+            const sidebarLinks = document.querySelectorAll('.nav-links li');
+            sidebarLinks.forEach(link => {
+                const view = link.dataset.view;
+                if (['profiling', 'gap-analysis', 'documents', 'maintenance'].includes(view)) {
+                    link.style.display = isAssigned ? 'block' : 'none';
+                }
+            });
+
+            // Se l'utente non è assegnato, interrompiamo qui caricamento dei requisiti e wizard
+            if (!isAssigned) {
+                return;
+            }
+        }
+
         appState.requirements = await Backend.getRequirements();
         await this.checkGlobalStatus();
         this.updateStats();

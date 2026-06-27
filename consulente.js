@@ -46,6 +46,7 @@ const consulente = {
         this.bindEvents();
         this.navigate('dashboard-consulente');
         await this.loadData();
+        window.appInitialized = true;
     },
 
     setupUI(user) {
@@ -118,9 +119,8 @@ const consulente = {
     async loadData() {
         const B = this._B || window.Backend || Backend;
         try {
-            const [stats, pendingUsers, allStructures] = await Promise.all([
+            const [stats, allStructures] = await Promise.all([
                 B.getAdminStats(),
-                B.getPendingUsers(),
                 B.getAllStructuresWithRequirements()
             ]);
 
@@ -128,9 +128,8 @@ const consulente = {
             setEl('dash-stat-clienti',    stats.activeStructures);
             setEl('dash-stat-pending',    stats.pendingDocs);
             setEl('dash-stat-validated',  stats.validatedDocs);
-            setEl('dash-stat-new-reg',    pendingUsers.length);
 
-            this._clienti = pendingUsers;
+            this._clienti = allStructures;
 
             this._allDocs = [];
             allStructures.forEach(item => {
@@ -163,23 +162,41 @@ const consulente = {
         if (this._clienti.length === 0) {
             tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:28px;color:var(--text-muted);">
                 <i class='bx bx-info-circle' style="font-size:24px;display:block;margin-bottom:8px;"></i>
-                Nessun cliente in attesa di approvazione.
+                Nessun cliente assegnato a questo operatore.
             </td></tr>`;
             return;
         }
-        tbody.innerHTML = this._clienti.map(u => {
-            const data = u.created_at
-                ? new Date(u.created_at).toLocaleDateString('it-IT', {day:'2-digit', month:'short', year:'numeric'})
-                : '—';
+        const tipoLabels = {
+            'poliambulatorio':'Poliambulatorio','rsa':'RSA','lab':'Laboratorio Analisi',
+            'domiciliare':'Cure Domiciliari','odontoiatria':'Studio Odontoiatrico',
+            'radiologia':'Diagnostica Immagini','riabilitazione':'Riabilitazione','casa_cura':'Casa di Cura'
+        };
+        tbody.innerHTML = this._clienti.map(item => {
+            const u = item.user;
+            const s = item.structure;
+            
+            // Calcolo progresso requisiti validati
+            const reqs = item.requirements || [];
+            const total = reqs.length;
+            const green = reqs.filter(r => r.stato === 'green').length;
+            const progressPercent = total > 0 ? Math.round((green / total) * 100) : 0;
+
             return `<tr>
                 <td style="font-weight:600;">${_s(u.name || '—')}</td>
+                <td><span style="font-size:12px; padding:3px 8px; background:rgba(59,130,246,0.15); border-radius:4px; color:var(--primary); font-weight:600;">${tipoLabels[s.type] || s.type}</span></td>
                 <td style="font-size:13px;color:var(--text-muted);">${_s(u.email)}</td>
-                <td style="font-size:12px;color:var(--text-muted);">${_s(u.telefono || '—')}</td>
-                <td>${data}</td>
                 <td>
-                    <button class="btn btn-outline" style="padding:6px 14px;font-size:12px;color:var(--success);border-color:var(--success);"
-                        onclick="consulente.approveUser('${_s(u.email)}')">
-                        <i class='bx bx-check-circle'></i> Autorizza
+                    <div style="display:flex;align-items:center;gap:8px;">
+                        <div style="width:80px;background:rgba(255,255,255,0.06);height:6px;border-radius:3px;overflow:hidden;border:1px solid rgba(255,255,255,0.1);">
+                            <div style="width:${progressPercent}%;background:var(--success);height:100%;border-radius:3px;"></div>
+                        </div>
+                        <span style="font-size:11px;font-weight:600;color:var(--text-muted);">${progressPercent}% (${green}/${total})</span>
+                    </div>
+                </td>
+                <td>
+                    <button class="btn btn-outline" style="padding:6px 14px;font-size:12px;color:var(--primary);border-color:var(--primary);"
+                        onclick="consulente.openClientDetails('${_s(u.email)}')">
+                        <i class='bx bx-edit'></i> Gestisci
                     </button>
                 </td>
             </tr>`;

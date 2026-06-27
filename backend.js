@@ -15,12 +15,61 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 
 // Inizializzazione Supabase con polling per gestire il caricamento asincrono della CDN e i mock dei test
 let supabase;
+function setHeader(headersObj, key, value) {
+    if (!headersObj) return;
+    if (typeof headersObj.set === 'function') {
+        headersObj.set(key, value);
+    } else {
+        headersObj[key] = value;
+    }
+}
+function deleteHeader(headersObj, key) {
+    if (!headersObj) return;
+    if (typeof headersObj.delete === 'function') {
+        headersObj.delete(key);
+    } else {
+        delete headersObj[key];
+    }
+}
+
 function checkAndInitSupabase() {
     if (!supabase && window.supabase) {
+        let rawClient;
         if (typeof window.supabase.from === 'function') {
-            supabase = window.supabase;
+            rawClient = window.supabase;
         } else if (typeof window.supabase.createClient === 'function') {
-            supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+            rawClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        }
+        if (rawClient) {
+            supabase = new Proxy(rawClient, {
+                get(target, prop) {
+                    // Inietta l'header x-user-email dinamicamente per supportare RLS
+                    const user = Backend.getCurrentUser();
+                    if (user && user.email) {
+                        const emailClean = user.email.toLowerCase().trim();
+                        target.headers = target.headers || {};
+                        setHeader(target.headers, 'x-user-email', emailClean);
+                        if (target.rest) {
+                            target.rest.headers = target.rest.headers || {};
+                            setHeader(target.rest.headers, 'x-user-email', emailClean);
+                        }
+                        if (target.storage) {
+                            target.storage.headers = target.storage.headers || {};
+                            setHeader(target.storage.headers, 'x-user-email', emailClean);
+                        }
+                    } else {
+                        deleteHeader(target.headers, 'x-user-email');
+                        if (target.rest) {
+                            deleteHeader(target.rest.headers, 'x-user-email');
+                        }
+                        if (target.storage) {
+                            deleteHeader(target.storage.headers, 'x-user-email');
+                        }
+                    }
+                    const value = target[prop];
+                    return typeof value === 'function' ? value.bind(target) : value;
+                }
+            });
         }
     }
 }
@@ -39,6 +88,17 @@ const Backend = {
 
     get supabase() {
         checkAndInitSupabase();
+        if (supabase) {
+            const user = this.getCurrentUser();
+            if (user && user.email) {
+                supabase.headers = supabase.headers || {};
+                supabase.headers['x-user-email'] = user.email.toLowerCase().trim();
+            } else {
+                if (supabase.headers) {
+                    delete supabase.headers['x-user-email'];
+                }
+            }
+        }
         return supabase;
     },
 
@@ -823,7 +883,13 @@ const Backend = {
 
         if (!users || !structures) return [];
 
-        return users
+        const currentUser = this.getCurrentUser();
+        let filteredUsers = users;
+        if (currentUser && currentUser.role === 'consulente') {
+            filteredUsers = users.filter(u => u.consulente_email_fk === currentUser.email);
+        }
+
+        return filteredUsers
             .map(u => {
                 const struct = structures.find(s => s.user_email === u.email);
                 if (!struct) return null;
@@ -831,23 +897,88 @@ const Backend = {
                 const reqs = (requirements || [])
                     .filter(r => r.user_email === u.email)
                     .map(r => ({
-                        id:             r.req_id,
-                        titolo:         r.titolo,
-                        norma:          r.norma,
-                        cat:            r.cat,
-                        stato:          r.stato,
-                        percorso:       this._inferPercorso(r.req_id),
-                        file:           r.file_name,
-                        desc:           r.desc_text,
-                        compliance:     r.compliance,
-                        noteConsulente: r.note_consulente,
-                        validatedAt:    r.validated_at
+                       id:             r.req_id,
+                       titolo:         r.titolo,
+                       norma:          r.norma,
+                       cat:            r.cat,
+                       stato:          r.stato,
+                       percorso:       this._inferPercorso(r.req_id),
+                       file:           r.file_name,
+                       desc:           r.desc_text,
+                       compliance:     r.compliance,
+                       noteConsulente: r.note_consulente,
+                       validatedAt:    r.validated_at
                     }));
 
                 return { user: u, structure: struct, requirements: reqs };
             })
             .filter(Boolean);
     },
+
+    async assignConsultant(clientEmail, consultantEmail) {
+        const payload = {};
+        if (consultantEmail) {
+            payload.consulente_email_fk = consultantEmail;
+            payload.stato_assegnazione = 'in_carico';
+        } else {
+            payload.consulente_email_fk = null;
+            payload.stato_assegnazione = 'da_assegnare';
+        }
+
+        const { error } = await supabase
+            .from('users')
+            .update(payload)
+            .eq('email', clientEmail);
+
+        if (error) {
+            console.error('[Backend] Errore assignConsultant:', error);
+            throw new Error(error.message || 'Errore durante l\'assegnazione del consulente.');
+        }
+        return true;
+    },
+
+    async getConsultants() {
+        const { data, error } = await supabase
+            .from('users')
+            .select('email, name, role, consulente_codice_privacy, consulente_email_mascherata')
+            .in('role', ['admin', 'consulente'])
+            .eq('registration_status', 'active');
+        if (error) {
+            console.error('[Backend] Errore getConsultants:', error);
+            return [];
+        }
+        return data || [];
+    },
+
+    async getCurrentUserProfile() {
+        const user = this.getCurrentUser();
+        if (!user) return null;
+        const { data, error } = await supabase
+            .from('users')
+            .select('email, name, role, registration_status, stato_assegnazione, consulente_email_fk')
+            .eq('email', user.email)
+            .single();
+        if (error) {
+            console.warn('[Backend] Errore recupero profilo utente:', error);
+            return null;
+        }
+        return data;
+    },
+
+    async getAssignedConsultantPublic(consultantEmail) {
+        if (!consultantEmail) return null;
+        const { data, error } = await supabase
+            .from('consultants_public')
+            .select('*')
+            .eq('consulente_email_fk', consultantEmail)
+            .single();
+        if (error) {
+            console.warn('[Backend] Errore recupero consulente pubblico:', error);
+            return null;
+        }
+        return data;
+    },
+
 
     async adminValidateRequirement(userEmail, reqId, newStatus, note = '') {
         const { error } = await supabase

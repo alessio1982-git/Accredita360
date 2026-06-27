@@ -19,6 +19,7 @@ ALTER TABLE public.requirements ENABLE ROW LEVEL SECURITY;
 CREATE OR REPLACE FUNCTION public.current_user_email()
 RETURNS TEXT AS $$
   SELECT COALESCE(
+    nullif(current_setting('request.headers', true)::json->>'x-user-email', ''),
     current_setting('request.jwt.claims', true)::json->>'email',
     ''
   );
@@ -45,6 +46,16 @@ $$ LANGUAGE sql STABLE SECURITY DEFINER;
 -- ────────────────────────────────────────────────────────────
 -- 3. POLICIES — TABELLA: users
 -- ────────────────────────────────────────────────────────────
+-- Elimina policy temporanee/insecure se esistenti
+DROP POLICY IF EXISTS "Allow all reads on users" ON public.users;
+DROP POLICY IF EXISTS "Allow all reads on structures" ON public.structures;
+DROP POLICY IF EXISTS "Allow all reads on requirements" ON public.requirements;
+DROP POLICY IF EXISTS "Allow upsert on structures" ON public.structures;
+DROP POLICY IF EXISTS "Allow update on structures" ON public.structures;
+DROP POLICY IF EXISTS "Allow insert requirements" ON public.requirements;
+DROP POLICY IF EXISTS "Allow update requirements" ON public.requirements;
+DROP POLICY IF EXISTS "Allow delete requirements" ON public.requirements;
+
 -- Elimina policy esistenti
 DROP POLICY IF EXISTS "users_select_own"   ON public.users;
 DROP POLICY IF EXISTS "users_select_admin" ON public.users;

@@ -93,6 +93,32 @@
             <div class="content-area">
                 <!-- VIEW: Dashboard -->
                 <div id="view-dashboard" class="view active-view">
+                    <!-- Banner In Attesa di Assegnazione -->
+                    <div id="unassigned-welcome-banner" class="welcome-card glass-card" style="display:none; border-left: 6px solid var(--warning); padding: 24px; background: rgba(245,158,11,0.06); margin-bottom: 24px;">
+                        <div style="display:flex; align-items:center; gap:16px;">
+                            <div style="font-size:36px; color:var(--warning);"><i class='bx bx-time-five'></i></div>
+                            <div>
+                                <h3 style="margin:0 0 6px 0; color:var(--warning); font-size:18px; font-weight:700;">In Attesa di Assegnazione</h3>
+                                <p style="margin:0; font-size:13px; color:var(--text-main); line-height:1.5;">
+                                    Grazie per esserti registrato su **Accredita360**. Il nostro team sta analizzando la tua anagrafica per assegnarti un **Consulente dedicato** che ti guiderà passo-passo nell'iter di accreditamento.
+                                </p>
+                                <p style="margin:8px 0 0; font-size:12px; color:var(--text-muted);">
+                                    Sarai abilitato alla compilazione dei requisiti non appena l'assegnazione sarà completata.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Widget Consulente Assegnato -->
+                    <div id="assigned-consultant-widget" class="glass-card" style="display:none; padding: 16px; margin-bottom: 24px; align-items: center; gap: 14px; border-left: 4px solid var(--success); background: rgba(16,185,129,0.03);">
+                        <i class='bx bx-user-check' style="font-size: 28px; color: var(--success);"></i>
+                        <div>
+                            <div style="font-size: 11px; color: var(--text-muted); text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px;">Consulente Incaricato</div>
+                            <div style="font-size: 14px; font-weight: 700; color: var(--text-main);" id="consultant-privacy-code">—</div>
+                            <div style="font-size: 12px; color: var(--text-muted);" id="consultant-privacy-email">—</div>
+                        </div>
+                    </div>
+
                     <!-- Banner Certificazione Approvata -->
                     <div id="cert-success-banner" class="glass-card" style="display:none; padding:24px; border-left:6px solid var(--success); margin-bottom:24px; background:rgba(16,185,129,0.08); align-items:center; justify-content:space-between; gap:20px; flex-wrap:wrap;">
                         <div style="flex:1; min-width:280px; display:flex; align-items:flex-start; gap:16px;">
@@ -112,7 +138,7 @@
                         </div>
                     </div>
 
-                    <div class="welcome-card">
+                    <div class="welcome-card" id="dashboard-welcome-card">
                         <div style="display:flex; justify-content:space-between; align-items:flex-start;">
                             <div>
                                 <h3>Dashboard Struttura Sanitaria</h3>

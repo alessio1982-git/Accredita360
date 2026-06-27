@@ -153,6 +153,45 @@
                         </table>
                     </div>
                 </div>
+                <!-- Smistamento Pratiche -->
+                <div class="checklist-container glass-card" style="margin-bottom:24px;border-left:4px solid var(--primary);">
+                    <div class="gap-header" style="margin-bottom:16px;padding:20px 20px 0;">
+                        <h4 style="display:flex;align-items:center;gap:8px;"><i class='bx bx-git-pull-request' style="color:var(--primary);"></i> Smistamento &amp; Assegnazione Pratiche</h4>
+                        <span style="font-size:12px;color:var(--text-muted);">Assegna le strutture sanitarie ai consulenti dedicati</span>
+                    </div>
+                    
+                    <!-- Contatori rapidi smistamento -->
+                    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; padding: 0 20px 16px 20px;">
+                        <div style="background:rgba(255,255,255,0.03); border:1px solid var(--glass-border); border-radius:8px; padding:10px 14px; text-align:center;">
+                            <div style="font-size:11px; color:var(--text-muted); font-weight:600; text-transform:uppercase;">Totale Clienti</div>
+                            <div style="font-size:20px; font-weight:800; color:var(--text-main);" id="dispatch-stat-total">—</div>
+                        </div>
+                        <div style="background:rgba(239,68,68,0.05); border:1px solid rgba(239,68,68,0.2); border-radius:8px; padding:10px 14px; text-align:center;">
+                            <div style="font-size:11px; color:#ef4444; font-weight:600; text-transform:uppercase;">Da Assegnare</div>
+                            <div style="font-size:20px; font-weight:800; color:#ef4444;" id="dispatch-stat-unassigned">—</div>
+                        </div>
+                        <div style="background:rgba(16,185,129,0.05); border:1px solid rgba(16,185,129,0.2); border-radius:8px; padding:10px 14px; text-align:center;">
+                            <div style="font-size:11px; color:#10b981; font-weight:600; text-transform:uppercase;">In Carico</div>
+                            <div style="font-size:20px; font-weight:800; color:#10b981;" id="dispatch-stat-assigned">—</div>
+                        </div>
+                    </div>
+
+                    <div class="checklist-table-wrapper">
+                        <table class="checklist-table">
+                            <thead>
+                                <tr>
+                                    <th>Struttura Sanitaria</th>
+                                    <th>Tipo Struttura</th>
+                                    <th>Consulente Incaricato</th>
+                                    <th>Azione</th>
+                                </tr>
+                            </thead>
+                            <tbody id="admin-dispatch-table">
+                                <tr><td colspan="4" style="text-align:center;padding:20px;color:var(--text-muted);"><i class='bx bx-loader-alt'></i> Caricamento...</td></tr>
+                             </tbody>
+                         </table>
+                     </div>
+                 </div>
                 <!-- Filtri -->
                 <div class="checklist-container glass-card" style="margin-bottom:20px;padding:16px 20px;">
                     <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">

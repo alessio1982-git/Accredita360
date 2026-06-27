@@ -126,6 +126,12 @@ test('verifica download modelli e istanze', async ({ page }) => {
   page.on('console', msg => console.log(`[Browser Console] ${msg.type()}: ${msg.text()}`));
   page.on('pageerror', err => console.log(`[Browser PageError] ${err.message}`));
 
+  page.on('request', request => {
+    if (request.url().includes('/rest/v1/')) {
+      console.log(`[REST Request] ${request.method()} ${request.url()} Headers:`, JSON.stringify(request.headers()));
+    }
+  });
+
   // Imposta sessionStorage per impersonare alessio.arlotta@gmail.com
   await page.addInitScript(() => {
     const session = {
@@ -142,7 +148,22 @@ test('verifica download modelli e istanze', async ({ page }) => {
     window.sessionStorage.setItem('accredita360_session_v2', JSON.stringify(session));
   });
 
+  const fs = require('fs');
+  const path = require('path');
+  const localBackendContent = fs.readFileSync(path.join(__dirname, '../backend.js'), 'utf8');
+  const localAppContent = fs.readFileSync(path.join(__dirname, '../app.js'), 'utf8');
+
+  await page.route('**/backend.js*', async route => {
+    await route.fulfill({ status: 200, contentType: 'application/javascript', body: localBackendContent });
+  });
+  await page.route('**/app.js*', async route => {
+    await route.fulfill({ status: 200, contentType: 'application/javascript', body: localAppContent });
+  });
+
   await page.goto(`${BASE_URL}/app.html`);
+
+  // Attendiamo che l'inizializzazione asincrona sia completata
+  await page.waitForFunction(() => window.appInitialized === true);
 
   // Navighiamo alla Gap Analysis per rendere visibile la tabella dei requisiti
   await page.click('.nav-links li[data-view="gap-analysis"]');
@@ -295,7 +316,23 @@ test('consultant filter redflag displays only flagged structures', async ({ page
     });
   });
 
+  const fs = require('fs');
+  const path = require('path');
+  const localBackendContent = fs.readFileSync(path.join(__dirname, '../backend.js'), 'utf8');
+  const localConsulenteContent = fs.readFileSync(path.join(__dirname, '../consulente.js'), 'utf8');
+
+  await page.route('**/backend.js*', async route => {
+    await route.fulfill({ status: 200, contentType: 'application/javascript', body: localBackendContent });
+  });
+  await page.route('**/consulente.js*', async route => {
+    await route.fulfill({ status: 200, contentType: 'application/javascript', body: localConsulenteContent });
+  });
+
   await page.goto(`${BASE_URL}/consulente.html`);
+
+  // Attendiamo che l'inizializzazione asincrona sia completata
+  await page.waitForFunction(() => window.appInitialized === true);
+
   await page.click('.nav-links li[data-view="monitoraggio"]');
   await page.waitForSelector('#monitoraggio-grid');
 
@@ -321,12 +358,21 @@ test('migration preserves document state when structure changes complexity', asy
   const path = require('path');
   const localBackendPath = path.join(__dirname, '../backend.js');
   const localBackendContent = fs.readFileSync(localBackendPath, 'utf8');
+  const localAppPath = path.join(__dirname, '../app.js');
+  const localAppContent = fs.readFileSync(localAppPath, 'utf8');
 
   await page.route('**/backend.js*', async route => {
     await route.fulfill({
       status: 200,
       contentType: 'application/javascript',
       body: localBackendContent
+    });
+  });
+  await page.route('**/app.js*', async route => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/javascript',
+      body: localAppContent
     });
   });
 
@@ -417,6 +463,38 @@ test('migration preserves document state when structure changes complexity', asy
               }
             };
           }
+          if (table === 'users') {
+            return {
+              select: function() {
+                return {
+                  eq: function() {
+                    return {
+                      single: () => Promise.resolve({
+                        data: { email: 'alessio.arlotta@gmail.com', registration_status: 'active', role: 'cliente', stato_assegnazione: 'in_carico', consulente_email_fk: 'admin@accredita360.it' },
+                        error: null
+                      })
+                    };
+                  }
+                };
+              }
+            };
+          }
+          if (table === 'structures') {
+            return {
+              select: function() {
+                return {
+                  eq: function() {
+                    return {
+                      single: () => Promise.resolve({
+                        data: { type: 'poliambulatorio', data: { features: { wantsAccreditamento: true } } },
+                        error: null
+                      })
+                    };
+                  }
+                };
+              }
+            };
+          }
           return {
             select: () => mockChain,
             insert: () => Promise.resolve({ data: [], error: null }),
@@ -498,6 +576,38 @@ test('migration preserves document state when structure changes complexity', asy
                   }
                 };
               }
+              if (table === 'users') {
+                return {
+                  select: function() {
+                    return {
+                      eq: function() {
+                        return {
+                          single: () => Promise.resolve({
+                            data: { email: 'alessio.arlotta@gmail.com', registration_status: 'active', role: 'cliente', stato_assegnazione: 'in_carico', consulente_email_fk: 'admin@accredita360.it' },
+                            error: null
+                          })
+                        };
+                      }
+                    };
+                  }
+                };
+              }
+              if (table === 'structures') {
+                return {
+                  select: function() {
+                    return {
+                      eq: function() {
+                        return {
+                          single: () => Promise.resolve({
+                            data: { type: 'poliambulatorio', data: { features: { wantsAccreditamento: true } } },
+                            error: null
+                          })
+                        };
+                      }
+                    };
+                  }
+                };
+              }
               return originalFrom.apply(instance, arguments);
             };
             supabaseInstance = instance;
@@ -527,6 +637,9 @@ test('migration preserves document state when structure changes complexity', asy
   });
 
   await page.goto(`${BASE_URL}/app.html`);
+
+  // Attendiamo che l'inizializzazione asincrona sia completata
+  await page.waitForFunction(() => window.appInitialized === true);
 
   // Navighiamo alla pagina di Profilazione Struttura
   await page.click('.nav-links li[data-view="profiling"]');

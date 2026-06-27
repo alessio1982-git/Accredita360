@@ -35,6 +35,7 @@ const admin = {
         this.bindEvents();
         await this.renderConsultantsData();
         this.navigate('dashboard-admin');
+        window.appInitialized = true;
     },
 
     setupUI(user) {
@@ -86,9 +87,11 @@ const admin = {
 
     // ── CONSULENTI DATA ──────────────────────────────────────────
     async renderConsultantsData() {
-        const [stats, pendingUsers] = await Promise.all([
+        const [stats, pendingUsers, allStructures, consultants] = await Promise.all([
             Backend.getAdminStats(),
-            Backend.getPendingUsers()
+            Backend.getPendingUsers(),
+            Backend.getAllStructuresWithRequirements(),
+            Backend.getConsultants()
         ]);
 
         const setEl = (id, val) => { const e = document.getElementById(id); if (e) e.textContent = val; };
@@ -138,8 +141,66 @@ const admin = {
             }
         }
 
+        // Smistamento Pratiche
+        const totalClients = allStructures.length;
+        const unassignedClients = allStructures.filter(item => !item.user.consulente_email_fk).length;
+        const assignedClients = totalClients - unassignedClients;
+
+        setEl('dispatch-stat-total', totalClients);
+        setEl('dispatch-stat-unassigned', unassignedClients);
+        setEl('dispatch-stat-assigned', assignedClients);
+
+        const dispatchTbody = document.getElementById('admin-dispatch-table');
+        if (dispatchTbody) {
+            if (allStructures.length === 0) {
+                dispatchTbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:20px; color:var(--text-muted); font-size:13px;">Nessuna struttura sanitaria profilata nel sistema.</td></tr>`;
+            } else {
+                const tipoLabels = {
+                    'poliambulatorio':'Poliambulatorio','rsa':'RSA','lab':'Laboratorio Analisi',
+                    'domiciliare':'Cure Domiciliari','odontoiatria':'Studio Odontoiatrico',
+                    'radiologia':'Diagnostica Immagini','riabilitazione':'Riabilitazione','casa_cura':'Casa di Cura'
+                };
+                dispatchTbody.innerHTML = allStructures.map(item => {
+                    const u = item.user;
+                    const s = item.structure;
+                    const cEmail = u.consulente_email_fk || '';
+                    
+                    const selectOptions = `<option value="">-- Seleziona Consulente --</option>` + 
+                        consultants.map(c => {
+                            const isSelected = c.email === cEmail ? 'selected' : '';
+                            const realDetails = `${c.name || '—'} (${c.email})`;
+                            const privacyDetails = `[Codice: ${c.consulente_codice_privacy || 'N/D'} | Maschera: ${c.consulente_email_mascherata || 'N/D'}]`;
+                            return `<option value="${_s(c.email)}" ${isSelected}>${_s(realDetails)} ${_s(privacyDetails)}</option>`;
+                        }).join('');
+                    
+                    const isAssigned = !!cEmail;
+                    const buttonText = isAssigned ? '<i class="bx bx-transfer-alt"></i> Riassegna' : '<i class="bx bx-save"></i> Assegna';
+                    const buttonClass = isAssigned ? 'btn-outline' : 'btn-success';
+                    const borderStyle = isAssigned ? '' : 'border-left: 3px solid var(--danger);';
+                    const rowStyle = isAssigned ? '' : 'background: rgba(239, 68, 68, 0.02);';
+
+                    return `<tr style="${rowStyle}${borderStyle}">
+                        <td>
+                            <div style="font-weight:600;">${_s(u.name || '—')}</div>
+                            <div style="font-size:11px; color:var(--text-muted);">${_s(u.email)}</div>
+                        </td>
+                        <td><span style="font-size:12px; padding:3px 8px; background:rgba(59,130,246,0.15); border-radius:4px; color:var(--primary); font-weight:600;">${tipoLabels[s.type] || s.type}</span></td>
+                        <td>
+                            <select class="input-box" id="select-cons-${_s(u.email)}" style="font-size:12px; padding:6px; width:100%; max-width:380px;">
+                                ${selectOptions}
+                            </select>
+                        </td>
+                        <td>
+                            <button class="btn ${buttonClass}" style="padding: 6px 12px; font-size:12px;" onclick="admin.saveDispatch('${_s(u.email)}')">
+                                ${buttonText}
+                            </button>
+                        </td>
+                    </tr>`;
+                }).join('');
+            }
+        }
+
         // Documenti
-        const allStructures = await Backend.getAllStructuresWithRequirements();
         this._adminAllDocs = [];
         allStructures.forEach(item => {
             const strutturaNome = item.user.name || item.user.email;
@@ -150,6 +211,21 @@ const admin = {
         });
         this._renderAdminTable(this._adminAllDocs);
     },
+
+    async saveDispatch(clientEmail) {
+        const selectEl = document.getElementById('select-cons-' + clientEmail);
+        if (!selectEl) return;
+        const consultantEmail = selectEl.value || null;
+
+        try {
+            await Backend.assignConsultant(clientEmail, consultantEmail);
+            alert('Assegnazione salvata con successo.');
+            await this.renderConsultantsData();
+        } catch (e) {
+            alert('Errore durante l\'assegnazione: ' + e.message);
+        }
+    },
+
 
     _renderAdminTable(docs) {
         const list = document.getElementById('consultant-list');

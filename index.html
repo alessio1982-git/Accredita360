@@ -1050,6 +1050,18 @@
 
                 try {
                     // Query client Supabase
+                    const emailClean = email.toLowerCase().trim();
+                    const setHeader = (obj, k, v) => {
+                        if (!obj) return;
+                        if (typeof obj.set === 'function') obj.set(k, v);
+                        else obj[k] = v;
+                    };
+                    supabase.headers = supabase.headers || {};
+                    setHeader(supabase.headers, 'x-user-email', emailClean);
+                    if (supabase.rest) {
+                        supabase.rest.headers = supabase.rest.headers || {};
+                        setHeader(supabase.rest.headers, 'x-user-email', emailClean);
+                    }
                     const { data: users, error } = await supabase
                         .from('users')
                         .select('id,email,name,role,registration_status')
