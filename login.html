@@ -107,7 +107,7 @@
         /* PANNELLI SELEZIONE */
         .panels-grid {
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: repeat(3, 1fr);
             gap: 16px;
             margin-bottom: 24px;
         }
@@ -320,8 +320,16 @@
             <div class="login-panel-card panel-consulente" id="panel-consulente" onclick="loginApp.selectPanel('consulente')">
                 <div class="panel-icon"><i class='bx bx-briefcase'></i></div>
                 <div class="panel-label">Consulente</div>
-                <div class="panel-desc">Amministratore o Consulente Sanitario. Gestisci le pratiche di accreditamento.</div>
-                <span class="panel-badge">Admin & Consulenza</span>
+                <div class="panel-desc">Consulente Sanitario incaricato. Gestisci e supporta le pratiche di accreditamento delle strutture.</div>
+                <span class="panel-badge">Consulenza &amp; Supporto</span>
+            </div>
+
+            <!-- Amministratore -->
+            <div class="login-panel-card panel-admin" id="panel-admin" onclick="loginApp.selectPanel('admin')">
+                <div class="panel-icon"><i class='bx bx-shield-quarter' style="color:#8b5cf6;"></i></div>
+                <div class="panel-label" style="color:#8b5cf6; font-weight:700;">Amministratore</div>
+                <div class="panel-desc">Gestore Globale del Sistema. Monitora, configura ed amministra l'intera piattaforma.</div>
+                <span class="panel-badge" style="background:rgba(139,92,246,0.1); border:1px solid rgba(139,92,246,0.2); color:#8b5cf6;">Gestione Globale</span>
             </div>
         </div>
 
@@ -542,7 +550,7 @@
             // Controllo parametro URL ?role=
             const params = new URLSearchParams(window.location.search);
             const role = params.get('role');
-            if (role === 'consulente' || role === 'utente') {
+            if (role === 'consulente' || role === 'utente' || role === 'admin') {
                 const grid = document.querySelector('.panels-grid');
                 if (grid) grid.style.display = 'none';
                 const headerP = document.querySelector('.page-header p');
@@ -571,11 +579,17 @@
                 title.textContent    = "Accesso Struttura Sanitaria";
                 subtitle.textContent = "Inserisci le credenziali del Legale Rappresentante";
                 document.getElementById('login-email').placeholder = "struttura@esempio.it";
-            } else {
+            } else if (type === 'consulente') {
                 icon.innerHTML = "<i class='bx bx-briefcase' style='color:#10b981;'></i>";
                 icon.style.background = "rgba(16,185,129,0.15)";
-                title.textContent    = "Accesso Consulente / Amministratore";
+                title.textContent    = "Accesso Consulente Sanitario";
                 subtitle.textContent = "Area riservata — Verifica in 2 passaggi attiva";
+                document.getElementById('login-email').placeholder = "consulente@accredita360s.com";
+            } else if (type === 'admin') {
+                icon.innerHTML = "<i class='bx bx-shield-quarter' style='color:#8b5cf6;'></i>";
+                icon.style.background = "rgba(139,92,246,0.15)";
+                title.textContent    = "Accesso Amministratore";
+                subtitle.textContent = "Pannello di controllo globale — Autenticazione 2FA richiesta";
                 document.getElementById('login-email').placeholder = "admin@accredita360s.com";
             }
 

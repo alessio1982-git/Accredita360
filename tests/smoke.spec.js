@@ -13,18 +13,47 @@ test('homepage si carica correttamente', async ({ page }) => {
 });
 
 // ─── LOGIN: pagina accessibile ───────────────────────────────
-test('pagina login si apre', async ({ page }) => {
+test('pagina login si apre e mostra i tre pannelli', async ({ page }) => {
+  const fs = require('fs');
+  const path = require('path');
+  const localLoginHtml = fs.readFileSync(path.join(__dirname, '../login.html'), 'utf8');
+  await page.route('**/login.html*', async route => {
+    await route.fulfill({ status: 200, contentType: 'text/html', body: localLoginHtml });
+  });
+
   await page.goto(`${BASE_URL}/login.html`);
   await expect(page).toHaveTitle(/Accredita360|Login|Accedi/i);
   
-  // Clicca sul pannello utente per mostrare i campi
+  // 1. Verifica che i tre pannelli siano visibili
+  await expect(page.locator('#panel-utente')).toBeVisible();
+  await expect(page.locator('#panel-consulente')).toBeVisible();
+  await expect(page.locator('#panel-admin')).toBeVisible();
+
+  // 2. Clicca sul pannello utente per mostrare i campi
   await page.click('#panel-utente');
   await expect(page.locator('#login-email')).toBeVisible();
-  await expect(page.locator('#login-pwd')).toBeVisible();
+  await expect(page.locator('#login-email')).toHaveAttribute('placeholder', 'struttura@esempio.it');
+
+  // 3. Clicca sul pannello consulente
+  await page.click('#panel-consulente');
+  await expect(page.locator('#login-form-title')).toContainText('Accesso Consulente Sanitario');
+  await expect(page.locator('#login-email')).toHaveAttribute('placeholder', 'consulente@accredita360s.com');
+
+  // 4. Clicca sul pannello admin
+  await page.click('#panel-admin');
+  await expect(page.locator('#login-form-title')).toContainText('Accesso Amministratore');
+  await expect(page.locator('#login-email')).toHaveAttribute('placeholder', 'admin@accredita360s.com');
 });
 
 // ─── LOGIN: credenziali errate mostrano errore ────────────────
 test('login con credenziali errate mostra errore', async ({ page }) => {
+  const fs = require('fs');
+  const path = require('path');
+  const localLoginHtml = fs.readFileSync(path.join(__dirname, '../login.html'), 'utf8');
+  await page.route('**/login.html*', async route => {
+    await route.fulfill({ status: 200, contentType: 'text/html', body: localLoginHtml });
+  });
+
   await page.goto(`${BASE_URL}/login.html`);
 
   // Clicca sul pannello utente per mostrare i campi
@@ -73,6 +102,13 @@ test('admin.html redirige al login se non autenticati', async ({ page }) => {
 test('login con successo e verifica assenza loop', async ({ page }) => {
   page.on('console', msg => console.log(`[Browser Console] ${msg.type()}: ${msg.text()}`));
   page.on('pageerror', err => console.log(`[Browser PageError] ${err.message}`));
+
+  const fs = require('fs');
+  const path = require('path');
+  const localLoginHtml = fs.readFileSync(path.join(__dirname, '../login.html'), 'utf8');
+  await page.route('**/login.html*', async route => {
+    await route.fulfill({ status: 200, contentType: 'text/html', body: localLoginHtml });
+  });
 
   // Mock login endpoint to bypass 2FA check
   await page.route('**/functions/v1/login', async route => {
