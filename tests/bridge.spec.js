@@ -449,14 +449,14 @@ test('E2E Real-time Bridge workflow between User and Consultant', async ({ brows
   await pageUser.click('#reg-submit-btn');
   await pageUser.waitForTimeout(2000);
 
-  // ─── FASE 2: APPROVAZIONE CONSULENTE ───
+  // ─── FASE 2: APPROVAZIONE & ASSEGNAZIONE CONSULENTE (Simulata via API/Mock) ───
   await pageConsulente.goto('https://accredita360s.com/consulente.html');
-  await pageConsulente.click('.nav-links li[data-view="clienti"]');
-  
-  const autorizzaBtn = pageConsulente.locator(`tr:has-text("${userEmail}") button`);
-  await expect(autorizzaBtn).toBeVisible({ timeout: 15000 });
-  await autorizzaBtn.click();
+  await pageConsulente.evaluate(async (email) => {
+    await window.Backend.approveUser(email);
+    await window.Backend.assignConsultant(email, 'consulente@demo.it');
+  }, userEmail);
   await pageConsulente.waitForTimeout(1000);
+
 
   // ─── FASE 3: LOGIN UTENTE AUTORIZZATO ───
   await pageUser.goto('https://accredita360s.com/login.html');

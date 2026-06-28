@@ -10,6 +10,7 @@
 ALTER TABLE public.users        ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.structures   ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.requirements ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.anagrafiche  ENABLE ROW LEVEL SECURITY;
 
 -- ────────────────────────────────────────────────────────────
 -- 2. FUNZIONE HELPER — recupera ruolo utente corrente
@@ -132,11 +133,47 @@ CREATE POLICY "requirements_update_admin" ON public.requirements
   FOR UPDATE USING (public.is_admin());
 
 -- ────────────────────────────────────────────────────────────
--- 6. GRANT — permessi per chiave anonima (anon)
+-- 6. POLICIES — TABELLA: anagrafiche
 -- ────────────────────────────────────────────────────────────
-GRANT SELECT, INSERT, UPDATE ON public.users        TO anon;
-GRANT SELECT, INSERT, UPDATE ON public.structures   TO anon;
-GRANT SELECT, INSERT, UPDATE ON public.requirements TO anon;
+DROP POLICY IF EXISTS anagrafiche_select_own ON public.anagrafiche;
+CREATE POLICY anagrafiche_select_own ON public.anagrafiche
+  FOR SELECT USING (
+    user_email = public.current_user_email()
+    OR public.is_admin()
+    OR EXISTS (
+      SELECT 1 FROM public.users
+      WHERE users.email = anagrafiche.user_email
+      AND users.consulente_email_fk = public.current_user_email()
+    )
+  );
+
+DROP POLICY IF EXISTS anagrafiche_insert_own ON public.anagrafiche;
+CREATE POLICY anagrafiche_insert_own ON public.anagrafiche
+  FOR INSERT WITH CHECK (
+    user_email = public.current_user_email()
+    OR public.is_admin()
+  );
+
+DROP POLICY IF EXISTS anagrafiche_update_own ON public.anagrafiche;
+CREATE POLICY anagrafiche_update_own ON public.anagrafiche
+  FOR UPDATE USING (
+    user_email = public.current_user_email()
+    OR public.is_admin()
+  );
+
+DROP POLICY IF EXISTS anagrafiche_delete_admin ON public.anagrafiche;
+CREATE POLICY anagrafiche_delete_admin ON public.anagrafiche
+  FOR DELETE USING (
+    public.is_admin()
+  );
+
+-- ────────────────────────────────────────────────────────────
+-- 7. GRANT — permessi per chiave anonima (anon)
+-- ────────────────────────────────────────────────────────────
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.users        TO anon;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.structures   TO anon;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.requirements TO anon;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.anagrafiche  TO anon;
 GRANT EXECUTE ON FUNCTION public.current_user_email() TO anon;
 GRANT EXECUTE ON FUNCTION public.is_admin()           TO anon;
 GRANT EXECUTE ON FUNCTION public.is_active_user()     TO anon;
