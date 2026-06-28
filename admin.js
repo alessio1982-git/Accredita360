@@ -62,7 +62,7 @@ const admin = {
 
     navigate(viewId) {
         const titles = {
-            'dashboard-admin': 'Dashboard Consulente',
+            'dashboard-admin': 'Dashboard Amministratore',
             'consultants':     'Area Consulenti',
             'registrations':   'Nuove Iscrizioni',
             'normativa':       'Quadro Normativo',
