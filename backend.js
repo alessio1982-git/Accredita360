@@ -881,18 +881,17 @@ const Backend = {
             supabase.from('requirements').select('*')
         ]);
 
-        if (!users || !structures) return [];
+        if (!users) return [];
 
+        let filteredUsers = users.filter(u => u.role === 'cliente');
         const currentUser = this.getCurrentUser();
-        let filteredUsers = users;
         if (currentUser && currentUser.role === 'consulente') {
-            filteredUsers = users.filter(u => u.consulente_email_fk === currentUser.email);
+            filteredUsers = filteredUsers.filter(u => u.consulente_email_fk === currentUser.email);
         }
 
         return filteredUsers
             .map(u => {
-                const struct = structures.find(s => s.user_email === u.email);
-                if (!struct) return null;
+                const struct = structures ? structures.find(s => s.user_email === u.email) : null;
 
                 const reqs = (requirements || [])
                     .filter(r => r.user_email === u.email)
@@ -910,9 +909,8 @@ const Backend = {
                        validatedAt:    r.validated_at
                     }));
 
-                return { user: u, structure: struct, requirements: reqs };
-            })
-            .filter(Boolean);
+                return { user: u, structure: struct || null, requirements: reqs };
+            });
     },
 
     async assignConsultant(clientEmail, consultantEmail) {

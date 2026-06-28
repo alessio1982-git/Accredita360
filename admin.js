@@ -184,7 +184,7 @@ const admin = {
                             <div style="font-weight:600;">${_s(u.name || '—')}</div>
                             <div style="font-size:11px; color:var(--text-muted);">${_s(u.email)}</div>
                         </td>
-                        <td><span style="font-size:12px; padding:3px 8px; background:rgba(59,130,246,0.15); border-radius:4px; color:var(--primary); font-weight:600;">${tipoLabels[s.type] || s.type}</span></td>
+                        <td><span style="font-size:12px; padding:3px 8px; background:rgba(59,130,246,0.15); border-radius:4px; color:var(--primary); font-weight:600;">${s ? (tipoLabels[s.type] || s.type) : 'Non Profilata'}</span></td>
                         <td>
                             <select class="input-box" id="select-cons-${_s(u.email)}" style="font-size:12px; padding:6px; width:100%; max-width:380px;">
                                 ${selectOptions}

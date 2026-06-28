@@ -183,7 +183,7 @@ const consulente = {
 
             return `<tr>
                 <td style="font-weight:600;">${_s(u.name || '—')}</td>
-                <td><span style="font-size:12px; padding:3px 8px; background:rgba(59,130,246,0.15); border-radius:4px; color:var(--primary); font-weight:600;">${tipoLabels[s.type] || s.type}</span></td>
+                <td><span style="font-size:12px; padding:3px 8px; background:rgba(59,130,246,0.15); border-radius:4px; color:var(--primary); font-weight:600;">${s ? (tipoLabels[s.type] || s.type) : 'Non Profilata'}</span></td>
                 <td style="font-size:13px;color:var(--text-muted);">${_s(u.email)}</td>
                 <td>
                     <div style="display:flex;align-items:center;gap:8px;">
