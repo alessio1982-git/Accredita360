@@ -64,6 +64,7 @@ const admin = {
         const titles = {
             'dashboard-admin': 'Dashboard Consulente',
             'consultants':     'Area Consulenti',
+            'registrations':   'Nuove Iscrizioni',
             'normativa':       'Quadro Normativo',
             'procedure-ota':   'Procedure OTA',
             'panoramica':      'Panoramica'

@@ -675,17 +675,21 @@ test('gestione utenti: autorizza, sospendi, riattiva ed elimina in tempo reale',
   page.on('console', msg => console.log(`[Browser Console] ${msg.type()}: ${msg.text()}`));
   page.on('pageerror', err => console.log(`[Browser PageError] ${err.message}`));
 
-  // Imposta file backend.js e admin.js locali
+  // Imposta file backend.js, admin.js e admin.html locali
   const fs = require('fs');
   const path = require('path');
   const localBackendContent = fs.readFileSync(path.join(__dirname, '../backend.js'), 'utf8');
   const localAdminContent = fs.readFileSync(path.join(__dirname, '../admin.js'), 'utf8');
+  const localAdminHtmlContent = fs.readFileSync(path.join(__dirname, '../admin.html'), 'utf8');
 
   await page.route('**/backend.js*', async route => {
     await route.fulfill({ status: 200, contentType: 'application/javascript', body: localBackendContent });
   });
   await page.route('**/admin.js*', async route => {
     await route.fulfill({ status: 200, contentType: 'application/javascript', body: localAdminContent });
+  });
+  await page.route('**/admin.html*', async route => {
+    await route.fulfill({ status: 200, contentType: 'text/html', body: localAdminHtmlContent });
   });
 
   // Imposta sessione admin
@@ -747,7 +751,7 @@ test('gestione utenti: autorizza, sospendi, riattiva ed elimina in tempo reale',
   });
 
   await page.goto(`${BASE_URL}/admin.html`);
-  await page.click('.nav-links li[data-view="consultants"]');
+  await page.click('.nav-links li[data-view="registrations"]');
 
   // 1. Verifica stato iniziale: In Attesa
   const row = page.locator('#admin-new-registrations tr[data-user-email="pending@test.it"]');

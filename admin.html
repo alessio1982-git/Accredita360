@@ -27,6 +27,9 @@
             <li data-view="consultants">
                 <a href="#"><i class='bx bx-group'></i><span>Area Consulenti</span></a>
             </li>
+            <li data-view="registrations">
+                <a href="#"><i class='bx bx-user-plus'></i><span>Nuove Iscrizioni</span></a>
+            </li>
             <li data-view="normativa">
                 <a href="#"><i class='bx bx-book-open'></i><span>Quadro Normativo</span></a>
             </li>
@@ -96,7 +99,7 @@
                         <div class="stat-icon success"><i class='bx bx-check-double'></i></div>
                         <div class="stat-info"><h4>Documenti Validati</h4><span class="stat-value success" id="dash-stat-validated">—</span></div>
                     </div>
-                    <div class="stat-card glass-card">
+                    <div class="stat-card glass-card" onclick="admin.navigate('registrations')" style="cursor:pointer;">
                         <div class="stat-icon" style="background:rgba(139,92,246,0.15);color:#8b5cf6;"><i class='bx bx-user-plus'></i></div>
                         <div class="stat-info"><h4>Nuove Iscrizioni</h4><span class="stat-value" style="color:#8b5cf6;" id="dash-stat-new-reg">—</span></div>
                     </div>
@@ -126,20 +129,13 @@
                 </div>
             </div>
 
-            <!-- VIEW: Area Consulenti -->
-            <div id="view-consultants" class="view">
+            <!-- VIEW: Nuove Iscrizioni -->
+            <div id="view-registrations" class="view">
                 <div class="gap-header">
-                    <h3><i class='bx bx-shield-check' style="color:var(--success);"></i> Pannello Amministratore &amp; Consulenti</h3>
-                    <span class="status-badge status-green"><i class='bx bx-lock-alt'></i> Accesso Riservato</span>
+                    <h3><i class='bx bx-user-plus' style="color:#8b5cf6;"></i> Pannello Approvazione Nuove Iscrizioni</h3>
+                    <span class="status-badge status-purple"><i class='bx bx-lock-alt'></i> Accesso Riservato</span>
                 </div>
-                <!-- Stats Admin -->
-                <div class="stats-grid" id="admin-stats-grid" style="margin-bottom:24px;">
-                    <div class="stat-card glass-card"><div class="stat-icon"><i class='bx bx-buildings'></i></div><div class="stat-info"><h4>Strutture Attive</h4><span class="stat-value" id="admin-stat-structures">-</span></div></div>
-                    <div class="stat-card glass-card"><div class="stat-icon" style="background:rgba(139,92,246,0.15);color:#8b5cf6;"><i class='bx bx-user-plus'></i></div><div class="stat-info"><h4>Nuove Iscrizioni</h4><span class="stat-value" id="admin-stat-new-reg" style="color:#8b5cf6;">-</span></div></div>
-                    <div class="stat-card glass-card"><div class="stat-icon warning"><i class='bx bx-time-five'></i></div><div class="stat-info"><h4>In Attesa Validazione</h4><span class="stat-value warning" id="admin-stat-pending">-</span></div></div>
-                    <div class="stat-card glass-card"><div class="stat-icon success"><i class='bx bx-check-double'></i></div><div class="stat-info"><h4>Documenti Validati</h4><span class="stat-value success" id="admin-stat-validated">-</span></div></div>
-                    <div class="stat-card glass-card"><div class="stat-icon danger"><i class='bx bx-x-circle'></i></div><div class="stat-info"><h4>Documenti Rifiutati</h4><span class="stat-value danger" id="admin-stat-rejected">-</span></div></div>
-                </div>
+                
                 <!-- Nuove Iscrizioni -->
                 <div class="checklist-container glass-card" style="margin-bottom:24px;border-left:4px solid #8b5cf6;">
                     <div class="gap-header" style="margin-bottom:16px;padding:20px 20px 0;">
@@ -152,6 +148,22 @@
                             <tbody id="admin-new-registrations"><tr><td colspan="7" style="text-align:center;padding:20px;color:var(--text-muted);"><i class='bx bx-loader-alt'></i> Caricamento...</td></tr></tbody>
                         </table>
                     </div>
+                </div>
+            </div>
+
+            <!-- VIEW: Area Consulenti -->
+            <div id="view-consultants" class="view">
+                <div class="gap-header">
+                    <h3><i class='bx bx-shield-check' style="color:var(--success);"></i> Pannello Amministratore &amp; Consulenti</h3>
+                    <span class="status-badge status-green"><i class='bx bx-lock-alt'></i> Accesso Riservato</span>
+                </div>
+                <!-- Stats Admin -->
+                <div class="stats-grid" id="admin-stats-grid" style="margin-bottom:24px;">
+                    <div class="stat-card glass-card"><div class="stat-icon"><i class='bx bx-buildings'></i></div><div class="stat-info"><h4>Strutture Attive</h4><span class="stat-value" id="admin-stat-structures">-</span></div></div>
+                    <div class="stat-card glass-card" onclick="admin.navigate('registrations')" style="cursor:pointer;"><div class="stat-icon" style="background:rgba(139,92,246,0.15);color:#8b5cf6;"><i class='bx bx-user-plus'></i></div><div class="stat-info"><h4>Nuove Iscrizioni</h4><span class="stat-value" id="admin-stat-new-reg" style="color:#8b5cf6;">-</span></div></div>
+                    <div class="stat-card glass-card"><div class="stat-icon warning"><i class='bx bx-time-five'></i></div><div class="stat-info"><h4>In Attesa Validazione</h4><span class="stat-value warning" id="admin-stat-pending">-</span></div></div>
+                    <div class="stat-card glass-card"><div class="stat-icon success"><i class='bx bx-check-double'></i></div><div class="stat-info"><h4>Documenti Validati</h4><span class="stat-value success" id="admin-stat-validated">-</span></div></div>
+                    <div class="stat-card glass-card"><div class="stat-icon danger"><i class='bx bx-x-circle'></i></div><div class="stat-info"><h4>Documenti Rifiutati</h4><span class="stat-value danger" id="admin-stat-rejected">-</span></div></div>
                 </div>
                 <!-- Smistamento Pratiche -->
                 <div class="checklist-container glass-card" style="margin-bottom:24px;border-left:4px solid var(--primary);">
