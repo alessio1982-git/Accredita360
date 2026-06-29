@@ -72,6 +72,50 @@ test('login con credenziali errate mostra errore', async ({ page }) => {
   await expect(page).toHaveURL(/login/);
 });
 
+// ─── SICUREZZA: Role-Based Cross-Check ────────────────────────
+test('role cross-check: consulente provando ad accedere da admin riceve 403 e blocco', async ({ page }) => {
+  const fs = require('fs');
+  const path = require('path');
+  const localLoginHtml = fs.readFileSync(path.join(__dirname, '../login.html'), 'utf8');
+  
+  await page.route('**/login.html*', async route => {
+    await route.fulfill({ status: 200, contentType: 'text/html', body: localLoginHtml });
+  });
+
+  // Mockiamo la risposta di login fallita per discrepanza ruolo (403)
+  await page.route('**/functions/v1/login', async route => {
+    const payload = JSON.parse(route.request().postData() || '{}');
+    expect(payload.target_role).toBe('admin'); // deve aver inviato il portale selezionato
+    
+    await route.fulfill({
+      status: 403,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        success: false,
+        message: 'Profilo non autorizzato per questo portale.'
+      })
+    });
+  });
+
+  await page.goto(`${BASE_URL}/login.html`);
+
+  // Seleziona il pannello Amministratore
+  await page.click('#panel-admin');
+
+  // Inserisci credenziali
+  await page.fill('#login-email', 'consulente@demo.it');
+  await page.fill('#login-pwd', 'consulente123');
+  await page.click('#login-submit-btn');
+
+  // Verifica che compaia l'errore del cross-check di sicurezza
+  const errorBox = page.locator('#login-error');
+  await expect(errorBox).toBeVisible();
+  await expect(errorBox).toContainText('Profilo non autorizzato per questo portale.');
+
+  // Verifica che sia rimasto sulla pagina di login
+  await expect(page).toHaveURL(/login/);
+});
+
 // ─── REGISTRAZIONE: pagina accessibile ───────────────────────
 test('pagina registrazione si apre', async ({ page }) => {
   await page.goto(`${BASE_URL}/register.html`);

@@ -67,10 +67,13 @@ const r = (p: string) => `${SUPABASE_URL}/rest/v1/${p}`;
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
 
+  const clientIp = req.headers.get("x-real-ip") || req.headers.get("x-forwarded-for") || "unknown";
+
   try {
     const body     = await req.json();
     const email    = String(body.email    ?? "").toLowerCase().trim();
     const password = String(body.password ?? "");
+    const target_role = String(body.target_role ?? "").toLowerCase().trim();
     if (!email || !password) return res401("Email e password obbligatori.", 400);
 
     // ── 1. Pulizia tentativi vecchi ───────────────────────────
@@ -132,6 +135,33 @@ serve(async (req) => {
         body: JSON.stringify({ email, attempted_at: new Date().toISOString() }),
       });
       return res401("Email o password non corretti.", 401);
+    }
+
+    // ── 4b. Role-Based Cross-Check ────────────────────────────
+    const roleMapping: Record<string, string> = {
+      "utente": "cliente",
+      "consulente": "consulente",
+      "admin": "admin"
+    };
+
+    const expectedDbRole = roleMapping[target_role];
+    if (!expectedDbRole || user.role !== expectedDbRole) {
+      console.warn(`[SECURITY ALERT] Tentativo di Access Control Bypass. IP: ${clientIp}, Email: ${email}, Portale Richiesto: ${target_role || "non specificato"}, Ruolo Reale DB: ${user.role}`);
+      
+      // Scrive log nel DB (fire and forget / non bloccante)
+      safeFetch(r("security_logs"), {
+        method: "POST",
+        headers: { ...H(), "Prefer": "return=minimal" },
+        body: JSON.stringify({
+          event_type: "ACCESS_BYPASS_ATTEMPT",
+          email: email,
+          client_ip: clientIp,
+          target_role: target_role || "non specificato",
+          stored_role: user.role
+        })
+      }).catch(err => console.error("Errore scrittura security_logs:", err));
+
+      return res401("Profilo non autorizzato per questo portale.", 403);
     }
 
     // ── 5. Stato account ──────────────────────────────────────

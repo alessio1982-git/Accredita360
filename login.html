@@ -611,7 +611,7 @@
                 const res  = await fetch(`${SUPA_URL}/functions/v1/login`, {
                     method: 'POST',
                     headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY, 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email: email.toLowerCase(), password: pwd })
+                    body: JSON.stringify({ email: email.toLowerCase(), password: pwd, target_role: this.currentPanel })
                 });
                 const data = await res.json();
 
