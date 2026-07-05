@@ -18,6 +18,12 @@ const FROM_EMAIL       = "noreply@accredita360s.com";
 const FROM_NAME        = "Accredita360 Portal";
 const SITE_URL         = "https://accredita360s.com";
 
+const corsHeaders = {
+  "Access-Control-Allow-Origin":  "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "GET, OPTIONS",
+};
+
 function generateBase32Secret(length = 16): string {
   const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
   const arr = new Uint8Array(length);
@@ -26,6 +32,10 @@ function generateBase32Secret(length = 16): string {
 }
 
 serve(async (req) => {
+  if (req.method === "OPTIONS") {
+    return new Response("ok", { headers: corsHeaders });
+  }
+
   const url    = new URL(req.url);
   const userId = url.searchParams.get("userId");
   const action = url.searchParams.get("action") ?? "approve";
@@ -292,7 +302,10 @@ function htmlResponse(title: string, message: string, success: boolean): Respons
 </html>`;
 
   return new Response(html, {
-    headers: { "Content-Type": "text/html; charset=utf-8" },
+    headers: {
+      ...corsHeaders,
+      "Content-Type": "text/html; charset=utf-8"
+    },
     status:  success ? 200 : 400,
   });
 }

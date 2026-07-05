@@ -148,11 +148,19 @@ const Backend = {
         }
 
         // 2. Richiama l'Edge Function di approvazione per eseguire l'update con privilegi di sistema
-        // Utilizziamo mode: 'no-cors' ed apikey nella query string per evitare blocchi CORS / preflight
-        await fetch(`${SUPABASE_URL}/functions/v1/approve-user?userId=${user.id}&apikey=${SUPABASE_KEY}`, {
+        const res = await fetch(`${SUPABASE_URL}/functions/v1/approve-user?userId=${user.id}`, {
             method: 'GET',
-            mode: 'no-cors'
+            headers: {
+                'apikey': SUPABASE_KEY,
+                'Authorization': `Bearer ${SUPABASE_KEY}`
+            }
         });
+
+        if (!res.ok) {
+            const errText = await res.text();
+            console.error('[Backend] Errore Edge Function approve:', errText);
+            throw new Error('Impossibile approvare l\'utente via Edge Function.');
+        }
 
         // Ritorna un oggetto finto o parziale coerente con la firma precedente
         return { email: userEmail, name: user.name, registration_status: 'active' };
@@ -173,10 +181,19 @@ const Backend = {
             throw new Error('Utente non trovato.');
         }
 
-        await fetch(`${SUPABASE_URL}/functions/v1/approve-user?userId=${user.id}&action=suspend&apikey=${SUPABASE_KEY}`, {
+        const res = await fetch(`${SUPABASE_URL}/functions/v1/approve-user?userId=${user.id}&action=suspend`, {
             method: 'GET',
-            mode: 'no-cors'
+            headers: {
+                'apikey': SUPABASE_KEY,
+                'Authorization': `Bearer ${SUPABASE_KEY}`
+            }
         });
+
+        if (!res.ok) {
+            const errText = await res.text();
+            console.error('[Backend] Errore Edge Function suspend:', errText);
+            throw new Error('Impossibile sospendere l\'utente via Edge Function.');
+        }
 
         return { email: userEmail, name: user.name, registration_status: 'rejected' };
     },
@@ -196,10 +213,19 @@ const Backend = {
             throw new Error('Utente non trovato.');
         }
 
-        await fetch(`${SUPABASE_URL}/functions/v1/approve-user?userId=${user.id}&action=delete&apikey=${SUPABASE_KEY}`, {
+        const res = await fetch(`${SUPABASE_URL}/functions/v1/approve-user?userId=${user.id}&action=delete`, {
             method: 'GET',
-            mode: 'no-cors'
+            headers: {
+                'apikey': SUPABASE_KEY,
+                'Authorization': `Bearer ${SUPABASE_KEY}`
+            }
         });
+
+        if (!res.ok) {
+            const errText = await res.text();
+            console.error('[Backend] Errore Edge Function delete:', errText);
+            throw new Error('Impossibile eliminare l\'utente via Edge Function.');
+        }
 
         return { email: userEmail, name: user.name };
     },
