@@ -1850,6 +1850,38 @@ app.startRealtimeBridge = function() {
         const user = Backend.getCurrentUser();
         if (user && user.role !== 'admin' && user.role !== 'consulente') {
             try {
+                // Recupera il profilo utente corrente in tempo reale
+                const profile = await Backend.getCurrentUserProfile();
+                if (!profile) return;
+
+                const isAssigned = profile.stato_assegnazione === 'in_carico';
+                
+                // Controlla se la visibilità delle voci menu corrisponde allo stato attuale
+                const firstSecretLink = document.querySelector('.nav-links li[data-view="profiling"]');
+                const wasAssignedInUI = firstSecretLink && firstSecretLink.style.display !== 'none';
+
+                if (isAssigned !== wasAssignedInUI) {
+                    console.log('[Bridge Sync] Rilevato cambio di stato assegnazione! Aggiornamento in corso...');
+                    // Aggiorniamo i dati in sessione e ricarichiamo la dashboard
+                    const sessionKey = 'accredita360_session_v2';
+                    const rawSession = sessionStorage.getItem(sessionKey) || localStorage.getItem(sessionKey);
+                    if (rawSession) {
+                        const parsed = JSON.parse(rawSession);
+                        if (parsed.user) {
+                            parsed.user.stato_assegnazione = profile.stato_assegnazione;
+                            parsed.user.consulente_email_fk = profile.consulente_email_fk;
+                            sessionStorage.setItem(sessionKey, JSON.stringify(parsed));
+                        }
+                    }
+                    await this.loadData();
+                    if (!isAssigned) return; // Se disassegnato, fermati qui
+                }
+
+                if (!isAssigned) {
+                    // Se la struttura non è ancora assegnata, non ci sono requisiti da sincronizzare
+                    return;
+                }
+
                 // Controlla se lo stato della struttura o i requisiti sono cambiati
                 const oldReqsSerialized = JSON.stringify(appState.requirements.map(r => ({ id: r.id, stato: r.stato, noteConsulente: r.noteConsulente, file: r.file })));
                 

@@ -46,6 +46,7 @@ const consulente = {
         this.bindEvents();
         this.navigate('dashboard-consulente');
         await this.loadData();
+        this.startRealtimeBridge();
         window.appInitialized = true;
     },
 
@@ -85,9 +86,9 @@ const consulente = {
         const titleEl = document.getElementById('view-title');
         if (titleEl) titleEl.textContent = titles[viewId] || viewId;
 
-        // Ferma eventuale sync bridge attivo se usciamo dal dettaglio
+        // Reset client email if leaving detail view
         if (viewId !== 'dettaglio-cliente') {
-            this.stopRealtimeBridge();
+            this._detClientEmail = null;
         }
 
         // Sincronizza active class nella sidebar
@@ -600,8 +601,8 @@ const consulente = {
         this.stopRealtimeBridge();
         // Polling ogni 5 secondi per garantire compatibilità con RLS e aggiornamento del feed
         this._bridgeInterval = setInterval(async () => {
+            const B = this._B || window.Backend || Backend;
             if (this._detClientEmail) {
-                const B = this._B || window.Backend || Backend;
                 const allStructures = await B.getAllStructuresWithRequirements();
                 const clientData = allStructures.find(item => item.user.email === this._detClientEmail);
                 if (clientData) {
@@ -615,6 +616,56 @@ const consulente = {
                         this.renderClientRequirements();
                         this.verifyFascicoloDocumentale();
                     }
+                }
+            } else {
+                // Polling generale per la dashboard (quando non siamo nel dettaglio)
+                try {
+                    const allStructures = await B.getAllStructuresWithRequirements();
+                    
+                    // Controlla se l'elenco delle e-mail dei clienti assegnati è cambiato
+                    const currentEmails = this._clienti.map(item => item.user.email).sort().join(',');
+                    const remoteEmails = allStructures.map(item => item.user.email).sort().join(',');
+                    
+                    // Controlla anche se ci sono stati cambi nei file o nello stato dei requisiti di qualsiasi cliente
+                    const currentReqsHash = JSON.stringify(this._allDocs.map(d => ({ email: d.userEmail, reqId: d.req.id, stato: d.req.stato, file: d.req.file })));
+                    
+                    let newAllDocs = [];
+                    allStructures.forEach(item => {
+                        item.requirements.forEach(req => {
+                            newAllDocs.push({
+                                strutturaNome: item.user.name || item.user.email,
+                                strutturaTipo: item.structure ? item.structure.type : '—',
+                                userEmail: item.user.email,
+                                req
+                            });
+                        });
+                    });
+                    const remoteReqsHash = JSON.stringify(newAllDocs.map(d => ({ email: d.userEmail, reqId: d.req.id, stato: d.req.stato, file: d.req.file })));
+
+                    if (currentEmails !== remoteEmails || currentReqsHash !== remoteReqsHash) {
+                        console.log('[Bridge Sync] Rilevata variazione dashboard consulente! Aggiornamento in corso...');
+                        
+                        // Aggiorniamo le cache locali e le statistiche
+                        const stats = await B.getAdminStats();
+                        const setEl = (id, val) => { const e = document.getElementById(id); if (e) e.textContent = val; };
+                        setEl('dash-stat-clienti',    stats.activeStructures);
+                        setEl('dash-stat-pending',    stats.pendingDocs);
+                        setEl('dash-stat-validated',  stats.validatedDocs);
+                        
+                        this._clienti = allStructures;
+                        this._allDocs = newAllDocs;
+                        this._buildMonitoraggioData(allStructures);
+                        
+                        // Rerender della vista attiva se dipende dai dati caricati
+                        const activeLi = document.querySelector('.nav-links li.active');
+                        if (activeLi) {
+                            const currentView = activeLi.dataset.view;
+                            if (currentView === 'clienti') this.renderClienti();
+                            if (currentView === 'monitoraggio') this.renderMonitoraggio();
+                        }
+                    }
+                } catch (e) {
+                    console.warn('[Bridge Sync Dashboard] Polling fallito:', e.message);
                 }
             }
         }, 5000);

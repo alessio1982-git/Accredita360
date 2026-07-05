@@ -30,6 +30,9 @@
             <li data-view="registrations">
                 <a href="#"><i class='bx bx-user-plus'></i><span>Nuove Iscrizioni</span></a>
             </li>
+            <li data-view="smistamento">
+                <a href="#"><i class='bx bx-git-pull-request'></i><span>Smistamento Pratiche</span></a>
+            </li>
             <li data-view="normativa">
                 <a href="#"><i class='bx bx-book-open'></i><span>Quadro Normativo</span></a>
             </li>
@@ -151,20 +154,13 @@
                 </div>
             </div>
 
-            <!-- VIEW: Area Consulenti -->
-            <div id="view-consultants" class="view">
+            <!-- VIEW: Smistamento Pratiche -->
+            <div id="view-smistamento" class="view">
                 <div class="gap-header">
-                    <h3><i class='bx bx-shield-check' style="color:var(--success);"></i> Pannello Amministratore &amp; Consulenti</h3>
-                    <span class="status-badge status-green"><i class='bx bx-lock-alt'></i> Accesso Riservato</span>
+                    <h3><i class='bx bx-git-pull-request' style="color:var(--primary);"></i> Smistamento &amp; Assegnazione Pratiche</h3>
+                    <span class="status-badge status-purple"><i class='bx bx-lock-alt'></i> Accesso Riservato</span>
                 </div>
-                <!-- Stats Admin -->
-                <div class="stats-grid" id="admin-stats-grid" style="margin-bottom:24px;">
-                    <div class="stat-card glass-card"><div class="stat-icon"><i class='bx bx-buildings'></i></div><div class="stat-info"><h4>Strutture Attive</h4><span class="stat-value" id="admin-stat-structures">-</span></div></div>
-                    <div class="stat-card glass-card" onclick="admin.navigate('registrations')" style="cursor:pointer;"><div class="stat-icon" style="background:rgba(139,92,246,0.15);color:#8b5cf6;"><i class='bx bx-user-plus'></i></div><div class="stat-info"><h4>Nuove Iscrizioni</h4><span class="stat-value" id="admin-stat-new-reg" style="color:#8b5cf6;">-</span></div></div>
-                    <div class="stat-card glass-card"><div class="stat-icon warning"><i class='bx bx-time-five'></i></div><div class="stat-info"><h4>In Attesa Validazione</h4><span class="stat-value warning" id="admin-stat-pending">-</span></div></div>
-                    <div class="stat-card glass-card"><div class="stat-icon success"><i class='bx bx-check-double'></i></div><div class="stat-info"><h4>Documenti Validati</h4><span class="stat-value success" id="admin-stat-validated">-</span></div></div>
-                    <div class="stat-card glass-card"><div class="stat-icon danger"><i class='bx bx-x-circle'></i></div><div class="stat-info"><h4>Documenti Rifiutati</h4><span class="stat-value danger" id="admin-stat-rejected">-</span></div></div>
-                </div>
+                
                 <!-- Smistamento Pratiche -->
                 <div class="checklist-container glass-card" style="margin-bottom:24px;border-left:4px solid var(--primary);">
                     <div class="gap-header" style="margin-bottom:16px;padding:20px 20px 0;">
@@ -204,6 +200,22 @@
                          </table>
                      </div>
                  </div>
+            </div>
+
+            <!-- VIEW: Area Consulenti -->
+            <div id="view-consultants" class="view">
+                <div class="gap-header">
+                    <h3><i class='bx bx-shield-check' style="color:var(--success);"></i> Pannello Amministratore &amp; Consulenti</h3>
+                    <span class="status-badge status-green"><i class='bx bx-lock-alt'></i> Accesso Riservato</span>
+                </div>
+                <!-- Stats Admin -->
+                <div class="stats-grid" id="admin-stats-grid" style="margin-bottom:24px;">
+                    <div class="stat-card glass-card"><div class="stat-icon"><i class='bx bx-buildings'></i></div><div class="stat-info"><h4>Strutture Attive</h4><span class="stat-value" id="admin-stat-structures">-</span></div></div>
+                    <div class="stat-card glass-card" onclick="admin.navigate('registrations')" style="cursor:pointer;"><div class="stat-icon" style="background:rgba(139,92,246,0.15);color:#8b5cf6;"><i class='bx bx-user-plus'></i></div><div class="stat-info"><h4>Nuove Iscrizioni</h4><span class="stat-value" id="admin-stat-new-reg" style="color:#8b5cf6;">-</span></div></div>
+                    <div class="stat-card glass-card"><div class="stat-icon warning"><i class='bx bx-time-five'></i></div><div class="stat-info"><h4>In Attesa Validazione</h4><span class="stat-value warning" id="admin-stat-pending">-</span></div></div>
+                    <div class="stat-card glass-card"><div class="stat-icon success"><i class='bx bx-check-double'></i></div><div class="stat-info"><h4>Documenti Validati</h4><span class="stat-value success" id="admin-stat-validated">-</span></div></div>
+                    <div class="stat-card glass-card"><div class="stat-icon danger"><i class='bx bx-x-circle'></i></div><div class="stat-info"><h4>Documenti Rifiutati</h4><span class="stat-value danger" id="admin-stat-rejected">-</span></div></div>
+                </div>
                 <!-- Filtri -->
                 <div class="checklist-container glass-card" style="margin-bottom:20px;padding:16px 20px;">
                     <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">

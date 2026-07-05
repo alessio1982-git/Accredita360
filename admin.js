@@ -34,7 +34,9 @@ const admin = {
         this.setupUI(user);
         this.bindEvents();
         await this.renderConsultantsData();
-        this.navigate('dashboard-admin');
+        const activeLink = document.querySelector('.nav-links li.active');
+        const defaultView = activeLink ? activeLink.dataset.view : 'dashboard-admin';
+        this.navigate(defaultView);
         window.appInitialized = true;
     },
 
@@ -65,6 +67,7 @@ const admin = {
             'dashboard-admin': 'Dashboard Amministratore',
             'consultants':     'Area Consulenti',
             'registrations':   'Nuove Iscrizioni',
+            'smistamento':     'Smistamento Pratiche',
             'normativa':       'Quadro Normativo',
             'procedure-ota':   'Procedure OTA',
             'panoramica':      'Panoramica'
