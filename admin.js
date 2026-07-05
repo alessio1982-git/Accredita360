@@ -508,6 +508,47 @@ const admin = {
         document.querySelectorAll('#admin-new-registrations .user-checkbox').forEach(cb => {
             cb.checked = master.checked;
         });
+        // Sincronizza l'altro master checkbox se presente
+        const otherId = master.id === 'select-all-users' ? 'bulk-select-users' : 'select-all-users';
+        const otherEl = document.getElementById(otherId);
+        if (otherEl) otherEl.checked = master.checked;
+    },
+
+    async bulkDeleteUsers() {
+        const checked = Array.from(document.querySelectorAll('#admin-new-registrations .user-checkbox:checked'));
+        if (checked.length === 0) {
+            alert('Nessun utente selezionato.');
+            return;
+        }
+
+        if (!confirm(`ATTENZIONE: Vuoi eliminare definitivamente i ${checked.length} account selezionati? Questa azione rimuoverà tutti i dati associati.`)) {
+            return;
+        }
+
+        const btn = document.getElementById('btn-bulk-delete-users');
+        const originalHtml = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = `<i class='bx bx-loader-alt bx-spin'></i> Eliminazione...`;
+
+        try {
+            const emails = checked.map(cb => cb.dataset.email);
+            // Esegue le eliminazioni sul database
+            await Promise.all(emails.map(email => Backend.deleteUser(email)));
+            alert('Utenti selezionati eliminati con successo.');
+            
+            // Ricarica i dati della vista
+            await this.renderConsultantsData();
+        } catch (e) {
+            alert(e.message || 'Errore durante l\'eliminazione multipla.');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = originalHtml;
+            // Resetta i master checkboxes
+            const master1 = document.getElementById('select-all-users');
+            const master2 = document.getElementById('bulk-select-users');
+            if (master1) master1.checked = false;
+            if (master2) master2.checked = false;
+        }
     },
 
     toggleSelectAllDocs(master) {

@@ -145,6 +145,16 @@
                         <h4 style="display:flex;align-items:center;gap:8px;"><i class='bx bx-user-plus' style="color:#8b5cf6;"></i> Nuove Iscrizioni</h4>
                         <span style="font-size:12px;color:var(--text-muted);">Ultimi 30 giorni</span>
                     </div>
+                    <!-- Barra controlli per selezione/cancellazione massiva -->
+                    <div style="display:flex; align-items:center; gap:16px; padding: 0 20px 16px 20px; border-bottom: 1px solid var(--glass-border);">
+                        <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:13px; color:var(--text-main);">
+                            <input type="checkbox" id="bulk-select-users" onchange="admin.toggleSelectAllUsers(this)" style="cursor:pointer; width:16px; height:16px;">
+                            <span>Seleziona/Deseleziona tutto</span>
+                        </label>
+                        <button class="btn btn-danger" id="btn-bulk-delete-users" onclick="admin.bulkDeleteUsers()" style="padding:6px 12px; font-size:13px; display:flex; align-items:center; gap:6px;">
+                            <i class='bx bx-trash'></i> Elimina Selezionati
+                        </button>
+                    </div>
                     <div class="checklist-table-wrapper">
                         <table class="checklist-table">
                             <thead><tr><th style="width:40px;text-align:center;"><input type="checkbox" id="select-all-users" onchange="admin.toggleSelectAllUsers(this)" style="cursor:pointer;"></th><th>Utente</th><th>Email</th><th>Tipo</th><th>Data Iscrizione</th><th>Stato</th><th>Azioni</th></tr></thead>
