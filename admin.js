@@ -530,16 +530,35 @@ const admin = {
         btn.disabled = true;
         btn.innerHTML = `<i class='bx bx-loader-alt bx-spin'></i> Eliminazione...`;
 
+        const emails = checked.map(cb => cb.dataset.email);
+        const results = [];
+
+        // Esegue le eliminazioni una alla volta per catturare gli errori individuali
+        for (const email of emails) {
+            try {
+                await Backend.deleteUser(email);
+                results.push({ email, success: true });
+            } catch (err) {
+                console.error(`[Admin] Errore eliminazione utente ${email}:`, err);
+                results.push({ email, success: false, error: err.message || 'Errore sconosciuto' });
+            }
+        }
+
+        const successes = results.filter(r => r.success);
+        const failures = results.filter(r => !r.success);
+
+        if (failures.length === 0) {
+            alert(`Tutti i ${successes.length} utenti selezionati sono stati eliminati con successo.`);
+        } else {
+            const errorDetails = failures.map(f => `- ${f.email}: ${f.error}`).join('\n');
+            alert(`Completato con errori.\n\nEliminati con successo: ${successes.length}\nFalliti: ${failures.length}\n\nDettagli errori:\n${errorDetails}`);
+        }
+
         try {
-            const emails = checked.map(cb => cb.dataset.email);
-            // Esegue le eliminazioni sul database
-            await Promise.all(emails.map(email => Backend.deleteUser(email)));
-            alert('Utenti selezionati eliminati con successo.');
-            
             // Ricarica i dati della vista
             await this.renderConsultantsData();
         } catch (e) {
-            alert(e.message || 'Errore durante l\'eliminazione multipla.');
+            console.error('[Admin] Errore ricaricamento dati:', e);
         } finally {
             btn.disabled = false;
             btn.innerHTML = originalHtml;
