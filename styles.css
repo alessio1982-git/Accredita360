@@ -1031,3 +1031,43 @@ body {
     from { opacity: 0; transform: translateY(10px); }
     to   { opacity: 1; transform: translateY(0); }
 }
+
+/* ===== SIDEBAR ACCORDION / SUBMENU ===== */
+.nav-dropdown {
+    display: flex;
+    flex-direction: column;
+}
+
+.nav-dropdown .dropdown-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+}
+
+.nav-dropdown.parent-active > a {
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text-main);
+    border-left: 3px solid var(--primary);
+}
+
+.submenu {
+    list-style: none;
+    padding-left: 14px;
+    display: none;
+    flex-direction: column;
+    gap: 4px;
+    margin-top: 4px;
+}
+
+.submenu li a {
+    font-size: 13px !important;
+    padding: 8px 12px !important;
+    border-radius: 8px !important;
+}
+
+.submenu li.active a {
+    background: var(--primary) !important;
+    color: white !important;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.25);
+}

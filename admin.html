@@ -33,14 +33,24 @@
             <li data-view="smistamento">
                 <a href="#"><i class='bx bx-git-pull-request'></i><span>Smistamento Pratiche</span></a>
             </li>
-            <li data-view="normativa">
-                <a href="#"><i class='bx bx-book-open'></i><span>Quadro Normativo</span></a>
-            </li>
-            <li data-view="procedure-ota">
-                <a href="#"><i class='bx bx-clipboard'></i><span>Procedure OTA</span></a>
-            </li>
-            <li data-view="panoramica">
-                <a href="#"><i class='bx bx-map-alt'></i><span>Panoramica</span></a>
+            <!-- Accordion per Quadro Normativo -->
+            <li class="nav-dropdown" id="dropdown-normativa">
+                <a href="#" class="dropdown-toggle" onclick="admin.toggleDropdown(event)">
+                    <i class='bx bx-book-open'></i>
+                    <span>Quadro Normativo</span>
+                    <i class='bx bx-chevron-down toggle-icon' style="margin-left: auto; transition: transform 0.3s ease;"></i>
+                </a>
+                <ul class="submenu">
+                    <li data-view="normativa">
+                        <a href="#"><i class='bx bx-book-bookmark'></i><span>Introduzione</span></a>
+                    </li>
+                    <li data-view="procedure-ota">
+                        <a href="#"><i class='bx bx-clipboard'></i><span>Procedure OTA</span></a>
+                    </li>
+                    <li data-view="panoramica">
+                        <a href="#"><i class='bx bx-map-alt'></i><span>Panoramica</span></a>
+                    </li>
+                </ul>
             </li>
         </ul>
         <div style="margin-top:auto; padding:16px;">

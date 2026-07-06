@@ -54,20 +54,76 @@ const admin = {
     },
 
     bindEvents() {
-        document.querySelectorAll('.nav-links li').forEach(link => {
+        document.querySelectorAll('.nav-links li[data-view]').forEach(link => {
             link.addEventListener('click', e => {
                 e.preventDefault();
-                document.querySelectorAll('.nav-links li').forEach(l => l.classList.remove('active'));
-                link.classList.add('active');
+                e.stopPropagation();
                 this.navigate(link.dataset.view);
             });
         });
+    },
+
+    toggleDropdown(event) {
+        if (event) {
+            event.preventDefault();
+            event.stopPropagation();
+        }
+        const dropdown = document.getElementById('dropdown-normativa');
+        if (dropdown) {
+            const isOpen = dropdown.classList.contains('open');
+            if (isOpen) {
+                this.closeDropdown(dropdown);
+            } else {
+                this.openDropdown(dropdown);
+                // Cliccando sul genitore, portiamo anche alla pagina normativa (overview) come landing page
+                this.navigate('normativa');
+            }
+        }
+    },
+
+    openDropdown(dropdown) {
+        if (!dropdown) return;
+        dropdown.classList.add('open');
+        const submenu = dropdown.querySelector('.submenu');
+        if (submenu) {
+            submenu.style.display = 'flex';
+        }
+        const toggleIcon = dropdown.querySelector('.toggle-icon');
+        if (toggleIcon) {
+            toggleIcon.style.transform = 'rotate(180deg)';
+        }
+    },
+
+    closeDropdown(dropdown) {
+        if (!dropdown) return;
+        dropdown.classList.remove('open');
+        const submenu = dropdown.querySelector('.submenu');
+        if (submenu) {
+            submenu.style.display = 'none';
+        }
+        const toggleIcon = dropdown.querySelector('.toggle-icon');
+        if (toggleIcon) {
+            toggleIcon.style.transform = 'rotate(0deg)';
+        }
     },
 
     navigate(viewId) {
         if (viewId !== 'dettaglio-cliente') {
             this.stopRealtimeBridge();
         }
+        
+        // Aggiorna lo stato attivo della sidebar
+        document.querySelectorAll('.nav-links li').forEach(l => l.classList.remove('active', 'parent-active'));
+        const activeLi = document.querySelector(`.nav-links li[data-view="${viewId}"]`);
+        if (activeLi) {
+            activeLi.classList.add('active');
+            const parentDropdown = activeLi.closest('.nav-dropdown');
+            if (parentDropdown) {
+                parentDropdown.classList.add('parent-active');
+                this.openDropdown(parentDropdown);
+            }
+        }
+
         const titles = {
             'dashboard-admin': 'Dashboard Amministratore',
             'consultants':     'Area Consulenti',
