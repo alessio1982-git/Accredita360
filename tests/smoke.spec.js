@@ -384,6 +384,7 @@ test('consultant filter redflag displays only flagged structures', async ({ page
             ];
           };
           realBackend.getPendingUsers = async () => [];
+          realBackend.checkUserStatus = async () => true;
           realBackend.getAdminStats = async () => ({
             activeStructures: 2,
             pendingDocs: 1,
