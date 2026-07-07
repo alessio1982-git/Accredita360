@@ -365,12 +365,7 @@ const consulente = {
 
     // ── PANORAMICA TABS ───────────────────────────────────────────
     switchPanTab(tab) {
-        document.getElementById('pan-page-iter').style.display    = tab === 'iter'    ? 'block' : 'none';
-        document.getElementById('pan-page-storico').style.display = tab === 'storico' ? 'block' : 'none';
-        document.getElementById('pan-tab-iter').classList.toggle('active', tab === 'iter');
-        document.getElementById('pan-tab-storico').classList.toggle('active', tab === 'storico');
-        if (tab === 'iter')    this.renderPanIterTimeline();
-        if (tab === 'storico') this.renderStoricoNormativa();
+        // NOP: Only 'iter' tab exists now
     },
 
     renderPanIterTimeline() {
@@ -396,15 +391,6 @@ const consulente = {
                 <div style="font-size:11px;font-weight:600;color:var(--text-main);line-height:1.4;">${s.t}</div>
             </div>
         `).join('');
-    },
-
-    renderStoricoNormativa() {
-        const container = document.getElementById('pan-storico-container');
-        if (!container || container.children.length > 0) return;
-        container.innerHTML = `<div class="glass-card" style="padding:24px;text-align:center;color:var(--text-muted);">
-            <i class='bx bx-history' style="font-size:32px;opacity:0.4;display:block;margin-bottom:8px;"></i>
-            Storico normativa disponibile nella vista completa.
-        </div>`;
     },
 
     async renderProcedureManuali() {
