@@ -1019,6 +1019,29 @@ const Backend = {
         return !error;
     },
 
+    /**
+     * Carica il PDF del certificato nello storage e restituisce l'URL firmato.
+     */
+    async uploadCertificate(userEmail, pdfBlob, filename) {
+        const path = `certificates/${userEmail}/${filename}`;
+        
+        const { error: uploadErr } = await supabase.storage
+            .from('documents')
+            .upload(path, pdfBlob, { upsert: true, contentType: 'application/pdf' });
+
+        if (uploadErr) {
+            console.error('[Backend] Errore upload certificato PDF:', uploadErr);
+            throw new Error(uploadErr.message || 'Errore durante il caricamento del certificato.');
+        }
+
+        // Genera URL firmato (valido 1 anno)
+        const { data: urlData } = await supabase.storage
+            .from('documents')
+            .createSignedUrl(path, 60 * 60 * 24 * 365);
+
+        return urlData?.signedUrl || path;
+    },
+
     async getAdminStats() {
         const thirtyDaysAgo = new Date();
         thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);

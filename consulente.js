@@ -13,6 +13,7 @@ const consulente = {
     _currentFilter: 'all',
     _currentSearch: '',
     _clienti: [],
+    _realtimeChannel: null,
 
     async init() {
         // Guard: attende che Backend sia disponibile (CDN potrebbe essere lento)
@@ -90,6 +91,7 @@ const consulente = {
         if (viewId !== 'dettaglio-cliente') {
             this._detClientEmail = null;
         }
+        this.startRealtimeBridge();
 
         // Sincronizza active class nella sidebar
         document.querySelectorAll('.nav-links li').forEach(link => {
@@ -597,84 +599,50 @@ const consulente = {
     },
 
     // ── BRIDGE DI SINCRONIZZAZIONE ──────────────────────────────
+    // ── BRIDGE DI SINCRONIZZAZIONE REALTIME ────────────────────────
     startRealtimeBridge() {
         this.stopRealtimeBridge();
-        // Polling ogni 5 secondi per garantire compatibilità con RLS e aggiornamento del feed
-        this._bridgeInterval = setInterval(async () => {
-            const B = this._B || window.Backend || Backend;
-            if (this._detClientEmail) {
-                const allStructures = await B.getAllStructuresWithRequirements();
-                const clientData = allStructures.find(item => item.user.email === this._detClientEmail);
-                if (clientData) {
-                    // Controlla se ci sono differenze nei file caricati o nello stato
-                    const localSerialized = JSON.stringify(this._detRequirements.map(r => ({ id: r.id, stato: r.stato, file: r.file })));
-                    const remoteSerialized = JSON.stringify((clientData.requirements || []).map(r => ({ id: r.id, stato: r.stato, file: r.file })));
-                    
-                    if (localSerialized !== remoteSerialized) {
-                        console.log('[Bridge Sync] Rilevata variazione! Aggiorno vista...');
-                        this._detRequirements = clientData.requirements || [];
-                        this.renderClientRequirements();
-                        this.verifyFascicoloDocumentale();
-                    }
-                }
-            } else {
-                // Polling generale per la dashboard (quando non siamo nel dettaglio)
-                try {
-                    const allStructures = await B.getAllStructuresWithRequirements();
-                    
-                    // Controlla se l'elenco delle e-mail dei clienti assegnati è cambiato
-                    const currentEmails = this._clienti.map(item => item.user.email).sort().join(',');
-                    const remoteEmails = allStructures.map(item => item.user.email).sort().join(',');
-                    
-                    // Controlla anche se ci sono stati cambi nei file o nello stato dei requisiti di qualsiasi cliente
-                    const currentReqsHash = JSON.stringify(this._allDocs.map(d => ({ email: d.userEmail, reqId: d.req.id, stato: d.req.stato, file: d.req.file })));
-                    
-                    let newAllDocs = [];
-                    allStructures.forEach(item => {
-                        item.requirements.forEach(req => {
-                            newAllDocs.push({
-                                strutturaNome: item.user.name || item.user.email,
-                                strutturaTipo: item.structure ? item.structure.type : '—',
-                                userEmail: item.user.email,
-                                req
-                            });
-                        });
-                    });
-                    const remoteReqsHash = JSON.stringify(newAllDocs.map(d => ({ email: d.userEmail, reqId: d.req.id, stato: d.req.stato, file: d.req.file })));
+        const B = this._B || window.Backend || Backend;
+        if (!B || !B.supabase) return;
 
-                    if (currentEmails !== remoteEmails || currentReqsHash !== remoteReqsHash) {
-                        console.log('[Bridge Sync] Rilevata variazione dashboard consulente! Aggiornamento in corso...');
-                        
-                        // Aggiorniamo le cache locali e le statistiche
-                        const stats = await B.getAdminStats();
-                        const setEl = (id, val) => { const e = document.getElementById(id); if (e) e.textContent = val; };
-                        setEl('dash-stat-clienti',    stats.activeStructures);
-                        setEl('dash-stat-pending',    stats.pendingDocs);
-                        setEl('dash-stat-validated',  stats.validatedDocs);
-                        
-                        this._clienti = allStructures;
-                        this._allDocs = newAllDocs;
-                        this._buildMonitoraggioData(allStructures);
-                        
-                        // Rerender della vista attiva se dipende dai dati caricati
-                        const activeLi = document.querySelector('.nav-links li.active');
-                        if (activeLi) {
-                            const currentView = activeLi.dataset.view;
-                            if (currentView === 'clienti') this.renderClienti();
-                            if (currentView === 'monitoraggio') this.renderMonitoraggio();
-                        }
-                    }
-                } catch (e) {
-                    console.warn('[Bridge Sync Dashboard] Polling fallito:', e.message);
-                }
-            }
-        }, 5000);
+        if (this._detClientEmail) {
+            const email = this._detClientEmail;
+            console.log('[Realtime Consulente] Sottoscrizione a modifiche per:', email);
+            this._realtimeChannel = B.supabase
+                .channel(`cons-detail-sync-${email.replace(/[^a-zA-Z0-9]/g, '-')}`)
+                .on('postgres_changes', {
+                    event: '*',
+                    schema: 'public',
+                    table: 'requirements',
+                    filter: `user_email=eq.${email.toLowerCase().trim()}`
+                }, async (payload) => {
+                    console.log('[Realtime Detail Sync] Variazione requisiti ricevuta:', payload);
+                    await this.loadClientDetails();
+                })
+                .subscribe();
+        } else {
+            console.log('[Realtime Consulente] Sottoscrizione globale dashboard');
+            this._realtimeChannel = B.supabase
+                .channel('cons-dashboard-changes')
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'requirements' }, async () => {
+                    console.log('[Realtime Dashboard Sync] Modifica requisiti rilevata.');
+                    await this.loadData();
+                })
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'users' }, async () => {
+                    console.log('[Realtime Dashboard Sync] Modifica utenti rilevata.');
+                    await this.loadData();
+                })
+                .subscribe();
+        }
     },
 
     stopRealtimeBridge() {
-        if (this._bridgeInterval) {
-            clearInterval(this._bridgeInterval);
-            this._bridgeInterval = null;
+        if (this._realtimeChannel) {
+            const B = this._B || window.Backend || Backend;
+            if (B && B.supabase) {
+                B.supabase.removeChannel(this._realtimeChannel);
+            }
+            this._realtimeChannel = null;
         }
     },
 
@@ -688,6 +656,8 @@ const consulente = {
         const validated = this._detRequirements.filter(r => r.stato === 'green').length;
         const missingFiles = this._detRequirements.filter(r => !r.file).length;
 
+        const gStatus = this._detStructure?.data?.global_status || 'IN_CORSO';
+
         let warnings = [];
 
         // 1. Controllo coerenza requisiti validati
@@ -700,111 +670,68 @@ const consulente = {
             warnings.push(`<i class='bx bx-error'></i> Ci sono ${missingFiles} requisiti senza alcun file allegato.`);
         }
 
-        // 3. Simulazione dell'Agent_Quality_Assurance (doppio controllo)
-        if (totalReqs > 0 && validated === totalReqs) {
-            qaAlertsEl.innerHTML = `<span style="color:var(--success);font-weight:600;"><i class='bx bx-check-shield'></i> Agent_Quality_Assurance: Tutti i controlli incrociati normativi (D.A. 890/2002 e D.A. 20/2024) hanno dato esito positivo. Pratica idonea alla certificazione.</span>`;
-            if (btnIssue) btnIssue.disabled = false;
+        // 3. Verifica stato globale e visualizzazione messaggi QA
+        if (gStatus === 'CERTIFIED_AND_APPROVED') {
+            qaAlertsEl.innerHTML = `<span style="color:var(--success);font-weight:600;"><i class='bx bx-check-shield'></i> Struttura già Certificata e Approvata. Pratica chiusa.</span>`;
+            if (btnIssue) {
+                btnIssue.disabled = true;
+                btnIssue.innerHTML = `<i class='bx bx-check-double'></i> Pratica Approvata`;
+            }
+        } else if (gStatus === 'WAITS_FOR_APPROVAL') {
+            qaAlertsEl.innerHTML = `<span style="color:var(--warning);font-weight:600;"><i class='bx bx-time-five'></i> Pratica inviata all'amministratore. In attesa di emissione certificato.</span>`;
+            if (btnIssue) {
+                btnIssue.disabled = true;
+                btnIssue.innerHTML = `<i class='bx bx-time-five'></i> In Attesa di Approvazione`;
+            }
+        } else if (totalReqs > 0 && validated === totalReqs) {
+            qaAlertsEl.innerHTML = `<span style="color:var(--success);font-weight:600;"><i class='bx bx-check-shield'></i> Agent_Quality_Assurance: Tutti i controlli incrociati normativi hanno dato esito positivo. Pratica pronta per l'approvazione finale.</span>`;
+            if (btnIssue) {
+                btnIssue.disabled = false;
+                btnIssue.innerHTML = `<i class='bx bx-send'></i> Invia per Approvazione`;
+            }
         } else {
             qaAlertsEl.innerHTML = `<div style="display:flex;flex-direction:column;gap:4px;color:var(--text-muted);">
                 ${warnings.map(w => `<span>${w}</span>`).join('')}
-                <span style="color:var(--danger);font-weight:600;margin-top:6px;"><i class='bx bx-lock-alt'></i> Agent_Quality_Assurance: Certificazione bloccata finché tutti i requisiti non saranno convalidati.</span>
+                <span style="color:var(--danger);font-weight:600;margin-top:6px;"><i class='bx bx-lock-alt'></i> Agent_Quality_Assurance: Invio bloccato finché tutti i requisiti non saranno convalidati.</span>
             </div>`;
-            if (btnIssue) btnIssue.disabled = true;
+            if (btnIssue) {
+                btnIssue.disabled = true;
+                btnIssue.innerHTML = `<i class='bx bx-send'></i> Invia per Approvazione`;
+            }
         }
     },
 
-    async issueFinalCertification() {
+    async proposeFinalCertification() {
         if (!this._detClientEmail) return;
         const B = this._B || window.Backend || Backend;
 
-        if (!confirm('Sei sicuro di voler emettere la certificazione finale e approvare formalmente la pratica per questa struttura? La pratica dell\'utente verrà bloccata.')) {
+        if (!confirm('Confermi l\'invio della pratica all\'amministratore per l\'approvazione finale?')) {
             return;
         }
 
         try {
-            // Genera l'HTML del certificato ufficiale per html2pdf.js
-            const oggi = new Date().toLocaleDateString('it-IT', { day: '2-digit', month: 'long', year: 'numeric' });
-            const protocollo = `N. ACC-360-${Math.floor(100000 + Math.random() * 900000)}-${new Date().getFullYear()}`;
-            
             const profile = this._detStructure.data || {};
-            const strNome = this._detStructure.type.toUpperCase();
-            
-            const certHtml = `
-            <div style="border: 15px double #10b981; padding: 40px; text-align: center; font-family: 'Outfit', 'Arial', sans-serif; color: #1e293b; background: #fff; width: 680px; margin: 0 auto; box-sizing: border-box;">
-                <div style="margin-bottom: 20px;">
-                    <h2 style="margin: 0; color: #10b981; letter-spacing: 2px; font-size: 26px; font-weight: 800;">ACCREDITA360</h2>
-                    <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 2px; color: #64748b; margin-top: 4px;">Organismo Tecnico Indipendente di Conformità</div>
-                </div>
-                <hr style="border: 0; border-top: 2px solid #10b981; width: 80px; margin: 20px auto;">
-                <h1 style="font-size: 24px; font-weight: 700; margin: 20px 0; color: #0f172a; text-transform: uppercase;">Certificato di Conformità Sanitaria</h1>
-                <p style="font-size: 14px; line-height: 1.8; color: #475569; max-width: 500px; margin: 0 auto 30px;">
-                    Si attesta che la struttura sanitaria sotto indicata ha superato con esito positivo la Gap Analysis dei requisiti normativi per l'autorizzazione all'esercizio e l'accreditamento istituzionale nella Regione Siciliana.
-                </p>
-                <div style="background: #f8fafc; border: 1px solid #e2e8f0; padding: 20px; border-radius: 8px; text-align: left; margin-bottom: 30px; font-size: 13px;">
-                    <div style="margin-bottom: 8px;"><strong>Denominazione:</strong> ${_s(this._detClientEmail)}</div>
-                    <div style="margin-bottom: 8px;"><strong>Tipologia:</strong> ${_s(this._detStructure.type.toUpperCase())}</div>
-                    <div style="margin-bottom: 8px;"><strong>Sede Operativa:</strong> ${_s(profile.indirizzoOperativa || '—')}</div>
-                    <div style="margin-bottom: 8px;"><strong>Direttore Sanitario:</strong> ${_s(profile.direttoreSanitario || '—')}</div>
-                    <div><strong>Riferimenti Normativi:</strong> D.A. 890/2002 &amp; D.A. 20/2024 (Regione Siciliana)</div>
-                </div>
-                <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-top: 40px; font-size: 12px; color: #64748b;">
-                    <div style="text-align: left;">
-                        <strong>Protocollo:</strong> ${protocollo}<br>
-                        <strong>Data di Emissione:</strong> ${oggi}
-                    </div>
-                    <div style="text-align: right; position: relative;">
-                        <div style="border: 2px solid #10b981; color: #10b981; font-weight: 800; font-size: 10px; padding: 6px 12px; border-radius: 4px; display: inline-block; transform: rotate(-5deg); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;">
-                            <i class='bx bx-badge-check'></i> Approvato con Firma Digitale
-                        </div>
-                        <br>
-                        <strong>Firmato da:</strong> Supervisor Accredita360
-                    </div>
-                </div>
-            </div>`;
-
-            // Configura html2pdf per salvare il certificato
-            const container = document.createElement('div');
-            container.innerHTML = certHtml;
-            container.style.width = '750px';
-            container.style.padding = '20px';
-            
-            const opt = {
-                margin:       [15, 15, 15, 15],
-                filename:     `Certificato_Conformita_${this._detClientEmail}.pdf`,
-                image:        { type: 'jpeg', quality: 0.98 },
-                html2canvas:  { scale: 2, useCORS: true },
-                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            const updatedData = {
+                ...profile,
+                global_status: 'WAITS_FOR_APPROVAL',
+                proposed_at: new Date().toISOString()
             };
 
-            // Generiamo il PDF ed estraiamo la base64 per salvarlo sul profilo Supabase
-            html2pdf().from(container).set(opt).output('datauristring').then(async (dataUri) => {
-                // Aggiorniamo la struttura sul DB con global_status = CERTIFIED_AND_APPROVED e certificate_url
-                const updatedData = {
-                    ...profile,
-                    global_status: 'CERTIFIED_AND_APPROVED',
-                    certificate_url: dataUri,
-                    certified_at: new Date().toISOString(),
-                    certificate_protocol: protocollo
-                };
+            const { error } = await B.supabase
+                .from('structures')
+                .update({ data: updatedData })
+                .eq('user_email', this._detClientEmail);
 
-                const { error } = await supabase
-                    .from('structures')
-                    .update({ data: updatedData })
-                    .eq('user_email', this._detClientEmail);
-
-                if (error) {
-                    alert("Errore durante il salvataggio della certificazione nel DB.");
-                    console.error(error);
-                } else {
-                    alert("Certificazione finale emessa con successo! La pratica è stata chiusa e notificata all'utente.");
-                    await this.loadClientDetails();
-                }
-            }).catch(err => {
-                console.error('[Certifier Error]', err);
-            });
+            if (error) {
+                alert("Errore durante l'invio della proposta.");
+                console.error(error);
+            } else {
+                alert("Pratica inviata all'amministratore con successo per l'approvazione finale.");
+                await this.loadClientDetails();
+            }
 
         } catch (e) {
-            console.error('[Consulente] Errore emissione certificazione:', e);
+            console.error('[Consulente] Errore invio proposta approvazione:', e);
         }
     }
 };

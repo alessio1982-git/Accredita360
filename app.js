@@ -1829,40 +1829,53 @@ app.downloadOfficialCertificate = async function() {
             alert('Certificato non ancora generato o non trovato.');
             return;
         }
-        // Scarica il file usando il Data URL
-        const a = document.createElement('a');
-        a.href = certUrl;
-        a.download = `Certificato_Conformita_${struct.user_email}.pdf`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
+        // Scarica o visualizza il file a seconda del formato (Base64 legacy o URL dello Storage)
+        if (certUrl.startsWith('data:')) {
+            const a = document.createElement('a');
+            a.href = certUrl;
+            a.download = `Certificato_Conformita_${struct.user_email}.pdf`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        } else {
+            window.open(certUrl, '_blank');
+        }
     } catch (e) {
         console.error('[App] Errore durante il download del certificato:', e);
         alert('Errore durante il download del certificato.');
     }
 };
 
-app._bridgeInterval = null;
+app._realtimeChannel = null;
 
 app.startRealtimeBridge = function() {
     this.stopRealtimeBridge();
-    this._bridgeInterval = setInterval(async () => {
-        const user = Backend.getCurrentUser();
-        if (user && user.role !== 'admin' && user.role !== 'consulente') {
-            try {
-                // Recupera il profilo utente corrente in tempo reale
-                const profile = await Backend.getCurrentUserProfile();
-                if (!profile) return;
-
+    
+    const user = Backend.getCurrentUser();
+    if (!user || user.role === 'admin' || user.role === 'consulente') return;
+    
+    const B = window.Backend || Backend;
+    if (!B || !B.supabase) return;
+    
+    const email = user.email.toLowerCase().trim();
+    
+    this._realtimeChannel = B.supabase
+        .channel(`client-sync-${email.replace(/[^a-zA-Z0-9]/g, '-')}`)
+        .on('postgres_changes', {
+            event: '*',
+            schema: 'public',
+            table: 'users',
+            filter: `email=eq.${email}`
+        }, async (payload) => {
+            console.log('[Realtime Client Sync] Modifica utente rilevata:', payload);
+            const profile = payload.new;
+            if (profile) {
                 const isAssigned = profile.stato_assegnazione === 'in_carico';
-                
-                // Controlla se la visibilità delle voci menu corrisponde allo stato attuale
                 const firstSecretLink = document.querySelector('.nav-links li[data-view="profiling"]');
                 const wasAssignedInUI = firstSecretLink && firstSecretLink.style.display !== 'none';
-
+                
                 if (isAssigned !== wasAssignedInUI) {
-                    console.log('[Bridge Sync] Rilevato cambio di stato assegnazione! Aggiornamento in corso...');
-                    // Aggiorniamo i dati in sessione e ricarichiamo la dashboard
+                    console.log('[Realtime Client Sync] Aggiornamento stato assegnazione UI...');
                     const sessionKey = 'accredita360_session_v2';
                     const rawSession = sessionStorage.getItem(sessionKey) || localStorage.getItem(sessionKey);
                     if (rawSession) {
@@ -1874,60 +1887,64 @@ app.startRealtimeBridge = function() {
                         }
                     }
                     await this.loadData();
-                    if (!isAssigned) return; // Se disassegnato, fermati qui
                 }
-
-                if (!isAssigned) {
-                    // Se la struttura non è ancora assegnata, non ci sono requisiti da sincronizzare
-                    return;
-                }
-
-                // Controlla se lo stato della struttura o i requisiti sono cambiati
-                const oldReqsSerialized = JSON.stringify(appState.requirements.map(r => ({ id: r.id, stato: r.stato, noteConsulente: r.noteConsulente, file: r.file })));
-                
-                const struct = await Backend.getCurrentStructure();
-                const wasFrozen = !!this.state.frozen;
-                const isFrozen = struct?.data?.global_status === 'CERTIFIED_AND_APPROVED';
-                
-                const remoteReqs = await Backend.getRequirements();
-                const newReqsSerialized = JSON.stringify(remoteReqs.map(r => ({ id: r.id, stato: r.stato, noteConsulente: r.noteConsulente, file: r.file })));
-                
-                if (oldReqsSerialized !== newReqsSerialized || wasFrozen !== isFrozen) {
-                    console.log('[Bridge Sync] Rilevata variazione dal consulente! Aggiornamento in corso...');
-                    appState.requirements = remoteReqs;
-                    this.updateStats();
-                    await this.checkGlobalStatus();
-                    
-                    // Rinfresca le sezioni visualizzate preservando il filtro
-                    const activeAspFilter = document.querySelector('#gap-page-asp .filter-btn.active')?.dataset.filter || 'all';
-                    this.renderSection('asp', activeAspFilter);
-                    
-                    const activeOtaFilter = document.querySelector('#gap-page-ota .filter-btn.active')?.dataset.filter || 'all';
-                    const otaReqs = appState.requirements.filter(r => r.percorso === 'ota');
-                    if (otaReqs.length > 0) {
-                        this.renderSection('ota', activeOtaFilter);
-                    }
-                    
-                    // Aggiorna scadenze
-                    this.renderMaintenanceView();
-                    
-                    // Aggiorna fascicolo se visibile
-                    const fascicoloEl = document.getElementById('view-documents');
-                    if (fascicoloEl && fascicoloEl.classList.contains('active-view')) {
-                        this.renderCompliantList();
-                    }
-                }
-            } catch (err) {
-                console.warn('[Bridge Sync] Polling fallito:', err.message);
             }
-        }
-    }, 5000);
+        })
+        .on('postgres_changes', {
+            event: '*',
+            schema: 'public',
+            table: 'requirements',
+            filter: `user_email=eq.${email}`
+        }, async (payload) => {
+            console.log('[Realtime Client Sync] Modifica requisiti rilevata:', payload);
+            const remoteReqs = await Backend.getRequirements();
+            appState.requirements = remoteReqs;
+            this.updateStats();
+            await this.checkGlobalStatus();
+            
+            // Rinfresca le sezioni visualizzate
+            const activeAspFilter = document.querySelector('#gap-page-asp .filter-btn.active')?.dataset.filter || 'all';
+            this.renderSection('asp', activeAspFilter);
+            
+            const activeOtaFilter = document.querySelector('#gap-page-ota .filter-btn.active')?.dataset.filter || 'all';
+            const otaReqs = appState.requirements.filter(r => r.percorso === 'ota');
+            if (otaReqs.length > 0) {
+                this.renderSection('ota', activeOtaFilter);
+            }
+            
+            this.renderMaintenanceView();
+            
+            const fascicoloEl = document.getElementById('view-documents');
+            if (fascicoloEl && fascicoloEl.classList.contains('active-view')) {
+                this.renderCompliantList();
+            }
+        })
+        .on('postgres_changes', {
+            event: '*',
+            schema: 'public',
+            table: 'structures',
+            filter: `user_email=eq.${email}`
+        }, async (payload) => {
+            console.log('[Realtime Client Sync] Modifica struttura rilevata:', payload);
+            const struct = payload.new;
+            const wasFrozen = !!this.state.frozen;
+            const isFrozen = struct?.data?.global_status === 'CERTIFIED_AND_APPROVED';
+            if (wasFrozen !== isFrozen) {
+                appState.structure = struct;
+                this.state.frozen = isFrozen;
+                await this.checkGlobalStatus();
+            }
+        })
+        .subscribe();
 };
 
 app.stopRealtimeBridge = function() {
-    if (this._bridgeInterval) {
-        clearInterval(this._bridgeInterval);
-        this._bridgeInterval = null;
+    if (this._realtimeChannel) {
+        const B = window.Backend || Backend;
+        if (B && B.supabase) {
+            B.supabase.removeChannel(this._realtimeChannel);
+        }
+        this._realtimeChannel = null;
     }
 };
 

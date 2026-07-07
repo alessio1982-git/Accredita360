@@ -12,6 +12,7 @@ const admin = {
     _detActiveTab: 'asp',
     _detClientEmail: null,
     _bridgeInterval: null,
+    _realtimeChannel: null,
     _detRequirements: [],
     _detStructure: null,
 
@@ -109,8 +110,9 @@ const admin = {
 
     navigate(viewId) {
         if (viewId !== 'dettaglio-cliente') {
-            this.stopRealtimeBridge();
+            this._detClientEmail = null;
         }
+        this.startRealtimeBridge();
         
         // Aggiorna lo stato attivo della sidebar
         document.querySelectorAll('.nav-links li').forEach(l => l.classList.remove('active', 'parent-active'));
@@ -509,6 +511,8 @@ const admin = {
         const validated = this._detRequirements.filter(r => r.stato === 'green').length;
         const missingFiles = this._detRequirements.filter(r => !r.file).length;
 
+        const gStatus = this._detStructure?.data?.global_status || 'IN_CORSO';
+
         let warnings = [];
 
         if (validated < totalReqs) {
@@ -519,15 +523,33 @@ const admin = {
             warnings.push(`<i class='bx bx-error'></i> Ci sono ${missingFiles} requisiti senza alcun file allegato.`);
         }
 
-        if (totalReqs > 0 && validated === totalReqs) {
-            qaAlertsEl.innerHTML = `<span style="color:var(--success);font-weight:600;"><i class='bx bx-check-shield'></i> Agent_Quality_Assurance: Tutti i controlli incrociati normativi (D.A. 890/2002 e D.A. 20/2024) hanno dato esito positivo. Pratica idonea alla certificazione.</span>`;
-            if (btnIssue) btnIssue.disabled = false;
+        if (gStatus === 'CERTIFIED_AND_APPROVED') {
+            qaAlertsEl.innerHTML = `<span style="color:var(--success);font-weight:600;"><i class='bx bx-check-shield'></i> Struttura già Certificata e Approvata. Pratica chiusa.</span>`;
+            if (btnIssue) {
+                btnIssue.disabled = true;
+                btnIssue.innerHTML = `<i class='bx bx-check-double'></i> Certificato Emesso`;
+            }
+        } else if (gStatus === 'WAITS_FOR_APPROVAL') {
+            qaAlertsEl.innerHTML = `<span style="color:var(--warning);font-weight:600;"><i class='bx bx-bell'></i> Pratica proposta dal consulente per approvazione finale.</span>`;
+            if (btnIssue) {
+                btnIssue.disabled = false;
+                btnIssue.innerHTML = `<i class='bx bx-award'></i> Rilascia Certificato`;
+            }
+        } else if (totalReqs > 0 && validated === totalReqs) {
+            qaAlertsEl.innerHTML = `<span style="color:var(--success);font-weight:600;"><i class='bx bx-check-shield'></i> Agent_Quality_Assurance: Tutti i controlli incrociati normativi hanno dato esito positivo. Pratica idonea alla certificazione.</span>`;
+            if (btnIssue) {
+                btnIssue.disabled = false;
+                btnIssue.innerHTML = `<i class='bx bx-award'></i> Rilascia Certificato`;
+            }
         } else {
             qaAlertsEl.innerHTML = `<div style="display:flex;flex-direction:column;gap:4px;color:var(--text-muted);">
                 ${warnings.map(w => `<span>${w}</span>`).join('')}
                 <span style="color:var(--danger);font-weight:600;margin-top:6px;"><i class='bx bx-lock-alt'></i> Agent_Quality_Assurance: Certificazione bloccata finché tutti i requisiti non saranno convalidati.</span>
             </div>`;
-            if (btnIssue) btnIssue.disabled = true;
+            if (btnIssue) {
+                btnIssue.disabled = true;
+                btnIssue.innerHTML = `<i class='bx bx-award'></i> Rilascia Certificato`;
+            }
         }
     },
 
@@ -593,26 +615,33 @@ const admin = {
 
             const supabaseClient = window.supabase || supabase;
 
-            html2pdf().from(container).set(opt).output('datauristring').then(async (dataUri) => {
-                const updatedData = {
-                    ...profile,
-                    global_status: 'CERTIFIED_AND_APPROVED',
-                    certificate_url: dataUri,
-                    certified_at: new Date().toISOString(),
-                    certificate_protocol: protocollo
-                };
+            html2pdf().from(container).set(opt).output('blob').then(async (pdfBlob) => {
+                const filename = `Certificato_Conformita_${this._detClientEmail}.pdf`;
+                try {
+                    const signedUrl = await B.uploadCertificate(this._detClientEmail, pdfBlob, filename);
 
-                const { error } = await supabaseClient
-                    .from('structures')
-                    .update({ data: updatedData })
-                    .eq('user_email', this._detClientEmail);
+                    const updatedData = {
+                        ...profile,
+                        global_status: 'CERTIFIED_AND_APPROVED',
+                        certificate_url: signedUrl,
+                        certified_at: new Date().toISOString(),
+                        certificate_protocol: protocollo
+                    };
 
-                if (error) {
-                    alert("Errore durante il salvataggio della certificazione nel DB.");
-                    console.error(error);
-                } else {
-                    alert("Certificazione finale emessa con successo! La pratica è stata chiusa e notificata all'utente.");
-                    await this.loadClientDetails();
+                    const { error } = await supabaseClient
+                        .from('structures')
+                        .update({ data: updatedData })
+                        .eq('user_email', this._detClientEmail);
+
+                    if (error) {
+                        alert("Errore durante il salvataggio della certificazione nel DB.");
+                        console.error(error);
+                    } else {
+                        alert("Certificazione finale emessa con successo! La pratica è stata chiusa e notificata all'utente.");
+                        await this.loadClientDetails();
+                    }
+                } catch (uploadErr) {
+                    alert("Errore durante il caricamento del certificato: " + uploadErr.message);
                 }
             }).catch(err => {
                 console.error('[Certifier Error]', err);
@@ -625,30 +654,58 @@ const admin = {
 
     startRealtimeBridge() {
         this.stopRealtimeBridge();
-        this._bridgeInterval = setInterval(async () => {
-            const B = window.Backend || Backend;
-            if (this._detClientEmail) {
-                const allStructures = await B.getAllStructuresWithRequirements();
-                const clientData = allStructures.find(item => item.user.email === this._detClientEmail);
-                if (clientData) {
-                    const localSerialized = JSON.stringify(this._detRequirements.map(r => ({ id: r.id, stato: r.stato, file: r.file })));
-                    const remoteSerialized = JSON.stringify((clientData.requirements || []).map(r => ({ id: r.id, stato: r.stato, file: r.file })));
-                    
-                    if (localSerialized !== remoteSerialized) {
-                        console.log('[Bridge Sync Detail] Variazione rilevata!');
-                        this._detRequirements = clientData.requirements || [];
-                        this.renderClientRequirements();
-                        this.verifyFascicoloDocumentale();
-                    }
-                }
-            }
-        }, 5000);
+        const B = window.Backend || Backend;
+        if (!B || !B.supabase) return;
+
+        if (this._detClientEmail) {
+            const email = this._detClientEmail;
+            console.log('[Realtime Admin] Sottoscrizione a modifiche per:', email);
+            this._realtimeChannel = B.supabase
+                .channel(`admin-detail-sync-${email.replace(/[^a-zA-Z0-9]/g, '-')}`)
+                .on('postgres_changes', {
+                    event: '*',
+                    schema: 'public',
+                    table: 'requirements',
+                    filter: `user_email=eq.${email.toLowerCase().trim()}`
+                }, async (payload) => {
+                    console.log('[Realtime Detail Sync] Variazione requisiti ricevuta:', payload);
+                    await this.loadClientDetails();
+                })
+                .on('postgres_changes', {
+                    event: '*',
+                    schema: 'public',
+                    table: 'structures',
+                    filter: `user_email=eq.${email.toLowerCase().trim()}`
+                }, async (payload) => {
+                    console.log('[Realtime Detail Sync] Variazione struttura ricevuta:', payload);
+                    await this.loadClientDetails();
+                })
+                .subscribe();
+        } else {
+            console.log('[Realtime Admin] Sottoscrizione globale dashboard');
+            this._realtimeChannel = B.supabase
+                .channel('admin-dashboard-changes')
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'users' }, async () => {
+                    console.log('[Realtime Dashboard Sync] Modifica utenti rilevata.');
+                    await this.renderConsultantsData();
+                    this.updateStatsCounters();
+                })
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'structures' }, async () => {
+                    console.log('[Realtime Dashboard Sync] Modifica strutture rilevata.');
+                    await this.renderConsultantsData();
+                    this.updateStatsCounters();
+                })
+                .subscribe();
+        }
     },
 
     stopRealtimeBridge() {
-        if (this._bridgeInterval) {
-            clearInterval(this._bridgeInterval);
-            this._bridgeInterval = null;
+        if (this._realtimeChannel) {
+            const B = window.Backend || Backend;
+            if (B && B.supabase) {
+                B.supabase.removeChannel(this._realtimeChannel);
+            }
+            this._realtimeChannel = null;
         }
     },
 

@@ -82,10 +82,12 @@ CREATE POLICY "users_update_own" ON public.users
 -- ────────────────────────────────────────────────────────────
 -- 4. POLICIES — TABELLA: structures
 -- ────────────────────────────────────────────────────────────
-DROP POLICY IF EXISTS "structures_select_own"   ON public.structures;
-DROP POLICY IF EXISTS "structures_select_admin" ON public.structures;
-DROP POLICY IF EXISTS "structures_insert_own"   ON public.structures;
-DROP POLICY IF EXISTS "structures_update_own"   ON public.structures;
+DROP POLICY IF EXISTS "structures_select_own"        ON public.structures;
+DROP POLICY IF EXISTS "structures_select_admin"      ON public.structures;
+DROP POLICY IF EXISTS "structures_select_consulente" ON public.structures;
+DROP POLICY IF EXISTS "structures_insert_own"        ON public.structures;
+DROP POLICY IF EXISTS "structures_update_own"        ON public.structures;
+DROP POLICY IF EXISTS "structures_update_admin"      ON public.structures;
 
 -- Utente vede solo la propria struttura se attivo o admin
 CREATE POLICY "structures_select_own" ON public.structures
@@ -95,6 +97,16 @@ CREATE POLICY "structures_select_own" ON public.structures
 CREATE POLICY "structures_select_admin" ON public.structures
   FOR SELECT USING (public.is_admin());
 
+-- Consulente vede le strutture dei clienti assegnati
+CREATE POLICY "structures_select_consulente" ON public.structures
+  FOR SELECT USING (
+    EXISTS (
+      SELECT 1 FROM public.users
+      WHERE users.email = structures.user_email
+      AND users.consulente_email_fk = public.current_user_email()
+    )
+  );
+
 -- Utente può creare la propria struttura se attivo o admin
 CREATE POLICY "structures_insert_own" ON public.structures
   FOR INSERT WITH CHECK (user_email = public.current_user_email() AND public.is_active_user());
@@ -103,14 +115,20 @@ CREATE POLICY "structures_insert_own" ON public.structures
 CREATE POLICY "structures_update_own" ON public.structures
   FOR UPDATE USING (user_email = public.current_user_email() AND public.is_active_user());
 
+-- Admin può aggiornare qualsiasi struttura
+CREATE POLICY "structures_update_admin" ON public.structures
+  FOR UPDATE USING (public.is_admin());
+
 -- ────────────────────────────────────────────────────────────
 -- 5. POLICIES — TABELLA: requirements
 -- ────────────────────────────────────────────────────────────
-DROP POLICY IF EXISTS "requirements_select_own"   ON public.requirements;
-DROP POLICY IF EXISTS "requirements_select_admin" ON public.requirements;
-DROP POLICY IF EXISTS "requirements_insert_own"   ON public.requirements;
-DROP POLICY IF EXISTS "requirements_update_own"   ON public.requirements;
-DROP POLICY IF EXISTS "requirements_update_admin" ON public.requirements;
+DROP POLICY IF EXISTS "requirements_select_own"        ON public.requirements;
+DROP POLICY IF EXISTS "requirements_select_admin"      ON public.requirements;
+DROP POLICY IF EXISTS "requirements_select_consulente" ON public.requirements;
+DROP POLICY IF EXISTS "requirements_insert_own"        ON public.requirements;
+DROP POLICY IF EXISTS "requirements_update_own"        ON public.requirements;
+DROP POLICY IF EXISTS "requirements_update_admin"      ON public.requirements;
+DROP POLICY IF EXISTS "requirements_update_consulente" ON public.requirements;
 
 -- Utente vede solo i propri requisiti se attivo o admin
 CREATE POLICY "requirements_select_own" ON public.requirements
@@ -119,6 +137,16 @@ CREATE POLICY "requirements_select_own" ON public.requirements
 -- Admin vede tutti i requisiti
 CREATE POLICY "requirements_select_admin" ON public.requirements
   FOR SELECT USING (public.is_admin());
+
+-- Consulente vede i requisiti dei clienti assegnati
+CREATE POLICY "requirements_select_consulente" ON public.requirements
+  FOR SELECT USING (
+    EXISTS (
+      SELECT 1 FROM public.users
+      WHERE users.email = requirements.user_email
+      AND users.consulente_email_fk = public.current_user_email()
+    )
+  );
 
 -- Utente inserisce solo i propri requisiti se attivo o admin
 CREATE POLICY "requirements_insert_own" ON public.requirements
@@ -131,6 +159,16 @@ CREATE POLICY "requirements_update_own" ON public.requirements
 -- Admin può aggiornare qualsiasi requisito (per validazione)
 CREATE POLICY "requirements_update_admin" ON public.requirements
   FOR UPDATE USING (public.is_admin());
+
+-- Consulente può aggiornare i requisiti dei clienti assegnati (per validazione)
+CREATE POLICY "requirements_update_consulente" ON public.requirements
+  FOR UPDATE USING (
+    EXISTS (
+      SELECT 1 FROM public.users
+      WHERE users.email = requirements.user_email
+      AND users.consulente_email_fk = public.current_user_email()
+    )
+  );
 
 -- ────────────────────────────────────────────────────────────
 -- 6. POLICIES — TABELLA: anagrafiche
