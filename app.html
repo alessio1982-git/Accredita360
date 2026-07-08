@@ -657,31 +657,13 @@
                         <span style="font-size:12px;color:var(--text-muted);">Coerenza con la normativa vigente siciliana</span>
                     </div>
                     <!-- Tab Navigation -->
-                    <div class="tab-nav" style="display:flex;gap:8px;margin-bottom:20px;">
-                        <button id="norm-tab-coerenza"     class="filter-btn active" onclick="app.switchNormTab('coerenza')">Coerenza Normativa</button>
-                        <button id="norm-tab-legislazione" class="filter-btn"        onclick="app.switchNormTab('legislazione')">Legislazione</button>
-                        <button id="norm-tab-storico"      class="filter-btn"        onclick="app.switchNormTab('storico')">Storico Aggiornamenti</button>
+                    <div class="tab-nav" style="display:flex;gap:8px;margin-bottom:20px;justify-content:center;">
+                        <button id="norm-tab-coerenza"     class="filter-btn active" onclick="app.switchNormTab('coerenza')">Analisi Coerenza OTA</button>
                     </div>
                     <!-- Tab Coerenza -->
                     <div id="norm-page-coerenza">
                         <div id="norm-coerenza-container">
                             <!-- Popolato da renderStoricoNormativa() -->
-                        </div>
-                    </div>
-                    <!-- Tab Legislazione -->
-                    <div id="norm-page-legislazione" style="display:none;">
-                        <div id="norm-storico-list" class="glass-card" style="padding:32px;">
-                            <h4 style="color:var(--primary);margin-bottom:16px;"><i class='bx bx-book-open'></i> Normativa Regionale Siciliana</h4>
-                            <div id="norm-legislazione-list">
-                                <!-- Popolato da renderStoricoNormativa() -->
-                            </div>
-                        </div>
-                    </div>
-                    <!-- Tab Storico -->
-                    <div id="norm-page-storico" style="display:none;">
-                        <div class="glass-card" style="padding:32px;">
-                            <h4 style="color:var(--primary);margin-bottom:16px;"><i class='bx bx-history'></i> Storico Aggiornamenti Normativi</h4>
-                            <p style="color:var(--text-muted);font-size:13px;">Gli aggiornamenti più recenti alla normativa sanitaria regionale.</p>
                         </div>
                     </div>
                 </div>

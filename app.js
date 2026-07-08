@@ -745,10 +745,7 @@ const app = {
 
     switchNormTab(tab) {
         document.getElementById('norm-page-coerenza').style.display = tab === 'coerenza' ? 'block' : 'none';
-        document.getElementById('norm-page-legislazione').style.display = tab === 'legislazione' ? 'block' : 'none';
-
         document.getElementById('norm-tab-coerenza').classList.toggle('active', tab === 'coerenza');
-        document.getElementById('norm-tab-legislazione').classList.toggle('active', tab === 'legislazione');
     },
 
     async uploadFile(reqId) {
