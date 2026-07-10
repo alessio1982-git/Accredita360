@@ -35,7 +35,7 @@
             </li>
             <!-- Accordion per Quadro Normativo -->
             <li class="nav-dropdown" id="dropdown-normativa">
-                <a href="#" class="dropdown-toggle" onclick="admin.toggleDropdown(event)">
+                <a href="#" class="dropdown-toggle" onclick="admin.toggleDropdown(event, 'dropdown-normativa')">
                     <i class='bx bx-book-open'></i>
                     <span>Quadro Normativo</span>
                     <i class='bx bx-chevron-down toggle-icon' style="margin-left: auto; transition: transform 0.3s ease;"></i>
@@ -49,6 +49,28 @@
                     </li>
                     <li data-view="panoramica">
                         <a href="#"><i class='bx bx-map-alt'></i><span>Panoramica</span></a>
+                    </li>
+                </ul>
+            </li>
+            <!-- Accordion per Area Contabile -->
+            <li class="nav-dropdown" id="dropdown-contabile">
+                <a href="#" class="dropdown-toggle" onclick="admin.toggleDropdown(event, 'dropdown-contabile')">
+                    <i class='bx bx-wallet'></i>
+                    <span>Area Contabile</span>
+                    <i class='bx bx-chevron-down toggle-icon' style="margin-left: auto; transition: transform 0.3s ease;"></i>
+                </a>
+                <ul class="submenu">
+                    <li data-view="piani-abbonamento">
+                        <a href="#"><i class='bx bx-package'></i><span>Piani di abbonamento</span></a>
+                    </li>
+                    <li data-view="fatturazione">
+                        <a href="#"><i class='bx bx-receipt'></i><span>Fatturazione</span></a>
+                    </li>
+                    <li data-view="metodo-pagamento">
+                        <a href="#"><i class='bx bx-credit-card'></i><span>Metodo di pagamento</span></a>
+                    </li>
+                    <li data-view="report-contabili">
+                        <a href="#"><i class='bx bx-bar-chart-square'></i><span>Report</span></a>
                     </li>
                 </ul>
             </li>
@@ -404,6 +426,62 @@
                             </div>
                         </div>
                     </div>
+                </div>
+            </div>
+
+            <!-- VIEW: Piani di Abbonamento -->
+            <div id="view-piani-abbonamento" class="view">
+                <div class="gap-header">
+                    <h3><i class='bx bx-package' style="color:var(--primary);"></i> Piani di Abbonamento</h3>
+                    <span class="status-badge status-green"><i class='bx bx-time'></i> Configurazione SaaS</span>
+                </div>
+                <div class="glass-card" style="padding:32px; text-align:center; color:var(--text-muted);">
+                    <i class='bx bx-package' style="font-size:48px; color:var(--primary); opacity:0.6; display:block; margin-bottom:16px;"></i>
+                    <h4 style="color:var(--text-main); margin-bottom:8px;">Gestione Abbonamenti</h4>
+                    <p style="font-size:14px; max-width:500px; margin:0 auto 16px;">Questa sezione consentirà di gestire i piani di abbonamento delle strutture sanitarie collegate.</p>
+                    <span class="status-badge status-yellow" style="font-size:11px;">In fase di sviluppo (Stripe Sandbox)</span>
+                </div>
+            </div>
+
+            <!-- VIEW: Fatturazione -->
+            <div id="view-fatturazione" class="view">
+                <div class="gap-header">
+                    <h3><i class='bx bx-receipt' style="color:var(--primary);"></i> Fatturazione</h3>
+                    <span class="status-badge status-green"><i class='bx bx-time'></i> Storico Invii</span>
+                </div>
+                <div class="glass-card" style="padding:32px; text-align:center; color:var(--text-muted);">
+                    <i class='bx bx-receipt' style="font-size:48px; color:var(--primary); opacity:0.6; display:block; margin-bottom:16px;"></i>
+                    <h4 style="color:var(--text-main); margin-bottom:8px;">Fatture &amp; Ricevute</h4>
+                    <p style="font-size:14px; max-width:500px; margin:0 auto 16px;">Archivio e storico delle fatture emesse in automatico per le strutture iscritte.</p>
+                    <span class="status-badge status-yellow" style="font-size:11px;">In fase di sviluppo (Stripe Sandbox)</span>
+                </div>
+            </div>
+
+            <!-- VIEW: Metodo di Pagamento -->
+            <div id="view-metodo-pagamento" class="view">
+                <div class="gap-header">
+                    <h3><i class='bx bx-credit-card' style="color:var(--primary);"></i> Metodo di Pagamento</h3>
+                    <span class="status-badge status-green"><i class='bx bx-time'></i> Gateway</span>
+                </div>
+                <div class="glass-card" style="padding:32px; text-align:center; color:var(--text-muted);">
+                    <i class='bx bx-credit-card' style="font-size:48px; color:var(--primary); opacity:0.6; display:block; margin-bottom:16px;"></i>
+                    <h4 style="color:var(--text-main); margin-bottom:8px;">Metodi di Pagamento</h4>
+                    <p style="font-size:14px; max-width:500px; margin:0 auto 16px;">Configurazione dei gateway di pagamento (Stripe, SEPA, Carte di Credito).</p>
+                    <span class="status-badge status-yellow" style="font-size:11px;">In fase di sviluppo (Stripe Sandbox)</span>
+                </div>
+            </div>
+
+            <!-- VIEW: Report Contabili -->
+            <div id="view-report-contabili" class="view">
+                <div class="gap-header">
+                    <h3><i class='bx bx-bar-chart-square' style="color:var(--primary);"></i> Report Contabili</h3>
+                    <span class="status-badge status-green"><i class='bx bx-time'></i> Statistiche</span>
+                </div>
+                <div class="glass-card" style="padding:32px; text-align:center; color:var(--text-muted);">
+                    <i class='bx bx-bar-chart-square' style="font-size:48px; color:var(--primary); opacity:0.6; display:block; margin-bottom:16px;"></i>
+                    <h4 style="color:var(--text-main); margin-bottom:8px;">Report e Performance Finanziarie</h4>
+                    <p style="font-size:14px; max-width:500px; margin:0 auto 16px;">Analisi dei ricavi ricorrenti mensili (MRR), tasso di rinnovo e reportistica contabile.</p>
+                    <span class="status-badge status-yellow" style="font-size:11px;">In fase di sviluppo (Stripe Sandbox)</span>
                 </div>
             </div>
 

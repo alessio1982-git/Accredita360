@@ -64,20 +64,29 @@ const admin = {
         });
     },
 
-    toggleDropdown(event) {
+    toggleDropdown(event, dropdownId) {
         if (event) {
             event.preventDefault();
             event.stopPropagation();
         }
-        const dropdown = document.getElementById('dropdown-normativa');
+        const id = dropdownId || 'dropdown-normativa';
+        const dropdown = document.getElementById(id);
         if (dropdown) {
             const isOpen = dropdown.classList.contains('open');
             if (isOpen) {
                 this.closeDropdown(dropdown);
             } else {
+                // Chiude altri dropdown aperti per evitare sovrapposizioni
+                document.querySelectorAll('.nav-dropdown.open').forEach(other => {
+                    if (other.id !== id) this.closeDropdown(other);
+                });
                 this.openDropdown(dropdown);
-                // Cliccando sul genitore, portiamo anche alla pagina normativa (overview) come landing page
-                this.navigate('normativa');
+                // Naviga alla prima sottovoce
+                if (id === 'dropdown-normativa') {
+                    this.navigate('normativa');
+                } else if (id === 'dropdown-contabile') {
+                    this.navigate('piani-abbonamento');
+                }
             }
         }
     },
@@ -123,6 +132,9 @@ const admin = {
             if (parentDropdown) {
                 parentDropdown.classList.add('parent-active');
                 this.openDropdown(parentDropdown);
+            } else {
+                // Chiude i dropdown se si clicca su una voce principale (es. Dashboard, Smistamento)
+                document.querySelectorAll('.nav-dropdown.open').forEach(dropdown => this.closeDropdown(dropdown));
             }
         }
 
@@ -134,7 +146,11 @@ const admin = {
             'normativa':       'Quadro Normativo',
             'procedure-ota':   'Procedure OTA',
             'panoramica':      'Panoramica',
-            'dettaglio-cliente': 'Dettaglio Struttura'
+            'dettaglio-cliente': 'Dettaglio Struttura',
+            'piani-abbonamento': 'Piani di Abbonamento',
+            'fatturazione':     'Fatturazione',
+            'metodo-pagamento': 'Metodo di Pagamento',
+            'report-contabili': 'Report Contabili'
         };
         const titleEl = document.getElementById('view-title');
         if (titleEl) titleEl.textContent = titles[viewId] || viewId;
