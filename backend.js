@@ -242,27 +242,32 @@ const Backend = {
         if (!user) throw new Error('Sessione scaduta.');
 
         const payload = {
-            user_email:      user.email,
-            tipo_titolare:   data.tipo_titolare   || 'societa',
-            ragione_sociale: data.ragione_sociale  || null,
-            partita_iva:     data.partita_iva      || null,
-            codice_fiscale:  data.codice_fiscale   || null,
-            sede_legale:     data.sede_legale      || null,
-            nome_lr:         data.nome_lr          || null,
-            cognome_lr:      data.cognome_lr       || null,
-            cf_lr:           data.cf_lr            || null,
-            nome_struttura:  data.nome_struttura   || null,
-            indirizzo_op:    data.indirizzo_op     || null,
-            comune:          data.comune           || null,
-            cap:             data.cap              || null,
-            tel_struttura:   data.tel_struttura    || null,
-            email_struttura: data.email_struttura  || null,
-            pec:             data.pec              || null,
-            nome_ds:         data.nome_ds          || null,
-            cognome_ds:      data.cognome_ds       || null,
-            iscrizione_albo: data.iscrizione_albo  || null,
-            specializzazione:data.specializzazione || null,
-            updated_at:      new Date().toISOString()
+            user_email:          user.email,
+            tipo_titolare:       data.tipo_titolare       || 'societa',
+            ragione_sociale:     data.ragione_sociale      || null,
+            partita_iva:         data.partita_iva          || null,
+            codice_fiscale:      data.codice_fiscale       || null,
+            sede_legale:         data.sede_legale          || null,
+            nome_lr:             data.nome_lr              || null,
+            cognome_lr:          data.cognome_lr           || null,
+            cf_lr:               data.cf_lr                || null,
+            nome_struttura:      data.nome_struttura       || null,
+            indirizzo_op:        data.indirizzo_op         || null,
+            comune:              data.comune               || null,
+            cap:                 data.cap                  || null,
+            tel_struttura:       data.tel_struttura        || null,
+            email_struttura:     data.email_struttura      || null,
+            pec:                 data.pec                  || null,
+            nome_ds:             data.nome_ds              || null,
+            cognome_ds:          data.cognome_ds           || null,
+            iscrizione_albo:     data.iscrizione_albo      || null,
+            specializzazione:    data.specializzazione     || null,
+            num_dipendenti:      data.num_dipendenti       || null,
+            superficie_totale:   data.superficie_totale    || null,
+            num_ambulatori:      data.num_ambulatori       || null,
+            planimetria_url:     data.planimetria_url      || null,
+            foto_struttura_urls: data.foto_struttura_urls  || null,
+            updated_at:          new Date().toISOString()
         };
 
         const { error } = await supabase
@@ -294,6 +299,40 @@ const Backend = {
             console.warn('[Backend] Errore getAnagrafica:', error);
         }
         return data || null;
+    },
+
+    /**
+     * Carica un file relativo alla logica della struttura (planimetria, foto) su Supabase Storage.
+     * @param {string} fileName - Nome originale del file
+     * @param {File}   file     - Oggetto File
+     * @returns {Promise<{ url: string, path: string }>}
+     */
+    async uploadAnagraficaFile(fileName, file) {
+        const user = this.getCurrentUser();
+        if (!user) throw new Error('Sessione scaduta.');
+
+        const ts   = Date.now();
+        const safe = fileName.replace(/[^a-zA-Z0-9._-]/g, '_');
+        const path = `${user.email}/anagrafica/${ts}_${safe}`;
+
+        const { data: uploadData, error: uploadErr } = await supabase.storage
+            .from('documents')
+            .upload(path, file, { upsert: true, contentType: file.type });
+
+        if (uploadErr) {
+            console.error('[Backend] Errore upload anagrafica file:', uploadErr);
+            throw new Error(uploadErr.message || 'Errore durante il caricamento del file.');
+        }
+
+        // Genera URL firmato (valido 1 anno)
+        const { data: urlData } = await supabase.storage
+            .from('documents')
+            .createSignedUrl(path, 60 * 60 * 24 * 365);
+
+        const signedUrl = urlData?.signedUrl || null;
+
+        console.log(`[Backend] File di anagrafica caricato con successo: ${path}`);
+        return { url: signedUrl, path };
     },
 
     /**

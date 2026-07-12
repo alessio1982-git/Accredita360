@@ -333,6 +333,50 @@
                                 </div>
                             </div>
                         </div>
+                        <!-- Card Dimensioni e Logistica Struttura -->
+                        <div class="glass-card" style="grid-column: 1 / -1; margin-top: 10px;">
+                            <h4 style="margin-bottom: 20px; color: var(--primary); font-size: 18px;"><i class='bx bx-area'></i> Dimensioni e Logistica Struttura</h4>
+                            
+                            <!-- RIGA 1: Dati Quantitativi -->
+                            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 20px;">
+                                <div class="form-group">
+                                    <label>Numero Dipendenti / Collaboratori</label>
+                                    <input type="number" id="anag-dipendenti" class="input-box" placeholder="Es. 15" min="0">
+                                </div>
+                                <div class="form-group">
+                                    <label>Superficie Totale (in mq)</label>
+                                    <input type="number" id="anag-superficie" class="input-box" placeholder="Es. 350" min="0">
+                                </div>
+                                <div class="form-group">
+                                    <label>Numero di Ambulatori / Sale Visita</label>
+                                    <input type="number" id="anag-ambulatori" class="input-box" placeholder="Es. 6" min="0">
+                                </div>
+                            </div>
+                            
+                            <!-- RIGA 2: Upload Planimetria e Foto -->
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+                                <div class="form-group">
+                                    <label style="display: block; margin-bottom: 8px;">Planimetria della Struttura <span style="font-size: 11px; color: var(--text-muted); font-weight: normal;">(PDF, PNG, JPG)</span></label>
+                                    <div class="file-upload-dropzone" id="dropzone-planimetria" style="border: 2px dashed rgba(255,255,255,0.15); border-radius: 12px; padding: 20px; text-align: center; cursor: pointer; transition: all 0.3s ease; background: rgba(255,255,255,0.02);" onmouseover="this.style.borderColor='var(--primary)'; this.style.background='rgba(59,130,246,0.05)';" onmouseout="this.style.borderColor='rgba(255,255,255,0.15)'; this.style.background='rgba(255,255,255,0.02)';">
+                                        <i class='bx bx-map-alt' style="font-size: 32px; color: var(--primary); margin-bottom: 8px; display: block;"></i>
+                                        <span style="font-size: 13px; font-weight: 500; color: var(--text-main); display: block;">Trascina qui il file o clicca per caricare</span>
+                                        <span style="font-size: 11px; color: var(--text-muted); margin-top: 4px; display: block;">Necessaria per la valutazione degli spazi e sviluppo del preventivo</span>
+                                        <input type="file" id="file-planimetria" accept=".pdf,image/*" style="display: none;">
+                                        <div id="planimetria-preview" style="margin-top: 10px; font-size: 12px; color: var(--success); font-weight: 600; display: none;"></div>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label style="display: block; margin-bottom: 8px;">Foto Struttura <span style="font-size: 11px; color: var(--text-muted); font-weight: normal;">(Interne / Esterne - JPG, PNG o ZIP)</span></label>
+                                    <div class="file-upload-dropzone" id="dropzone-foto" style="border: 2px dashed rgba(255,255,255,0.15); border-radius: 12px; padding: 20px; text-align: center; cursor: pointer; transition: all 0.3s ease; background: rgba(255,255,255,0.02);" onmouseover="this.style.borderColor='var(--primary)'; this.style.background='rgba(59,130,246,0.05)';" onmouseout="this.style.borderColor='rgba(255,255,255,0.15)'; this.style.background='rgba(255,255,255,0.02)';">
+                                        <i class='bx bx-images' style="font-size: 32px; color: var(--primary); margin-bottom: 8px; display: block;"></i>
+                                        <span style="font-size: 13px; font-weight: 500; color: var(--text-main); display: block;">Trascina qui le immagini o clicca per caricare</span>
+                                        <span style="font-size: 11px; color: var(--text-muted); margin-top: 4px; display: block;">Accetta file multipli o archivio compresso ZIP</span>
+                                        <input type="file" id="file-foto" accept="image/*,.zip" multiple style="display: none;">
+                                        <div id="foto-preview" style="margin-top: 10px; font-size: 12px; color: var(--success); font-weight: 600; display: none;"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 

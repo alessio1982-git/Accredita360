@@ -402,6 +402,9 @@ const app = {
                 this.renderRequirements(btn.dataset.filter);
             });
         });
+
+        // Setup dropzones per planimetria e foto
+        this.setupAnagraficaDropzones();
     },
 
     navigate(viewId) {
@@ -1715,13 +1718,69 @@ const app = {
         }
     },
 
+    async salvaAnagrafica() {
+        if (this.state.frozen) {
+            alert('Pratica già approvata e certificata. Impossibile modificare i dati.');
+            return;
+        }
+        const btn = document.getElementById('anag-save-btn');
+        const msg = document.getElementById('anag-save-msg');
+        if (btn) { btn.disabled = true; btn.innerHTML = `<i class='bx bx-loader-alt bx-spin'></i> Salvataggio...`; }
+
+        try {
+            const tipo = document.getElementById('titolare-tipo')?.value || 'societa';
+
+            // Raccoglie tutti i campi per nome id
+            const gv = id => document.getElementById(id)?.value?.trim() || null;
+
+            const data = {
+                tipo_titolare:    tipo,
+                ragione_sociale:  gv('anag-ragione-sociale'),
+                partita_iva:      gv('anag-partita-iva'),
+                codice_fiscale:   gv('anag-codice-fiscale'),
+                sede_legale:      gv('anag-sede-legale'),
+                nome_lr:          tipo === 'fisica' ? gv('anag-nome-pf')    : gv('anag-nome-lr'),
+                cognome_lr:       tipo === 'fisica' ? gv('anag-cognome-pf') : gv('anag-cognome-lr'),
+                cf_lr:            tipo === 'fisica' ? gv('anag-cf-pf')      : gv('anag-cf-lr'),
+                nome_struttura:   gv('anag-nome-struttura'),
+                indirizzo_op:     gv('anag-indirizzo-op'),
+                comune:           gv('anag-comune'),
+                cap:              gv('anag-cap'),
+                tel_struttura:    gv('anag-tel-struttura') || gv('anag-tel-titolare'),
+                email_struttura:  gv('anag-email-struttura'),
+                pec:              gv('anag-pec'),
+                nome_ds:          gv('anag-nome-ds'),
+                cognome_ds:       gv('anag-cognome-ds'),
+                iscrizione_albo:  gv('anag-iscrizione-albo'),
+                specializzazione: gv('anag-specializzazione'),
+                num_dipendenti:   document.getElementById('anag-dipendenti')?.value ? parseInt(document.getElementById('anag-dipendenti').value) : null,
+                superficie_totale:document.getElementById('anag-superficie')?.value ? parseFloat(document.getElementById('anag-superficie').value) : null,
+                num_ambulatori:   document.getElementById('anag-ambulatori')?.value ? parseInt(document.getElementById('anag-ambulatori').value) : null,
+                planimetria_url:  this.state.planimetriaUrl || null,
+                foto_struttura_urls: this.state.fotoUrls || null
+            };
+
+            await Backend.saveAnagrafica(data);
+            this.state.anagrafica = data;
+
+            // Feedback visivo
+            if (msg) { msg.style.display = 'inline-flex'; setTimeout(() => msg.style.display = 'none', 3000); }
+            console.log('[App] Anagrafica salvata su Supabase:', data);
+        } catch (err) {
+            console.error('[App] Errore salvaAnagrafica:', err);
+            this._showErrorToast(err.message || 'Errore salvataggio. Riprova.');
+        } finally {
+            if (btn) { btn.disabled = false; btn.innerHTML = `<i class='bx bx-save'></i> Salva Dati`; }
+        }
+    },
+
     // Popola i campi anagrafica da Supabase quando l'utente entra nella vista
     async loadAnagrafica() {
         try {
             const data = await Backend.getAnagrafica();
             if (!data) return;
-            app.state.anagrafica = data;
-            const sv = (id, val) => { const el = document.getElementById(id); if (el && val) el.value = val; };
+            this.state.anagrafica = data;
+            const sv = (id, val) => { const el = document.getElementById(id); if (el && val !== undefined && val !== null) el.value = val; };
 
             // Seleziona tipo
             const tipoEl = document.getElementById('titolare-tipo');
@@ -1749,10 +1808,174 @@ const app = {
             sv('anag-cognome-ds',      data.cognome_ds);
             sv('anag-iscrizione-albo', data.iscrizione_albo);
             sv('anag-specializzazione',data.specializzazione);
+            sv('anag-dipendenti',      data.num_dipendenti);
+            sv('anag-superficie',      data.superficie_totale);
+            sv('anag-ambulatori',      data.num_ambulatori);
+
+            // Popola stato file caricati
+            this.state.planimetriaUrl = data.planimetria_url || null;
+            this.state.fotoUrls       = data.foto_struttura_urls || null;
+
+            // Renderizza preview se già presenti
+            const planPreview = document.getElementById('planimetria-preview');
+            if (planPreview && data.planimetria_url) {
+                planPreview.style.display = 'block';
+                planPreview.innerHTML = `<i class='bx bx-check-circle'></i> Planimetria caricata: <a href="${data.planimetria_url}" target="_blank" style="color:var(--primary);text-decoration:underline;">Visualizza</a>`;
+            } else if (planPreview) {
+                planPreview.style.display = 'none';
+            }
+
+            const fotoPreview = document.getElementById('foto-preview');
+            if (fotoPreview && data.foto_struttura_urls && data.foto_struttura_urls.length > 0) {
+                fotoPreview.style.display = 'block';
+                fotoPreview.innerHTML = `<i class='bx bx-check-circle'></i> ${data.foto_struttura_urls.length} foto caricate. <a href="#" onclick="app.showFotoGallery(event)" style="color:var(--primary);text-decoration:underline;">Visualizza Galleria</a>`;
+            } else if (fotoPreview) {
+                fotoPreview.style.display = 'none';
+            }
+
             console.log('[App] Anagrafica caricata da Supabase.');
         } catch (err) {
             console.warn('[App] loadAnagrafica:', err);
         }
+    },
+
+    setupAnagraficaDropzones() {
+        const setupDropzone = (dropzoneId, inputId, previewId, isMultiple) => {
+            const dropzone = document.getElementById(dropzoneId);
+            const input = document.getElementById(inputId);
+            const preview = document.getElementById(previewId);
+
+            if (!dropzone || !input || !preview) return;
+
+            // Al click sulla dropzone, si apre la finestra del browser
+            dropzone.addEventListener('click', () => {
+                if (this.state.frozen) return;
+                input.click();
+            });
+
+            // Evidenziazione al dragover
+            dropzone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                if (this.state.frozen) return;
+                dropzone.style.borderColor = 'var(--primary)';
+                dropzone.style.background = 'rgba(59,130,246,0.08)';
+            });
+
+            dropzone.addEventListener('dragleave', () => {
+                dropzone.style.borderColor = 'rgba(255,255,255,0.15)';
+                dropzone.style.background = 'rgba(255,255,255,0.02)';
+            });
+
+            // Gestione dei file rilasciati o selezionati
+            const handleFiles = async (files) => {
+                if (this.state.frozen) return;
+                if (!files || files.length === 0) return;
+
+                preview.style.display = 'block';
+                preview.style.color = 'var(--text-muted)';
+                preview.innerHTML = `<i class='bx bx-loader-alt bx-spin'></i> Caricamento in corso...`;
+
+                try {
+                    if (isMultiple) {
+                        const urls = this.state.fotoUrls ? [...this.state.fotoUrls] : [];
+                        for (const file of files) {
+                            const res = await Backend.uploadAnagraficaFile(file.name, file);
+                            if (res.url) urls.push(res.url);
+                        }
+                        this.state.fotoUrls = urls;
+                        preview.style.color = 'var(--success)';
+                        preview.innerHTML = `<i class='bx bx-check-circle'></i> Caricate ${files.length} foto con successo! <a href="#" onclick="app.showFotoGallery(event)" style="color:var(--primary);text-decoration:underline;">Visualizza</a>`;
+                    } else {
+                        const file = files[0];
+                        const res = await Backend.uploadAnagraficaFile(file.name, file);
+                        this.state.planimetriaUrl = res.url;
+                        preview.style.color = 'var(--success)';
+                        preview.innerHTML = `<i class='bx bx-check-circle'></i> Planimetria caricata con successo! <a href="${res.url}" target="_blank" style="color:var(--primary);text-decoration:underline;">Apri</a>`;
+                    }
+                } catch (err) {
+                    console.error("[Dropzone] Errore caricamento file:", err);
+                    preview.style.color = 'var(--danger)';
+                    preview.innerHTML = `<i class='bx bx-error-circle'></i> Errore: ${err.message || 'riprova.'}`;
+                }
+            };
+
+            dropzone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                dropzone.style.borderColor = 'rgba(255,255,255,0.15)';
+                dropzone.style.background = 'rgba(255,255,255,0.02)';
+                handleFiles(e.dataTransfer.files);
+            });
+
+            input.addEventListener('change', () => {
+                handleFiles(input.files);
+            });
+        };
+
+        setupDropzone('dropzone-planimetria', 'file-planimetria', 'planimetria-preview', false);
+        setupDropzone('dropzone-foto', 'file-foto', 'foto-preview', true);
+    },
+
+    showFotoGallery(e) {
+        if (e) e.preventDefault();
+        if (!this.state.fotoUrls || this.state.fotoUrls.length === 0) return;
+        
+        let modal = document.getElementById('gallery-modal');
+        let overlay = document.getElementById('gallery-overlay');
+        
+        if (!modal) {
+            modal = document.createElement('div');
+            modal.id = 'gallery-modal';
+            modal.style.position = 'fixed';
+            modal.style.top = '50%';
+            modal.style.left = '50%';
+            modal.style.transform = 'translate(-50%, -50%)';
+            modal.style.zIndex = '10000';
+            modal.style.padding = '24px';
+            modal.style.maxWidth = '600px';
+            modal.style.width = '90%';
+            modal.style.maxHeight = '80vh';
+            modal.style.overflowY = 'auto';
+            modal.style.background = 'var(--bg-main, #0b1329)';
+            modal.style.border = '1px solid rgba(255,255,255,0.1)';
+            modal.style.borderRadius = '16px';
+            modal.style.boxShadow = '0 20px 40px rgba(0,0,0,0.6)';
+            modal.style.backdropFilter = 'blur(20px)';
+            
+            overlay = document.createElement('div');
+            overlay.id = 'gallery-overlay';
+            overlay.style.position = 'fixed';
+            overlay.style.top = '0';
+            overlay.style.left = '0';
+            overlay.style.width = '100vw';
+            overlay.style.height = '100vh';
+            overlay.style.background = 'rgba(0,0,0,0.7)';
+            overlay.style.zIndex = '9999';
+            overlay.addEventListener('click', () => {
+                modal.style.display = 'none';
+                overlay.style.display = 'none';
+            });
+            
+            document.body.appendChild(overlay);
+            document.body.appendChild(modal);
+        }
+        
+        overlay.style.display = 'block';
+        modal.style.display = 'block';
+        
+        modal.innerHTML = `
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+                <h4 style="margin:0; color:var(--primary); font-size:18px;"><i class='bx bx-images'></i> Galleria Foto Struttura</h4>
+                <button class="btn btn-outline" style="padding:4px 10px; font-size:12px;" onclick="document.getElementById('gallery-modal').style.display='none'; document.getElementById('gallery-overlay').style.display='none';">Chiudi</button>
+            </div>
+            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap:12px;">
+                ${this.state.fotoUrls.map(url => `
+                    <div style="border-radius:8px; overflow:hidden; border:1px solid rgba(255,255,255,0.1); position:relative; background:#1e293b;">
+                        <img src="${url}" style="width:100%; height:110px; object-fit:cover; display:block;" />
+                        <a href="${url}" target="_blank" style="position:absolute; bottom:4px; right:4px; background:rgba(0,0,0,0.6); color:white; border-radius:4px; padding:2px 6px; font-size:11px; text-decoration:none;"><i class='bx bx-zoom-in'></i></a>
+                    </div>
+                `).join('')}
+            </div>
+        `;
     },
 
     doLogout() {
@@ -1773,7 +1996,9 @@ app.state = {
     requiredDocs:  { autorizzazioneSanitaria: [], accreditamentoOta: [], convenzionamento: [] },
     compliantDocs: [],
     processingIds: new Set(),
-    frozen:        false
+    frozen:        false,
+    planimetriaUrl: null,
+    fotoUrls:      null
 };
 
 // ── Blocco Pratica e Real-time Bridge ─────────────────────────────────────────
