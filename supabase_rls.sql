@@ -62,6 +62,7 @@ DROP POLICY IF EXISTS "users_select_own"   ON public.users;
 DROP POLICY IF EXISTS "users_select_admin" ON public.users;
 DROP POLICY IF EXISTS "users_insert_reg"   ON public.users;
 DROP POLICY IF EXISTS "users_update_own"   ON public.users;
+DROP POLICY IF EXISTS "users_update_admin" ON public.users;
 
 -- Utente vede solo se stesso se attivo o admin
 CREATE POLICY "users_select_own" ON public.users
@@ -78,6 +79,10 @@ CREATE POLICY "users_insert_reg" ON public.users
 -- Utente aggiorna solo il proprio profilo se attivo o admin
 CREATE POLICY "users_update_own" ON public.users
   FOR UPDATE USING (email = public.current_user_email() AND (registration_status = 'active' OR role = 'admin'));
+
+-- Admin aggiorna qualsiasi profilo utente (es. per assegnazione consulente)
+CREATE POLICY "users_update_admin" ON public.users
+  FOR UPDATE USING (public.is_admin());
 
 -- ────────────────────────────────────────────────────────────
 -- 4. POLICIES — TABELLA: structures
