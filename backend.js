@@ -267,6 +267,10 @@ const Backend = {
             num_ambulatori:      data.num_ambulatori       || null,
             planimetria_url:     data.planimetria_url      || null,
             foto_struttura_urls: data.foto_struttura_urls  || null,
+            privacy_accettata:   data.privacy_accettata   || false,
+            termini_accettati:   data.termini_accettati   || false,
+            data_accettazione:   data.data_accettazione   || null,
+            versione_documento:  data.versione_documento  || 'v1.0',
             updated_at:          new Date().toISOString()
         };
 

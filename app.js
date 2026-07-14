@@ -1669,57 +1669,6 @@ const app = {
 
     async salvaAnagrafica() {
         if (this.state.frozen) {
-            this._showErrorToast('La pratica è certificata e bloccata. Non è possibile salvare modifiche all\'anagrafica.');
-            return;
-        }
-        const btn = document.getElementById('anag-save-btn');
-        const msg = document.getElementById('anag-save-msg');
-        if (btn) { btn.disabled = true; btn.innerHTML = `<i class='bx bx-loader-alt bx-spin'></i> Salvataggio...`; }
-
-        try {
-            const tipo = document.getElementById('titolare-tipo')?.value || 'societa';
-
-            // Raccoglie tutti i campi per nome id
-            const gv = id => document.getElementById(id)?.value?.trim() || null;
-
-            const data = {
-                tipo_titolare:    tipo,
-                ragione_sociale:  gv('anag-ragione-sociale'),
-                partita_iva:      gv('anag-partita-iva'),
-                codice_fiscale:   gv('anag-codice-fiscale'),
-                sede_legale:      gv('anag-sede-legale'),
-                nome_lr:          tipo === 'fisica' ? gv('anag-nome-pf')    : gv('anag-nome-lr'),
-                cognome_lr:       tipo === 'fisica' ? gv('anag-cognome-pf') : gv('anag-cognome-lr'),
-                cf_lr:            tipo === 'fisica' ? gv('anag-cf-pf')      : gv('anag-cf-lr'),
-                nome_struttura:   gv('anag-nome-struttura'),
-                indirizzo_op:     gv('anag-indirizzo-op'),
-                comune:           gv('anag-comune'),
-                cap:              gv('anag-cap'),
-                tel_struttura:    gv('anag-tel-struttura') || gv('anag-tel-titolare'),
-                email_struttura:  gv('anag-email-struttura'),
-                pec:              gv('anag-pec'),
-                nome_ds:          gv('anag-nome-ds'),
-                cognome_ds:       gv('anag-cognome-ds'),
-                iscrizione_albo:  gv('anag-iscrizione-albo'),
-                specializzazione: gv('anag-specializzazione'),
-            };
-
-            await Backend.saveAnagrafica(data);
-            app.state.anagrafica = data;
-
-            // Feedback visivo
-            if (msg) { msg.style.display = 'inline-flex'; setTimeout(() => msg.style.display = 'none', 3000); }
-            console.log('[App] Anagrafica salvata su Supabase:', data);
-        } catch (err) {
-            console.error('[App] Errore salvaAnagrafica:', err);
-            this._showErrorToast(err.message || 'Errore salvataggio. Riprova.');
-        } finally {
-            if (btn) { btn.disabled = false; btn.innerHTML = `<i class='bx bx-save'></i> Salva Dati`; }
-        }
-    },
-
-    async salvaAnagrafica() {
-        if (this.state.frozen) {
             alert('Pratica già approvata e certificata. Impossibile modificare i dati.');
             return;
         }
@@ -1734,34 +1683,46 @@ const app = {
             const gv = id => document.getElementById(id)?.value?.trim() || null;
 
             const data = {
-                tipo_titolare:    tipo,
-                ragione_sociale:  gv('anag-ragione-sociale'),
-                partita_iva:      gv('anag-partita-iva'),
-                codice_fiscale:   gv('anag-codice-fiscale'),
-                sede_legale:      gv('anag-sede-legale'),
-                nome_lr:          tipo === 'fisica' ? gv('anag-nome-pf')    : gv('anag-nome-lr'),
-                cognome_lr:       tipo === 'fisica' ? gv('anag-cognome-pf') : gv('anag-cognome-lr'),
-                cf_lr:            tipo === 'fisica' ? gv('anag-cf-pf')      : gv('anag-cf-lr'),
-                nome_struttura:   gv('anag-nome-struttura'),
-                indirizzo_op:     gv('anag-indirizzo-op'),
-                comune:           gv('anag-comune'),
-                cap:              gv('anag-cap'),
-                tel_struttura:    gv('anag-tel-struttura') || gv('anag-tel-titolare'),
-                email_struttura:  gv('anag-email-struttura'),
-                pec:              gv('anag-pec'),
-                nome_ds:          gv('anag-nome-ds'),
-                cognome_ds:       gv('anag-cognome-ds'),
-                iscrizione_albo:  gv('anag-iscrizione-albo'),
-                specializzazione: gv('anag-specializzazione'),
-                num_dipendenti:   document.getElementById('anag-dipendenti')?.value ? parseInt(document.getElementById('anag-dipendenti').value) : null,
-                superficie_totale:document.getElementById('anag-superficie')?.value ? parseFloat(document.getElementById('anag-superficie').value) : null,
-                num_ambulatori:   document.getElementById('anag-ambulatori')?.value ? parseInt(document.getElementById('anag-ambulatori').value) : null,
-                planimetria_url:  this.state.planimetriaUrl || null,
-                foto_struttura_urls: this.state.fotoUrls || null
+                tipo_titolare:       tipo,
+                ragione_sociale:     gv('anag-ragione-sociale'),
+                partita_iva:         gv('anag-partita-iva'),
+                codice_fiscale:      gv('anag-codice-fiscale'),
+                sede_legale:         gv('anag-sede-legale'),
+                nome_lr:             tipo === 'fisica' ? gv('anag-nome-pf')    : gv('anag-nome-lr'),
+                cognome_lr:          tipo === 'fisica' ? gv('anag-cognome-pf') : gv('anag-cognome-lr'),
+                cf_lr:               tipo === 'fisica' ? gv('anag-cf-pf')      : gv('anag-cf-lr'),
+                nome_struttura:      gv('anag-nome-struttura'),
+                indirizzo_op:        gv('anag-indirizzo-op'),
+                comune:              gv('anag-comune'),
+                cap:                 gv('anag-cap'),
+                tel_struttura:       gv('anag-tel-struttura') || gv('anag-tel-titolare'),
+                email_struttura:     gv('anag-email-struttura'),
+                pec:                 gv('anag-pec'),
+                nome_ds:             gv('anag-nome-ds'),
+                cognome_ds:          gv('anag-cognome-ds'),
+                iscrizione_albo:     gv('anag-iscrizione-albo'),
+                specializzazione:    gv('anag-specializzazione'),
+                num_dipendenti:      document.getElementById('anag-dipendenti')?.value ? parseInt(document.getElementById('anag-dipendenti').value) : null,
+                superficie_totale:   document.getElementById('anag-superficie')?.value ? parseFloat(document.getElementById('anag-superficie').value) : null,
+                num_ambulatori:      document.getElementById('anag-ambulatori')?.value ? parseInt(document.getElementById('anag-ambulatori').value) : null,
+                planimetria_url:     this.state.planimetriaUrl || null,
+                foto_struttura_urls: this.state.fotoUrls || null,
+                privacy_accettata:   document.getElementById('chk-privacy')?.checked || false,
+                termini_accettati:   document.getElementById('chk-terms')?.checked || false,
+                data_accettazione:   (document.getElementById('chk-privacy')?.checked && document.getElementById('chk-terms')?.checked) ? new Date().toISOString() : null,
+                versione_documento:  'v1.0'
             };
 
             await Backend.saveAnagrafica(data);
             this.state.anagrafica = data;
+
+            // Se salvato con successo e i consensi sono attivi, disabilita le checkbox
+            if (data.privacy_accettata && data.termini_accettati) {
+                const chkP = document.getElementById('chk-privacy');
+                const chkT = document.getElementById('chk-terms');
+                if (chkP) chkP.disabled = true;
+                if (chkT) chkT.disabled = true;
+            }
 
             // Feedback visivo
             if (msg) { msg.style.display = 'inline-flex'; setTimeout(() => msg.style.display = 'none', 3000); }
@@ -1778,7 +1739,11 @@ const app = {
     async loadAnagrafica() {
         try {
             const data = await Backend.getAnagrafica();
-            if (!data) return;
+            if (!data) {
+                // Se non c'è anagrafica, disabilita il salvataggio per clickwrap vuoti
+                this.validateConsents();
+                return;
+            }
             this.state.anagrafica = data;
             const sv = (id, val) => { const el = document.getElementById(id); if (el && val !== undefined && val !== null) el.value = val; };
 
@@ -1832,6 +1797,21 @@ const app = {
             } else if (fotoPreview) {
                 fotoPreview.style.display = 'none';
             }
+
+            // Popola consensi legali
+            const chkP = document.getElementById('chk-privacy');
+            const chkT = document.getElementById('chk-terms');
+            if (chkP) {
+                chkP.checked = data.privacy_accettata || false;
+                if (data.privacy_accettata) chkP.disabled = true;
+            }
+            if (chkT) {
+                chkT.checked = data.termini_accettati || false;
+                if (data.termini_accettati) chkT.disabled = true;
+            }
+
+            // Valida stato del pulsante Salva
+            this.validateConsents();
 
             console.log('[App] Anagrafica caricata da Supabase.');
         } catch (err) {
@@ -1974,6 +1954,108 @@ const app = {
                         <a href="${url}" target="_blank" style="position:absolute; bottom:4px; right:4px; background:rgba(0,0,0,0.6); color:white; border-radius:4px; padding:2px 6px; font-size:11px; text-decoration:none;"><i class='bx bx-zoom-in'></i></a>
                     </div>
                 `).join('')}
+            </div>
+        `;
+    },
+
+    validateConsents() {
+        if (this.state.frozen) return;
+        
+        const chkPrivacy = document.getElementById('chk-privacy');
+        const chkTerms = document.getElementById('chk-terms');
+        const saveBtn = document.getElementById('anag-save-btn');
+        
+        if (!saveBtn) return;
+        
+        const allChecked = (chkPrivacy?.checked && chkTerms?.checked);
+        
+        if (allChecked) {
+            saveBtn.disabled = false;
+            saveBtn.style.opacity = '1';
+            saveBtn.style.pointerEvents = 'auto';
+        } else {
+            saveBtn.disabled = true;
+            saveBtn.style.opacity = '0.5';
+            saveBtn.style.pointerEvents = 'none';
+        }
+    },
+
+    showPrivacyPolicy(e) {
+        if (e) e.preventDefault();
+        const html = `
+            <p><strong>INFORMATIVA SUL TRATTAMENTO DEI DATI PERSONALI (GDPR)</strong></p>
+            <p>Ai sensi del Regolamento UE 2016/679 (GDPR), si informa l'utente che i dati personali raccolti tramite il form di Anagrafica saranno trattati esclusivamente per l'erogazione del servizio di conformità e per le procedure di accreditamento istituzionale di Accredita360.</p>
+            <p><strong>1. Finalità del trattamento:</strong> Gestione e verifica dei requisiti strutturali, organizzativi e tecnologici della struttura sanitaria, collegamento con consulenti assegnati e amministratori.</p>
+            <p><strong>2. Conservazione:</strong> I dati saranno conservati in modo sicuro sui database cifrati di Supabase per il periodo necessario all'esecuzione dei servizi contrattuali e agli obblighi normativi.</p>
+            <p><strong>3. Diritti dell'interessato:</strong> L'utente può esercitare in qualsiasi momento i diritti di accesso, rettifica, cancellazione o opposizione scrivendo all'indirizzo email di supporto.</p>
+        `;
+        this.showLegalModal("Informativa Privacy - Accredita360", html);
+    },
+
+    showTermsAndConditions(e) {
+        if (e) e.preventDefault();
+        const html = `
+            <p><strong>CONTRATTO DI LICENZA D'USO E TERMINI DI SERVIZIO (SaaS)</strong></p>
+            <p>Il presente documento definisce i termini contrattuali per l'utilizzo della piattaforma software SaaS Accredita360 da parte della struttura registrata.</p>
+            <p><strong>1. Licenza d'uso:</strong> Viene concessa una licenza limitata, non esclusiva e non trasferibile per l'utilizzo della piattaforma per scopi di autovalutazione e accreditamento.</p>
+            <p><strong>2. Obbligo di Pagamento:</strong> L'accesso completo alle funzionalità di Gap Analysis, caricamento documentale e rilascio attestati è subordinato alla sottoscrizione e al regolare pagamento del piano tariffario prescelto.</p>
+            <p><strong>3. Responsabilità:</strong> Accredita360 fornisce strumenti di supporto ma non garantisce l'ottenimento automatico del provvedimento da parte delle autorità ASP, che rimane sotto l'esclusiva responsabilità della struttura sanitaria.</p>
+            <p><strong>4. Versione:</strong> Contratto di Servizio v1.0.</p>
+        `;
+        this.showLegalModal("Termini e Condizioni di Servizio", html);
+    },
+
+    showLegalModal(title, contentHtml) {
+        let modal = document.getElementById('legal-modal');
+        let overlay = document.getElementById('legal-overlay');
+        
+        if (!modal) {
+            modal = document.createElement('div');
+            modal.id = 'legal-modal';
+            modal.style.position = 'fixed';
+            modal.style.top = '50%';
+            modal.style.left = '50%';
+            modal.style.transform = 'translate(-50%, -50%)';
+            modal.style.zIndex = '10000';
+            modal.style.padding = '24px';
+            modal.style.maxWidth = '650px';
+            modal.style.width = '90%';
+            modal.style.maxHeight = '80vh';
+            modal.style.overflowY = 'auto';
+            modal.style.background = 'var(--bg-main, #0b1329)';
+            modal.style.border = '1px solid rgba(255,255,255,0.1)';
+            modal.style.borderRadius = '16px';
+            modal.style.boxShadow = '0 20px 40px rgba(0,0,0,0.6)';
+            modal.style.backdropFilter = 'blur(20px)';
+            
+            overlay = document.createElement('div');
+            overlay.id = 'legal-overlay';
+            overlay.style.position = 'fixed';
+            overlay.style.top = '0';
+            overlay.style.left = '0';
+            overlay.style.width = '100vw';
+            overlay.style.height = '100vh';
+            overlay.style.background = 'rgba(0,0,0,0.7)';
+            overlay.style.zIndex = '9999';
+            overlay.addEventListener('click', () => {
+                modal.style.display = 'none';
+                overlay.style.display = 'none';
+            });
+            
+            document.body.appendChild(overlay);
+            document.body.appendChild(modal);
+        }
+        
+        overlay.style.display = 'block';
+        modal.style.display = 'block';
+        
+        modal.innerHTML = `
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:12px;">
+                <h4 style="margin:0; color:var(--primary); font-size:18px;"><i class='bx bx-book-bookmark'></i> ${title}</h4>
+                <button class="btn btn-outline" style="padding:4px 10px; font-size:12px;" onclick="document.getElementById('legal-modal').style.display='none'; document.getElementById('legal-overlay').style.display='none';">Chiudi</button>
+            </div>
+            <div style="font-size:13px; color:var(--text-main); line-height:1.6; max-height:60vh; overflow-y:auto; padding-right:8px;">
+                ${contentHtml}
             </div>
         `;
     },
