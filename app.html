@@ -232,7 +232,7 @@
                         </div>
 
                         <!-- Dati Titolare -->
-                        <div class="glass-card">
+                        <div class="glass-card" style="grid-column: 1 / -1;">
                             <h4 style="margin-bottom: 20px; color: var(--primary); font-size: 18px;"><i class='bx bx-user-pin'></i> Dati Titolare</h4>
                             <div class="form-group">
                                 <label>Natura Giuridica</label>
@@ -305,9 +305,31 @@
                                     <input type="tel" id="anag-tel-titolare" class="input-box" placeholder="es. 333 1234567">
                                 </div>
                             </div>
+                            <!-- Box allegati legali titolare -->
+                            <h5 style="margin: 20px 0 8px; color: var(--text-muted); border-top: 1px solid rgba(255,255,255,0.05); padding-top: 16px;">Allegati Titolare <span style="font-size: 11px; font-weight: normal; color: var(--text-muted);">(Carta d'Identità e Tessera Sanitaria obbligatorie)</span></h5>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 10px;">
+                                <div class="form-group">
+                                    <label style="display: block; margin-bottom: 8px;">Carta d'Identità Titolare <span style="font-size: 11px; color: var(--text-muted); font-weight: normal;">(PDF, PNG, JPG)</span></label>
+                                    <div class="file-upload-dropzone" id="dropzone-titolare-ci" style="border: 2px dashed rgba(255,255,255,0.15); border-radius: 12px; padding: 16px; text-align: center; cursor: pointer; transition: all 0.3s ease; background: rgba(255,255,255,0.02);" onmouseover="this.style.borderColor='var(--primary)'; this.style.background='rgba(59,130,246,0.05)';" onmouseout="this.style.borderColor='rgba(255,255,255,0.15)'; this.style.background='rgba(255,255,255,0.02)';">
+                                        <i class='bx bx-id-card' style="font-size: 28px; color: var(--primary); margin-bottom: 6px; display: block;"></i>
+                                        <span style="font-size: 12px; font-weight: 500; color: var(--text-main); display: block;">Trascina o clicca per caricare</span>
+                                        <input type="file" id="file-titolare-ci" accept=".pdf,image/*" style="display: none;">
+                                        <div id="titolare-ci-preview" style="margin-top: 8px; font-size: 11px; color: var(--success); font-weight: 600; display: none;"></div>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label style="display: block; margin-bottom: 8px;">Tessera Sanitaria / Codice Fiscale <span style="font-size: 11px; color: var(--text-muted); font-weight: normal;">(PDF, PNG, JPG)</span></label>
+                                    <div class="file-upload-dropzone" id="dropzone-titolare-ts" style="border: 2px dashed rgba(255,255,255,0.15); border-radius: 12px; padding: 16px; text-align: center; cursor: pointer; transition: all 0.3s ease; background: rgba(255,255,255,0.02);" onmouseover="this.style.borderColor='var(--primary)'; this.style.background='rgba(59,130,246,0.05)';" onmouseout="this.style.borderColor='rgba(255,255,255,0.15)'; this.style.background='rgba(255,255,255,0.02)';">
+                                        <i class='bx bx-credit-card-front' style="font-size: 28px; color: var(--primary); margin-bottom: 6px; display: block;"></i>
+                                        <span style="font-size: 12px; font-weight: 500; color: var(--text-main); display: block;">Trascina o clicca per caricare</span>
+                                        <input type="file" id="file-titolare-ts" accept=".pdf,image/*" style="display: none;">
+                                        <div id="titolare-ts-preview" style="margin-top: 8px; font-size: 11px; color: var(--success); font-weight: 600; display: none;"></div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                         <!-- Sede Operativa + Direttore Sanitario -->
-                        <div class="glass-card">
+                        <div class="glass-card" style="grid-column: 1 / -1;">
                             <h4 style="margin-bottom: 20px; color: var(--primary); font-size: 18px;"><i class='bx bx-clinic'></i> Sede Operativa & Direttore Sanitario</h4>
                             <div class="form-group">
                                 <label>Denominazione / Insegna Struttura</label>
@@ -359,6 +381,28 @@
                                     <input type="tel" id="anag-tel-struttura" class="input-box" placeholder="es. 091 123456">
                                 </div>
                             </div>
+                            <!-- Box allegati legali direttore sanitario -->
+                            <h5 style="margin: 20px 0 8px; color: var(--text-muted); border-top: 1px solid rgba(255,255,255,0.05); padding-top: 16px;">Allegati Direttore Sanitario <span style="font-size: 11px; font-weight: normal; color: var(--text-muted);">(Carta d'Identità e Tessera Sanitaria obbligatorie)</span></h5>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 10px;">
+                                <div class="form-group">
+                                    <label style="display: block; margin-bottom: 8px;">Carta d'Identità Dir. Sanitario <span style="font-size: 11px; color: var(--text-muted); font-weight: normal;">(PDF, PNG, JPG)</span></label>
+                                    <div class="file-upload-dropzone" id="dropzone-ds-ci" style="border: 2px dashed rgba(255,255,255,0.15); border-radius: 12px; padding: 16px; text-align: center; cursor: pointer; transition: all 0.3s ease; background: rgba(255,255,255,0.02);" onmouseover="this.style.borderColor='var(--primary)'; this.style.background='rgba(59,130,246,0.05)';" onmouseout="this.style.borderColor='rgba(255,255,255,0.15)'; this.style.background='rgba(255,255,255,0.02)';">
+                                        <i class='bx bx-id-card' style="font-size: 28px; color: var(--primary); margin-bottom: 6px; display: block;"></i>
+                                        <span style="font-size: 12px; font-weight: 500; color: var(--text-main); display: block;">Trascina o clicca per caricare</span>
+                                        <input type="file" id="file-ds-ci" accept=".pdf,image/*" style="display: none;">
+                                        <div id="ds-ci-preview" style="margin-top: 8px; font-size: 11px; color: var(--success); font-weight: 600; display: none;"></div>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label style="display: block; margin-bottom: 8px;">Tessera Sanitaria / Codice Fiscale <span style="font-size: 11px; color: var(--text-muted); font-weight: normal;">(PDF, PNG, JPG)</span></label>
+                                    <div class="file-upload-dropzone" id="dropzone-ds-ts" style="border: 2px dashed rgba(255,255,255,0.15); border-radius: 12px; padding: 16px; text-align: center; cursor: pointer; transition: all 0.3s ease; background: rgba(255,255,255,0.02);" onmouseover="this.style.borderColor='var(--primary)'; this.style.background='rgba(59,130,246,0.05)';" onmouseout="this.style.borderColor='rgba(255,255,255,0.15)'; this.style.background='rgba(255,255,255,0.02)';">
+                                        <i class='bx bx-credit-card-front' style="font-size: 28px; color: var(--primary); margin-bottom: 6px; display: block;"></i>
+                                        <span style="font-size: 12px; font-weight: 500; color: var(--text-main); display: block;">Trascina o clicca per caricare</span>
+                                        <input type="file" id="file-ds-ts" accept=".pdf,image/*" style="display: none;">
+                                        <div id="ds-ts-preview" style="margin-top: 8px; font-size: 11px; color: var(--success); font-weight: 600; display: none;"></div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                         <!-- Card Dimensioni e Logistica Struttura -->
                         <div class="glass-card" style="grid-column: 1 / -1; margin-top: 10px;">
@@ -381,25 +425,35 @@
                             </div>
                             
                             <!-- RIGA 2: Upload Planimetria e Foto -->
-                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+                            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px;">
                                 <div class="form-group">
-                                    <label style="display: block; margin-bottom: 8px;">Planimetria della Struttura <span style="font-size: 11px; color: var(--text-muted); font-weight: normal;">(PDF, PNG, JPG)</span></label>
+                                    <label style="display: block; margin-bottom: 8px;">Planimetria Struttura <span style="font-size: 11px; color: var(--text-muted); font-weight: normal;">(PDF o Immagine)</span></label>
                                     <div class="file-upload-dropzone" id="dropzone-planimetria" style="border: 2px dashed rgba(255,255,255,0.15); border-radius: 12px; padding: 20px; text-align: center; cursor: pointer; transition: all 0.3s ease; background: rgba(255,255,255,0.02);" onmouseover="this.style.borderColor='var(--primary)'; this.style.background='rgba(59,130,246,0.05)';" onmouseout="this.style.borderColor='rgba(255,255,255,0.15)'; this.style.background='rgba(255,255,255,0.02)';">
                                         <i class='bx bx-map-alt' style="font-size: 32px; color: var(--primary); margin-bottom: 8px; display: block;"></i>
                                         <span style="font-size: 13px; font-weight: 500; color: var(--text-main); display: block;">Trascina qui il file o clicca per caricare</span>
-                                        <span style="font-size: 11px; color: var(--text-muted); margin-top: 4px; display: block;">Necessaria per la valutazione degli spazi e sviluppo del preventivo</span>
+                                        <span style="font-size: 11px; color: var(--text-muted); margin-top: 4px; display: block;">Necessaria per la valutazione degli spazi e preventivo</span>
                                         <input type="file" id="file-planimetria" accept=".pdf,image/*" style="display: none;">
                                         <div id="planimetria-preview" style="margin-top: 10px; font-size: 12px; color: var(--success); font-weight: 600; display: none;"></div>
                                     </div>
                                 </div>
                                 <div class="form-group">
-                                    <label style="display: block; margin-bottom: 8px;">Foto Struttura <span style="font-size: 11px; color: var(--text-muted); font-weight: normal;">(Interne / Esterne - JPG, PNG o ZIP)</span></label>
+                                    <label style="display: block; margin-bottom: 8px;">Foto Struttura <span style="font-size: 11px; color: var(--text-muted); font-weight: normal;">(Interne/Esterne - JPG, ZIP)</span></label>
                                     <div class="file-upload-dropzone" id="dropzone-foto" style="border: 2px dashed rgba(255,255,255,0.15); border-radius: 12px; padding: 20px; text-align: center; cursor: pointer; transition: all 0.3s ease; background: rgba(255,255,255,0.02);" onmouseover="this.style.borderColor='var(--primary)'; this.style.background='rgba(59,130,246,0.05)';" onmouseout="this.style.borderColor='rgba(255,255,255,0.15)'; this.style.background='rgba(255,255,255,0.02)';">
                                         <i class='bx bx-images' style="font-size: 32px; color: var(--primary); margin-bottom: 8px; display: block;"></i>
-                                        <span style="font-size: 13px; font-weight: 500; color: var(--text-main); display: block;">Trascina qui le immagini o clicca per caricare</span>
-                                        <span style="font-size: 11px; color: var(--text-muted); margin-top: 4px; display: block;">Accetta file multipli o archivio compresso ZIP</span>
+                                        <span style="font-size: 13px; font-weight: 500; color: var(--text-main); display: block;">Trascina o clicca per caricare</span>
+                                        <span style="font-size: 11px; color: var(--text-muted); margin-top: 4px; display: block;">Accetta file multipli o archivio ZIP</span>
                                         <input type="file" id="file-foto" accept="image/*,.zip" multiple style="display: none;">
                                         <div id="foto-preview" style="margin-top: 10px; font-size: 12px; color: var(--success); font-weight: 600; display: none;"></div>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label style="display: block; margin-bottom: 8px;">Video Struttura <span style="font-size: 11px; color: var(--text-muted); font-weight: normal;">(Interno/Esterno - MP4, MOV)</span></label>
+                                    <div class="file-upload-dropzone" id="dropzone-video" style="border: 2px dashed rgba(255,255,255,0.15); border-radius: 12px; padding: 20px; text-align: center; cursor: pointer; transition: all 0.3s ease; background: rgba(255,255,255,0.02);" onmouseover="this.style.borderColor='var(--primary)'; this.style.background='rgba(59,130,246,0.05)';" onmouseout="this.style.borderColor='rgba(255,255,255,0.15)'; this.style.background='rgba(255,255,255,0.02)';">
+                                        <i class='bx bx-video' style="font-size: 32px; color: var(--primary); margin-bottom: 8px; display: block;"></i>
+                                        <span style="font-size: 13px; font-weight: 500; color: var(--text-main); display: block;">Trascina qui il video o clicca per caricare</span>
+                                        <span style="font-size: 11px; color: var(--text-muted); margin-top: 4px; display: block;">Video dettagliato commentato dall'ingresso a tutti i locali</span>
+                                        <input type="file" id="file-video" accept="video/*" style="display: none;">
+                                        <div id="video-preview" style="margin-top: 10px; font-size: 12px; color: var(--success); font-weight: 600; display: none;"></div>
                                     </div>
                                 </div>
                             </div>

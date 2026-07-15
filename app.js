@@ -1707,6 +1707,11 @@ const app = {
                 num_ambulatori:      document.getElementById('anag-ambulatori')?.value ? parseInt(document.getElementById('anag-ambulatori').value) : null,
                 planimetria_url:     this.state.planimetriaUrl || null,
                 foto_struttura_urls: this.state.fotoUrls || null,
+                titolare_ci_url:     this.state.titolareCiUrl || null,
+                titolare_ts_url:     this.state.titolareTsUrl || null,
+                ds_ci_url:           this.state.dsCiUrl || null,
+                ds_ts_url:           this.state.dsTsUrl || null,
+                video_struttura_url: this.state.videoStrutturaUrl || null,
                 privacy_accettata:   document.getElementById('chk-privacy')?.checked || false,
                 termini_accettati:   document.getElementById('chk-terms')?.checked || false,
                 data_accettazione:   (document.getElementById('chk-privacy')?.checked && document.getElementById('chk-terms')?.checked) ? new Date().toISOString() : null,
@@ -1780,6 +1785,11 @@ const app = {
             // Popola stato file caricati
             this.state.planimetriaUrl = data.planimetria_url || null;
             this.state.fotoUrls       = data.foto_struttura_urls || null;
+            this.state.titolareCiUrl  = data.titolare_ci_url || null;
+            this.state.titolareTsUrl  = data.titolare_ts_url || null;
+            this.state.dsCiUrl        = data.ds_ci_url || null;
+            this.state.dsTsUrl        = data.ds_ts_url || null;
+            this.state.videoStrutturaUrl = data.video_struttura_url || null;
 
             // Renderizza preview se già presenti
             const planPreview = document.getElementById('planimetria-preview');
@@ -1796,6 +1806,46 @@ const app = {
                 fotoPreview.innerHTML = `<i class='bx bx-check-circle'></i> ${data.foto_struttura_urls.length} foto caricate. <a href="#" onclick="app.showFotoGallery(event)" style="color:var(--primary);text-decoration:underline;">Visualizza Galleria</a>`;
             } else if (fotoPreview) {
                 fotoPreview.style.display = 'none';
+            }
+
+            const tCiPreview = document.getElementById('titolare-ci-preview');
+            if (tCiPreview && data.titolare_ci_url) {
+                tCiPreview.style.display = 'block';
+                tCiPreview.innerHTML = `<i class='bx bx-check-circle'></i> C.I. Titolare caricata: <a href="${data.titolare_ci_url}" target="_blank" style="color:var(--primary);text-decoration:underline;">Visualizza</a>`;
+            } else if (tCiPreview) {
+                tCiPreview.style.display = 'none';
+            }
+
+            const tTsPreview = document.getElementById('titolare-ts-preview');
+            if (tTsPreview && data.titolare_ts_url) {
+                tTsPreview.style.display = 'block';
+                tTsPreview.innerHTML = `<i class='bx bx-check-circle'></i> T.S. Titolare caricata: <a href="${data.titolare_ts_url}" target="_blank" style="color:var(--primary);text-decoration:underline;">Visualizza</a>`;
+            } else if (tTsPreview) {
+                tTsPreview.style.display = 'none';
+            }
+
+            const dsCiPreview = document.getElementById('ds-ci-preview');
+            if (dsCiPreview && data.ds_ci_url) {
+                dsCiPreview.style.display = 'block';
+                dsCiPreview.innerHTML = `<i class='bx bx-check-circle'></i> C.I. Dir. Sanitario caricata: <a href="${data.ds_ci_url}" target="_blank" style="color:var(--primary);text-decoration:underline;">Visualizza</a>`;
+            } else if (dsCiPreview) {
+                dsCiPreview.style.display = 'none';
+            }
+
+            const dsTsPreview = document.getElementById('ds-ts-preview');
+            if (dsTsPreview && data.ds_ts_url) {
+                dsTsPreview.style.display = 'block';
+                dsTsPreview.innerHTML = `<i class='bx bx-check-circle'></i> T.S. Dir. Sanitario caricata: <a href="${data.ds_ts_url}" target="_blank" style="color:var(--primary);text-decoration:underline;">Visualizza</a>`;
+            } else if (dsTsPreview) {
+                dsTsPreview.style.display = 'none';
+            }
+
+            const videoPreview = document.getElementById('video-preview');
+            if (videoPreview && data.video_struttura_url) {
+                videoPreview.style.display = 'block';
+                videoPreview.innerHTML = `<i class='bx bx-check-circle'></i> Video Struttura caricato: <a href="${data.video_struttura_url}" target="_blank" style="color:var(--primary);text-decoration:underline;">Visualizza Video</a>`;
+            } else if (videoPreview) {
+                videoPreview.style.display = 'none';
             }
 
             // Popola consensi legali
@@ -1868,9 +1918,30 @@ const app = {
                     } else {
                         const file = files[0];
                         const res = await Backend.uploadAnagraficaFile(file.name, file);
-                        this.state.planimetriaUrl = res.url;
+
+                        let labelText = "File";
+                        if (dropzoneId === 'dropzone-planimetria') {
+                            this.state.planimetriaUrl = res.url;
+                            labelText = "Planimetria";
+                        } else if (dropzoneId === 'dropzone-titolare-ci') {
+                            this.state.titolareCiUrl = res.url;
+                            labelText = "Carta d'Identità Titolare";
+                        } else if (dropzoneId === 'dropzone-titolare-ts') {
+                            this.state.titolareTsUrl = res.url;
+                            labelText = "Tessera Sanitaria Titolare";
+                        } else if (dropzoneId === 'dropzone-ds-ci') {
+                            this.state.dsCiUrl = res.url;
+                            labelText = "Carta d'Identità Dir. Sanitario";
+                        } else if (dropzoneId === 'dropzone-ds-ts') {
+                            this.state.dsTsUrl = res.url;
+                            labelText = "Tessera Sanitaria Dir. Sanitario";
+                        } else if (dropzoneId === 'dropzone-video') {
+                            this.state.videoStrutturaUrl = res.url;
+                            labelText = "Video Struttura";
+                        }
+
                         preview.style.color = 'var(--success)';
-                        preview.innerHTML = `<i class='bx bx-check-circle'></i> Planimetria caricata con successo! <a href="${res.url}" target="_blank" style="color:var(--primary);text-decoration:underline;">Apri</a>`;
+                        preview.innerHTML = `<i class='bx bx-check-circle'></i> ${labelText} caricato con successo! <a href="${res.url}" target="_blank" style="color:var(--primary);text-decoration:underline;">Apri</a>`;
                     }
                 } catch (err) {
                     console.error("[Dropzone] Errore caricamento file:", err);
@@ -1893,6 +1964,11 @@ const app = {
 
         setupDropzone('dropzone-planimetria', 'file-planimetria', 'planimetria-preview', false);
         setupDropzone('dropzone-foto', 'file-foto', 'foto-preview', true);
+        setupDropzone('dropzone-titolare-ci', 'file-titolare-ci', 'titolare-ci-preview', false);
+        setupDropzone('dropzone-titolare-ts', 'file-titolare-ts', 'titolare-ts-preview', false);
+        setupDropzone('dropzone-ds-ci', 'file-ds-ci', 'ds-ci-preview', false);
+        setupDropzone('dropzone-ds-ts', 'file-ds-ts', 'ds-ts-preview', false);
+        setupDropzone('dropzone-video', 'file-video', 'video-preview', false);
     },
 
     showFotoGallery(e) {
