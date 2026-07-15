@@ -198,12 +198,39 @@
                 <div id="view-anagrafica" class="view">
                     <div class="gap-header" style="margin-bottom: 24px;">
                         <h3>Anagrafica e Struttura</h3>
-                        <div style="display:flex;gap:10px;align-items:center;">
-                            <span id="anag-save-msg" style="font-size:12px;color:var(--success);display:none;"><i class='bx bx-check-circle'></i> Salvato con successo!</span>
-                            <button class="btn btn-primary" id="anag-save-btn" onclick="app.salvaAnagrafica()" disabled style="opacity: 0.5; pointer-events: none;"><i class='bx bx-save'></i> Salva Dati</button>
-                        </div>
                     </div>
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: start;">
+                        <!-- Card Consensi Legali e Contrattuali (Spostata all'inizio) -->
+                        <div class="glass-card" style="grid-column: 1 / -1; margin-bottom: 10px;">
+                            <h4 style="margin-bottom: 20px; color: var(--primary); font-size: 18px;"><i class='bx bx-shield-quarter'></i> Consensi Legali e Contrattuali</h4>
+                            
+                            <!-- Modulo 1: Privacy GDPR -->
+                            <div style="margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 16px;">
+                                <h5 style="margin: 0 0 8px; color: var(--text-main); font-size: 14px;">Privacy e Trattamento Dati</h5>
+                                <p style="font-size: 12px; color: var(--text-muted); line-height: 1.5; margin: 0 0 10px;">
+                                    Ho preso visione dell'informativa sul trattamento dei dati personali ai sensi del Regolamento UE 2016/679 (GDPR). Acconsento al trattamento dei miei dati personali per le finalità connesse all'erogazione del servizio Accredita360 e alle attività di accreditamento e consulenza richieste. 
+                                    <a href="#" onclick="app.showPrivacyPolicy(event)" style="color: var(--primary); text-decoration: underline; font-weight: 500;">Leggi l'informativa completa</a>
+                                </p>
+                                <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-main); cursor: pointer;">
+                                    <input type="checkbox" id="chk-privacy" onchange="app.validateConsents()" style="cursor: pointer; width: 16px; height: 16px;">
+                                    <span>Accetto il trattamento dei dati personali <span style="color: var(--danger);">*</span></span>
+                                </label>
+                            </div>
+
+                            <!-- Modulo 2: Contratto di Servizio (SaaS) -->
+                            <div style="margin-bottom: 10px;">
+                                <h5 style="margin: 0 0 8px; color: var(--text-main); font-size: 14px;">Termini e Condizioni di Servizio</h5>
+                                <p style="font-size: 12px; color: var(--text-muted); line-height: 1.5; margin: 0 0 10px;">
+                                    Con la presente, accetto i termini e le condizioni del contratto di licenza d'uso della piattaforma Accredita360. Mi impegno al pagamento della quota di abbonamento corrispondente al piano sottoscritto. Confermo di aver compreso che il servizio sarà attivo dalla conferma del pagamento e che la fatturazione avverrà secondo le modalità indicate. 
+                                    <a href="#" onclick="app.showTermsAndConditions(event)" style="color: var(--primary); text-decoration: underline; font-weight: 500;">Leggi il contratto di servizio</a>
+                                </p>
+                                <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-main); cursor: pointer;">
+                                    <input type="checkbox" id="chk-terms" onchange="app.validateConsents()" style="cursor: pointer; width: 16px; height: 16px;">
+                                    <span>Accetto i Termini e le Condizioni di Servizio e l'obbligo di pagamento del piano selezionato <span style="color: var(--danger);">*</span></span>
+                                </label>
+                            </div>
+                        </div>
+
                         <!-- Dati Titolare -->
                         <div class="glass-card">
                             <h4 style="margin-bottom: 20px; color: var(--primary); font-size: 18px;"><i class='bx bx-user-pin'></i> Dati Titolare</h4>
@@ -377,35 +404,11 @@
                                 </div>
                             </div>
                         </div>
-                        <!-- Card Consensi Legali e Contrattuali -->
-                        <div class="glass-card" style="grid-column: 1 / -1; margin-top: 20px;">
-                            <h4 style="margin-bottom: 20px; color: var(--primary); font-size: 18px;"><i class='bx bx-shield-quarter'></i> Consensi Legali e Contrattuali</h4>
-                            
-                            <!-- Modulo 1: Privacy GDPR -->
-                            <div style="margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 16px;">
-                                <h5 style="margin: 0 0 8px; color: var(--text-main); font-size: 14px;">Privacy e Trattamento Dati</h5>
-                                <p style="font-size: 12px; color: var(--text-muted); line-height: 1.5; margin: 0 0 10px;">
-                                    Ho preso visione dell'informativa sul trattamento dei dati personali ai sensi del Regolamento UE 2016/679 (GDPR). Acconsento al trattamento dei miei dati personali per le finalità connesse all'erogazione del servizio Accredita360 e alle attività di accreditamento e consulenza richieste. 
-                                    <a href="#" onclick="app.showPrivacyPolicy(event)" style="color: var(--primary); text-decoration: underline; font-weight: 500;">Leggi l'informativa completa</a>
-                                </p>
-                                <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-main); cursor: pointer;">
-                                    <input type="checkbox" id="chk-privacy" onchange="app.validateConsents()" style="cursor: pointer; width: 16px; height: 16px;">
-                                    <span>Accetto il trattamento dei dati personali <span style="color: var(--danger);">*</span></span>
-                                </label>
-                            </div>
-
-                            <!-- Modulo 2: Contratto di Servizio (SaaS) -->
-                            <div style="margin-bottom: 10px;">
-                                <h5 style="margin: 0 0 8px; color: var(--text-main); font-size: 14px;">Termini e Condizioni di Servizio</h5>
-                                <p style="font-size: 12px; color: var(--text-muted); line-height: 1.5; margin: 0 0 10px;">
-                                    Con la presente, accetto i termini e le condizioni del contratto di licenza d'uso della piattaforma Accredita360. Mi impegno al pagamento della quota di abbonamento corrispondente al piano sottoscritto. Confermo di aver compreso che il servizio sarà attivo dalla conferma del pagamento e che la fatturazione avverrà secondo le modalità indicate. 
-                                    <a href="#" onclick="app.showTermsAndConditions(event)" style="color: var(--primary); text-decoration: underline; font-weight: 500;">Leggi il contratto di servizio</a>
-                                </p>
-                                <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-main); cursor: pointer;">
-                                    <input type="checkbox" id="chk-terms" onchange="app.validateConsents()" style="cursor: pointer; width: 16px; height: 16px;">
-                                    <span>Accetto i Termini e le Condizioni di Servizio e l'obbligo di pagamento del piano selezionato <span style="color: var(--danger);">*</span></span>
-                                </label>
-                            </div>
+                        
+                        <!-- Sezione Pulsante di Salvataggio in fondo (Spostato alla fine) -->
+                        <div style="grid-column: 1 / -1; display: flex; justify-content: flex-end; align-items: center; gap: 16px; margin-top: 20px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.05);">
+                            <span id="anag-save-msg" style="font-size:13px; color:var(--success); display:none; align-items:center; gap:6px;"><i class='bx bx-check-circle' style="font-size:18px;"></i> Salvato con successo!</span>
+                            <button class="btn btn-primary" id="anag-save-btn" onclick="app.salvaAnagrafica()" disabled style="opacity: 0.5; pointer-events: none; padding: 12px 24px; font-size: 14px; font-weight: 600;"><i class='bx bx-save' style="font-size:18px; vertical-align:middle; margin-right:4px;"></i> Salva Dati</button>
                         </div>
                     </div>
                 </div>
