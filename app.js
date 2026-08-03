@@ -3454,5 +3454,206 @@ app.scaricaFascicoloCompleto = async function(format = 'docx') {
     }, 2000);
 };
 
+// ===== NOTIFICHE LIVE & CHAT REQUISITI =====
+app.initNotifications = async function() {
+    const user = Backend.getCurrentUser();
+    if (!user || !user.email) return;
+
+    this._userNotifications = await Backend.getUserNotifications(user.email);
+    this.renderNotifications();
+
+    // Sottoscrizione WebSockets Realtime
+    Backend.subscribeUserNotifications(user.email, (newNotif) => {
+        if (!this._userNotifications) this._userNotifications = [];
+        this._userNotifications.unshift(newNotif);
+        this.renderNotifications();
+        if (typeof this._showSuccessToast === 'function') {
+            this._showSuccessToast(`🔔 Notifica: ${newNotif.title}`);
+        }
+    });
+};
+
+app.renderNotifications = function() {
+    const badge = document.getElementById('notification-badge-count');
+    const container = document.getElementById('notification-items-container');
+    if (!this._userNotifications) this._userNotifications = [];
+
+    const unreadCount = this._userNotifications.filter(n => !n.read).length;
+    if (badge) {
+        if (unreadCount > 0) {
+            badge.style.display = 'flex';
+            badge.textContent = unreadCount > 9 ? '9+' : unreadCount;
+        } else {
+            badge.style.display = 'none';
+        }
+    }
+
+    if (!container) return;
+    if (this._userNotifications.length === 0) {
+        container.innerHTML = `<div style="text-align: center; padding: 24px; color: var(--text-muted); font-size: 12px;">Nessuna notifica presente.</div>`;
+        return;
+    }
+
+    const typeIcons = {
+        'approval':  'bx-check-circle',
+        'rejection': 'bx-error-circle',
+        'comment':   'bx-message-square-dots',
+        'system':    'bx-info-circle'
+    };
+
+    container.innerHTML = this._userNotifications.map(n => `
+        <div class="notification-item ${n.read ? '' : 'unread'}" onclick="app.markNotifRead('${n.id}');">
+            <div class="notification-icon type-${n.type}">
+                <i class='bx ${typeIcons[n.type] || 'bx-bell'}'></i>
+            </div>
+            <div style="flex:1;">
+                <div style="font-size:12px; font-weight:700; color:var(--text-main); margin-bottom:2px;">${_s(n.title)}</div>
+                <div style="font-size:11px; color:var(--text-muted); line-height:1.3;">${_s(n.message)}</div>
+                <div style="font-size:9px; color:var(--text-muted); margin-top:4px;">${new Date(n.created_at).toLocaleTimeString('it-IT', {hour:'2-digit', minute:'2-digit'})}</div>
+            </div>
+        </div>
+    `).join('');
+};
+
+app.toggleNotificationDropdown = function() {
+    const dropdown = document.getElementById('notification-dropdown-panel');
+    if (!dropdown) return;
+    if (dropdown.style.display === 'flex') {
+        dropdown.style.display = 'none';
+    } else {
+        dropdown.style.display = 'flex';
+    }
+};
+
+app.markNotifRead = async function(notifId) {
+    await Backend.markNotificationRead(notifId);
+    if (this._userNotifications) {
+        const item = this._userNotifications.find(n => n.id === notifId);
+        if (item) item.read = true;
+    }
+    this.renderNotifications();
+};
+
+app.markAllNotifsRead = async function() {
+    const user = Backend.getCurrentUser();
+    if (!user || !user.email) return;
+    await Backend.markAllNotificationsRead(user.email);
+    if (this._userNotifications) {
+        this._userNotifications.forEach(n => n.read = true);
+    }
+    this.renderNotifications();
+};
+
+// Modulo Chat Contestuale Requisiti
+app.openReqChatModal = function(requirementId, customStructEmail) {
+    const modal = document.getElementById('req-chat-modal');
+    const header = document.getElementById('req-chat-modal-header');
+    if (!modal || !header) return;
+
+    const user = Backend.getCurrentUser();
+    const structEmail = customStructEmail || (this.state && this.state.structureData ? this.state.structureData.user_email : user?.email);
+
+    this._activeChatReqId = requirementId;
+    this._activeChatStructEmail = structEmail;
+
+    header.innerHTML = `
+        <span style="font-size: 11px; font-weight: 700; color: var(--primary); text-transform: uppercase;">REQUISITO ${requirementId}</span>
+        <h4 style="font-size: 15px; font-weight: 700; color: var(--text-main); margin-top: 2px;">Discussion &amp; Commenti Requisito</h4>
+    `;
+
+    modal.style.display = 'flex';
+    this.loadRequirementChat(requirementId, structEmail);
+};
+
+app.closeReqChatModal = function() {
+    const modal = document.getElementById('req-chat-modal');
+    if (modal) modal.style.display = 'none';
+};
+
+app.loadRequirementChat = async function(requirementId, structureEmail) {
+    const msgList = document.getElementById('req-chat-messages');
+    if (msgList) {
+        msgList.innerHTML = `<div style="text-align:center; padding:16px; color:var(--text-muted); font-size:11px;"><i class='bx bx-loader-alt bx-spin'></i> Caricamento messaggi...</div>`;
+    }
+
+    const comments = await Backend.getRequirementComments(requirementId, structureEmail);
+    this.renderRequirementChat(comments);
+
+    // WebSockets realtime per il singolo req
+    if (this._chatChannel) {
+        try { this._chatChannel.unsubscribe(); } catch(e){}
+    }
+    this._chatChannel = Backend.subscribeRequirementComments(structureEmail, requirementId, (newComment) => {
+        if (this._activeChatReqId === requirementId) {
+            this.appendChatMessage(newComment);
+        }
+    });
+};
+
+app.renderRequirementChat = function(comments) {
+    const msgList = document.getElementById('req-chat-messages');
+    if (!msgList) return;
+
+    if (!comments || comments.length === 0) {
+        msgList.innerHTML = `<div style="text-align:center; padding:16px; color:var(--text-muted); font-size:11px;">Nessun messaggio presente. Avvia la conversazione qui sotto.</div>`;
+        return;
+    }
+
+    msgList.innerHTML = comments.map(c => this.buildChatBubbleHTML(c)).join('');
+    msgList.scrollTop = msgList.scrollHeight;
+};
+
+app.buildChatBubbleHTML = function(c) {
+    const isUser = c.sender_role === 'user';
+    const isConsultant = c.sender_role === 'consultant';
+    const bubbleClass = isUser ? 'chat-bubble-user' : (isConsultant ? 'chat-bubble-consultant' : 'chat-bubble-admin');
+    const roleBadge = isUser ? 'Struttura' : (isConsultant ? 'Consulente Sanitario' : 'Amministratore');
+
+    return `
+        <div class="chat-bubble ${bubbleClass}">
+            <div class="chat-sender-name">
+                <i class='bx ${isUser ? 'bx-building' : (isConsultant ? 'bx-user-voice' : 'bx-shield-quarter')}'></i>
+                ${_s(c.sender_name)} <span style="opacity:0.7; font-weight:400;">(${roleBadge})</span>
+            </div>
+            <div>${_s(c.message)}</div>
+            <div class="chat-timestamp">${new Date(c.created_at).toLocaleTimeString('it-IT', {hour:'2-digit', minute:'2-digit'})}</div>
+        </div>
+    `;
+};
+
+app.appendChatMessage = function(c) {
+    const msgList = document.getElementById('req-chat-messages');
+    if (!msgList) return;
+    // Se c'era l'avviso vuoto, rimuovilo
+    if (msgList.children.length === 1 && msgList.children[0].textContent.includes('Nessun messaggio')) {
+        msgList.innerHTML = '';
+    }
+    const div = document.createElement('div');
+    div.innerHTML = this.buildChatBubbleHTML(c);
+    msgList.appendChild(div.firstElementChild);
+    msgList.scrollTop = msgList.scrollHeight;
+};
+
+app.sendRequirementComment = async function() {
+    const input = document.getElementById('req-chat-input');
+    if (!input || !input.value.trim()) return;
+
+    const msg = input.value.trim();
+    input.value = '';
+
+    try {
+        await Backend.sendRequirementComment({
+            requirementId:  this._activeChatReqId,
+            structureEmail: this._activeChatStructEmail,
+            message:        msg
+        });
+    } catch(err) {
+        alert(err.message || 'Errore durante l\'invio del messaggio.');
+    }
+};
+
 // Start App
-document.addEventListener('DOMContentLoaded', () => { app.init(); });
+document.addEventListener('DOMContentLoaded', () => {
+    app.init();
+    setTimeout(() => { app.initNotifications(); }, 800);
+});

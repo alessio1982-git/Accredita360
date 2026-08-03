@@ -717,8 +717,202 @@ const consulente = {
         } catch (e) {
             console.error('[Consulente] Errore invio proposta approvazione:', e);
         }
+    },
+
+    // ===== CENTRO NOTIFICHE LIVE CONSULENTE =====
+    async initNotifications() {
+        const B = this._B || window.Backend || Backend;
+        const user = B.getCurrentUser();
+        if (!user || !user.email) return;
+
+        this._userNotifications = await B.getUserNotifications(user.email);
+        this.renderNotifications();
+
+        B.subscribeUserNotifications(user.email, (newNotif) => {
+            if (!this._userNotifications) this._userNotifications = [];
+            this._userNotifications.unshift(newNotif);
+            this.renderNotifications();
+        });
+    },
+
+    renderNotifications() {
+        const badge = document.getElementById('notification-badge-count');
+        const container = document.getElementById('notification-items-container');
+        if (!this._userNotifications) this._userNotifications = [];
+
+        const unreadCount = this._userNotifications.filter(n => !n.read).length;
+        if (badge) {
+            if (unreadCount > 0) {
+                badge.style.display = 'flex';
+                badge.textContent = unreadCount > 9 ? '9+' : unreadCount;
+            } else {
+                badge.style.display = 'none';
+            }
+        }
+
+        if (!container) return;
+        if (this._userNotifications.length === 0) {
+            container.innerHTML = `<div style="text-align: center; padding: 24px; color: var(--text-muted); font-size: 12px;">Nessuna notifica presente.</div>`;
+            return;
+        }
+
+        const typeIcons = {
+            'approval':  'bx-check-circle',
+            'rejection': 'bx-error-circle',
+            'comment':   'bx-message-square-dots',
+            'system':    'bx-info-circle'
+        };
+
+        container.innerHTML = this._userNotifications.map(n => `
+            <div class="notification-item ${n.read ? '' : 'unread'}" onclick="consulente.markNotifRead('${n.id}');">
+                <div class="notification-icon type-${n.type}">
+                    <i class='bx ${typeIcons[n.type] || 'bx-bell'}'></i>
+                </div>
+                <div style="flex:1;">
+                    <div style="font-size:12px; font-weight:700; color:var(--text-main); margin-bottom:2px;">${_s(n.title)}</div>
+                    <div style="font-size:11px; color:var(--text-muted); line-height:1.3;">${_s(n.message)}</div>
+                    <div style="font-size:9px; color:var(--text-muted); margin-top:4px;">${new Date(n.created_at).toLocaleTimeString('it-IT', {hour:'2-digit', minute:'2-digit'})}</div>
+                </div>
+            </div>
+        `).join('');
+    },
+
+    toggleNotificationDropdown() {
+        const dropdown = document.getElementById('notification-dropdown-panel');
+        if (!dropdown) return;
+        dropdown.style.display = (dropdown.style.display === 'flex') ? 'none' : 'flex';
+    },
+
+    async markNotifRead(notifId) {
+        const B = this._B || window.Backend || Backend;
+        await B.markNotificationRead(notifId);
+        if (this._userNotifications) {
+            const item = this._userNotifications.find(n => n.id === notifId);
+            if (item) item.read = true;
+        }
+        this.renderNotifications();
+    },
+
+    async markAllNotifsRead() {
+        const B = this._B || window.Backend || Backend;
+        const user = B.getCurrentUser();
+        if (!user || !user.email) return;
+        await B.markAllNotificationsRead(user.email);
+        if (this._userNotifications) {
+            this._userNotifications.forEach(n => n.read = true);
+        }
+        this.renderNotifications();
+    },
+
+    openReqChatModal(requirementId, customStructEmail) {
+        const modal = document.getElementById('req-chat-modal');
+        const header = document.getElementById('req-chat-modal-header');
+        if (!modal || !header) return;
+
+        const structEmail = customStructEmail || this._detClientEmail;
+
+        this._activeChatReqId = requirementId;
+        this._activeChatStructEmail = structEmail;
+
+        header.innerHTML = `
+            <span style="font-size: 11px; font-weight: 700; color: var(--primary); text-transform: uppercase;">REQUISITO ${requirementId}</span>
+            <h4 style="font-size: 15px; font-weight: 700; color: var(--text-main); margin-top: 2px;">Discussion &amp; Commenti col Cliente</h4>
+        `;
+
+        modal.style.display = 'flex';
+        this.loadRequirementChat(requirementId, structEmail);
+    },
+
+    closeReqChatModal() {
+        const modal = document.getElementById('req-chat-modal');
+        if (modal) modal.style.display = 'none';
+    },
+
+    async loadRequirementChat(requirementId, structureEmail) {
+        const B = this._B || window.Backend || Backend;
+        const msgList = document.getElementById('req-chat-messages');
+        if (msgList) {
+            msgList.innerHTML = `<div style="text-align:center; padding:16px; color:var(--text-muted); font-size:11px;"><i class='bx bx-loader-alt bx-spin'></i> Caricamento messaggi...</div>`;
+        }
+
+        const comments = await B.getRequirementComments(requirementId, structureEmail);
+        this.renderRequirementChat(comments);
+
+        if (this._chatChannel) {
+            try { this._chatChannel.unsubscribe(); } catch(e){}
+        }
+        this._chatChannel = B.subscribeRequirementComments(structureEmail, requirementId, (newComment) => {
+            if (this._activeChatReqId === requirementId) {
+                this.appendChatMessage(newComment);
+            }
+        });
+    },
+
+    renderRequirementChat(comments) {
+        const msgList = document.getElementById('req-chat-messages');
+        if (!msgList) return;
+
+        if (!comments || comments.length === 0) {
+            msgList.innerHTML = `<div style="text-align:center; padding:16px; color:var(--text-muted); font-size:11px;">Nessun messaggio presente. Scrivi un messaggio qui sotto per la struttura.</div>`;
+            return;
+        }
+
+        msgList.innerHTML = comments.map(c => this.buildChatBubbleHTML(c)).join('');
+        msgList.scrollTop = msgList.scrollHeight;
+    },
+
+    buildChatBubbleHTML(c) {
+        const isUser = c.sender_role === 'user';
+        const isConsultant = c.sender_role === 'consultant';
+        const bubbleClass = isUser ? 'chat-bubble-user' : (isConsultant ? 'chat-bubble-consultant' : 'chat-bubble-admin');
+        const roleBadge = isUser ? 'Struttura' : (isConsultant ? 'Consulente Sanitario' : 'Amministratore');
+
+        return `
+            <div class="chat-bubble ${bubbleClass}">
+                <div class="chat-sender-name">
+                    <i class='bx ${isUser ? 'bx-building' : (isConsultant ? 'bx-user-voice' : 'bx-shield-quarter')}'></i>
+                    ${_s(c.sender_name)} <span style="opacity:0.7; font-weight:400;">(${roleBadge})</span>
+                </div>
+                <div>${_s(c.message)}</div>
+                <div class="chat-timestamp">${new Date(c.created_at).toLocaleTimeString('it-IT', {hour:'2-digit', minute:'2-digit'})}</div>
+            </div>
+        `;
+    },
+
+    appendChatMessage(c) {
+        const msgList = document.getElementById('req-chat-messages');
+        if (!msgList) return;
+        if (msgList.children.length === 1 && msgList.children[0].textContent.includes('Nessun messaggio')) {
+            msgList.innerHTML = '';
+        }
+        const div = document.createElement('div');
+        div.innerHTML = this.buildChatBubbleHTML(c);
+        msgList.appendChild(div.firstElementChild);
+        msgList.scrollTop = msgList.scrollHeight;
+    },
+
+    async sendRequirementComment() {
+        const B = this._B || window.Backend || Backend;
+        const input = document.getElementById('req-chat-input');
+        if (!input || !input.value.trim()) return;
+
+        const msg = input.value.trim();
+        input.value = '';
+
+        try {
+            await B.sendRequirementComment({
+                requirementId:  this._activeChatReqId,
+                structureEmail: this._activeChatStructEmail,
+                message:        msg
+            });
+        } catch(err) {
+            alert(err.message || 'Errore durante l\'invio del messaggio.');
+        }
     }
 };
 
 window.consulente = consulente;
-document.addEventListener('DOMContentLoaded', () => consulente.init());
+document.addEventListener('DOMContentLoaded', () => {
+    consulente.init();
+    setTimeout(() => { consulente.initNotifications(); }, 800);
+});

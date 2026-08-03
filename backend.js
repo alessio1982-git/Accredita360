@@ -1222,6 +1222,192 @@ const Backend = {
 
         const order = { scaduto: 0, in_scadenza: 1, valido: 2 };
         return schedule.sort((a, b) => order[a.stato] - order[b.stato]);
+    },
+
+    // =========================================================
+    // CHAT CONTESTUALE REQUISITI & NOTIFICHE LIVE
+    // =========================================================
+
+    /**
+     * Recupera i commenti per un determinato requisito e struttura.
+     */
+    async getRequirementComments(requirementId, structureEmail) {
+        if (!requirementId || !structureEmail) return [];
+        const { data, error } = await supabase
+            .from('requirement_comments')
+            .select('*')
+            .eq('requirement_id', requirementId)
+            .eq('structure_email', structureEmail)
+            .order('created_at', { ascending: true });
+
+        if (error) {
+            console.error('[Backend] Errore getRequirementComments:', error);
+            return [];
+        }
+        return data || [];
+    },
+
+    /**
+     * Invia un commento contestuale su un requisito.
+     */
+    async sendRequirementComment({ requirementId, structureEmail, message }) {
+        const user = this.getCurrentUser();
+        if (!user || !message.trim()) throw new Error('Messaggio non valido o sessione scaduta.');
+
+        const payload = {
+            structure_email: structureEmail,
+            requirement_id:  requirementId,
+            sender_email:    user.email,
+            sender_name:     user.name || user.email.split('@')[0],
+            sender_role:     user.role || 'user',
+            message:         message.trim()
+        };
+
+        const { data, error } = await supabase
+            .from('requirement_comments')
+            .insert(payload)
+            .select()
+            .single();
+
+        if (error) {
+            console.error('[Backend] Errore sendRequirementComment:', error);
+            throw new Error(error.message || 'Impossibile inviare il commento.');
+        }
+
+        // Generazione automatica notifica per il destinatario
+        try {
+            if (user.role === 'user') {
+                // Notifica all'admin/consulente
+                await this.createNotification({
+                    targetEmail: 'admin@accredita360.it',
+                    title: `Nuovo messaggio su ${requirementId}`,
+                    message: `${user.name || user.email}: "${message.trim().substring(0, 60)}..."`,
+                    type: 'comment'
+                });
+            } else {
+                // Notifica alla struttura utente
+                await this.createNotification({
+                    targetEmail: structureEmail,
+                    title: `Messaggio dal Consulente su ${requirementId}`,
+                    message: `${user.name || 'Consulente'}: "${message.trim().substring(0, 60)}..."`,
+                    type: 'comment'
+                });
+            }
+        } catch (notifErr) {
+            console.warn('[Backend] Errore invio notifica automatica:', notifErr);
+        }
+
+        return data;
+    },
+
+    /**
+     * Recupera le notifiche live per l'utente corrente.
+     */
+    async getUserNotifications(email) {
+        const target = email || this.getCurrentUser()?.email;
+        if (!target) return [];
+
+        const { data, error } = await supabase
+            .from('user_notifications')
+            .select('*')
+            .eq('target_email', target)
+            .order('created_at', { ascending: false })
+            .limit(30);
+
+        if (error) {
+            console.error('[Backend] Errore getUserNotifications:', error);
+            return [];
+        }
+        return data || [];
+    },
+
+    /**
+     * Crea una nuova notifica per un utente.
+     */
+    async createNotification({ targetEmail, title, message, type = 'system' }) {
+        if (!targetEmail || !title) return null;
+
+        const { data, error } = await supabase
+            .from('user_notifications')
+            .insert({
+                target_email: targetEmail,
+                title,
+                message,
+                type,
+                read: false
+            })
+            .select()
+            .single();
+
+        if (error) {
+            console.error('[Backend] Errore createNotification:', error);
+            return null;
+        }
+        return data;
+    },
+
+    /**
+     * Segna una notifica come letta.
+     */
+    async markNotificationRead(notificationId) {
+        if (!notificationId) return;
+        await supabase
+            .from('user_notifications')
+            .update({ read: true })
+            .eq('id', notificationId);
+    },
+
+    /**
+     * Segna tutte le notifiche dell'utente come lette.
+     */
+    async markAllNotificationsRead(email) {
+        const target = email || this.getCurrentUser()?.email;
+        if (!target) return;
+        await supabase
+            .from('user_notifications')
+            .update({ read: true })
+            .eq('target_email', target)
+            .eq('read', false);
+    },
+
+    /**
+     * Sottoscrizione WebSockets Realtime per le notifiche dell'utente.
+     */
+    subscribeUserNotifications(email, callback) {
+        if (!email || typeof callback !== 'function') return null;
+
+        return supabase
+            .channel(`notifs_${email}`)
+            .on('postgres_changes', {
+                event: 'INSERT',
+                schema: 'public',
+                table: 'user_notifications',
+                filter: `target_email=eq.${email}`
+            }, (payload) => {
+                callback(payload.new);
+            })
+            .subscribe();
+    },
+
+    /**
+     * Sottoscrizione WebSockets Realtime per i commenti di un requisito.
+     */
+    subscribeRequirementComments(structureEmail, requirementId, callback) {
+        if (!structureEmail || !requirementId || typeof callback !== 'function') return null;
+
+        return supabase
+            .channel(`comments_${structureEmail}_${requirementId}`)
+            .on('postgres_changes', {
+                event: 'INSERT',
+                schema: 'public',
+                table: 'requirement_comments',
+                filter: `structure_email=eq.${structureEmail}`
+            }, (payload) => {
+                if (payload.new && payload.new.requirement_id === requirementId) {
+                    callback(payload.new);
+                }
+            })
+            .subscribe();
     }
 };
 

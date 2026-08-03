@@ -125,6 +125,22 @@
         <header class="topbar">
             <h2 id="view-title">Dashboard Consulente</h2>
             <div class="user-profile">
+                <!-- Notification Bell Container -->
+                <div class="notification-wrapper">
+                    <button id="nav-notification-bell" class="notification-bell-btn" onclick="app.toggleNotificationDropdown();" title="Centro Notifiche">
+                        <i class='bx bx-bell'></i>
+                        <div id="notification-badge-count" class="notification-badge" style="display: none;">0</div>
+                    </button>
+                    <div id="notification-dropdown-panel" class="notification-dropdown">
+                        <div class="notification-header">
+                            <h5 style="font-size: 13px; font-weight: 700; color: var(--text-main); margin: 0;"><i class='bx bx-bell'></i> Notifiche</h5>
+                            <button class="btn btn-outline" style="padding: 3px 8px; font-size: 10px;" onclick="app.markAllNotifsRead();">Segna lette</button>
+                        </div>
+                        <div id="notification-items-container" class="notification-list">
+                            <div style="text-align: center; padding: 24px; color: var(--text-muted); font-size: 12px;">Nessuna notifica presente.</div>
+                        </div>
+                    </div>
+                </div>
                 <div class="user-info">
                     <span class="user-name">—</span>
                     <span class="user-role">Consulente</span>
@@ -460,6 +476,29 @@
         </div><!-- /content-area -->
     </main>
 </div>
+
+    <!-- Modal Chat Contestuale Requisito -->
+    <div id="req-chat-modal" class="timeline-modal-overlay" style="display: none;" onclick="if(event.target === this) consulente.closeReqChatModal();">
+        <div class="timeline-modal-content" style="max-width: 500px;">
+            <button onclick="consulente.closeReqChatModal();" style="position: absolute; top: 20px; right: 20px; background: none; border: none; color: var(--text-muted); font-size: 24px; cursor: pointer;">
+                <i class='bx bx-x'></i>
+            </button>
+            <div id="req-chat-modal-header" style="margin-bottom: 16px; border-bottom: 1px solid var(--glass-border); padding-bottom: 12px;">
+                <!-- Popolato da openReqChatModal() -->
+            </div>
+            <div id="req-chat-container">
+                <div id="req-chat-messages" class="req-chat-messages">
+                    <div style="text-align: center; padding: 20px; color: var(--text-muted); font-size: 12px;">Caricamento messaggi...</div>
+                </div>
+                <div style="display: flex; gap: 8px; margin-top: 12px;">
+                    <input type="text" id="req-chat-input" class="input-box" placeholder="Scrivi un messaggio per la struttura..." style="flex: 1; padding: 8px 12px; font-size: 12px;" onkeypress="if(event.key==='Enter') consulente.sendRequirementComment();">
+                    <button class="btn btn-primary" style="padding: 8px 14px; font-size: 13px;" onclick="consulente.sendRequirementComment();">
+                        <i class='bx bx-send'></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <script src="https://cdn.jsdelivr.net/npm/dompurify@3/dist/purify.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
