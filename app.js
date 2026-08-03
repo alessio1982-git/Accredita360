@@ -1524,29 +1524,163 @@ const app = {
             </div>`;
     },
 
-    // ===== PANORAMICA: Render Timeline 9 Fasi =====
+    // ===== PANORAMICA: Render Timeline 9 Fasi (Dinamica ed Interattiva) =====
     renderPanIterTimeline() {
         const el = document.getElementById('pan-iter-timeline');
-        if (!el || el.children.length > 0) return;
+        if (!el) return;
+
+        // Determina lo step corrente (1-9) in base ai dati della struttura
+        let currentStep = 1;
+        const struct = this.state.structureData || {};
+        const reqs = this.state.requirementsData || [];
+
+        if (struct.stato === 'CERTIFIED' || struct.stato === 'APPROVED') {
+            currentStep = 9;
+        } else if (struct.stato === 'WAITS_FOR_APPROVAL') {
+            currentStep = 8;
+        } else if (reqs.some(r => r.status === 'REJECTED' || r.stato === 'REJECTED')) {
+            currentStep = 6;
+        } else if (reqs.length > 0 && reqs.filter(r => r.status === 'APPROVED' || r.stato === 'APPROVED').length > 0) {
+            currentStep = 5;
+        } else if (struct.consulente_email_fk || struct.consulente_assegnato) {
+            currentStep = 3;
+        } else if (struct.ragione_sociale || struct.piva || struct.titolare_ci_url) {
+            currentStep = 2;
+        } else {
+            currentStep = 1;
+        }
+
         const steps = [
-            { n: 1, t: 'Domanda della struttura', i: 'bx-send', c: '#3b82f6' },
-            { n: 2, t: 'Caricamento documentazione', i: 'bx-upload', c: '#8b5cf6' },
-            { n: 3, t: 'Verifica documentale', i: 'bx-search-alt', c: '#6366f1' },
-            { n: 4, t: 'Sopralluogo verificatori OTA', i: 'bx-building-house', c: '#10b981' },
-            { n: 5, t: 'Check-list requisiti', i: 'bx-list-check', c: '#14b8a6' },
-            { n: 6, t: 'Eventuali non conformità', i: 'bx-error-circle', c: '#f59e0b' },
-            { n: 7, t: 'Adeguamenti', i: 'bx-wrench', c: '#f97316' },
-            { n: 8, t: 'Relazione finale', i: 'bx-file', c: '#ec4899' },
-            { n: 9, t: 'Decisione regionale', i: 'bx-badge-check', c: '#06b6d4' }
+            { n: 1, t: 'Domanda della struttura', i: 'bx-send', desc: 'Presentazione della domanda e avvio della procedura di accreditamento istituzionale.', actionLabel: 'Compila Anagrafica', actionTarget: 'profile' },
+            { n: 2, t: 'Caricamento documentazione', i: 'bx-upload', desc: 'Caricamento di planimetrie, foto, video logistica e documenti di identità del Titolare e DS.', actionLabel: 'Vai a Documenti', actionTarget: 'documents' },
+            { n: 3, t: 'Verifica documentale', i: 'bx-search-alt', desc: 'Analisi preliminare da parte del Consulente Sanitario dei requisiti strutturali e tecnologici.', actionLabel: 'Vedi Gap Analysis', actionTarget: 'gap-analysis' },
+            { n: 4, t: 'Sopralluogo verificatori OTA', i: 'bx-building-house', desc: 'Ispezione sul campo programmata con i verificatori dell\'Organismo Tecnicamente Accreditante.', actionLabel: 'Pianifica Sopralluogo', actionTarget: 'maintenance' },
+            { n: 5, t: 'Check-list requisiti', i: 'bx-list-check', desc: 'Compilazione ed esame analitico delle evidenze per ciascun requisito del D.A. 20/2024.', actionLabel: 'Vedi Checklist', actionTarget: 'gap-analysis' },
+            { n: 6, t: 'Eventuali non conformità', i: 'bx-error-circle', desc: 'Rilevazione di scostamenti o integrazioni necessarie per la piena conformità sanitaria.', actionLabel: 'Verifica Incongruenze', actionTarget: 'gap-analysis' },
+            { n: 7, t: 'Adeguamenti', i: 'bx-wrench', desc: 'Esecuzione dei correttivi e caricamento delle nuove evidenze richieste dai verificatori.', actionLabel: 'Carica Integrazioni', actionTarget: 'documents' },
+            { n: 8, t: 'Relazione finale', i: 'bx-file', desc: 'Stesura della relazione di valutazione finale ed emissione dell\'Attestato di Conformità.', actionLabel: 'Vedi Certificato', actionTarget: 'documents' },
+            { n: 9, t: 'Decisione regionale', i: 'bx-badge-check', desc: 'Emissione del Decreto dell\'Assessorato della Salute e iscrizione all\'Albo Regionale.', actionLabel: 'Vedi Dettagli', actionTarget: 'panoramica' }
         ];
-        el.innerHTML = steps.map(s => `
-            <div style="background:rgba(255,255,255,0.03); border:1px solid var(--glass-border); border-radius:12px; padding:14px; text-align:center; transition:all 0.3s ease;" onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='0 8px 20px rgba(0,0,0,0.2)'" onmouseout="this.style.transform='';this.style.boxShadow=''">
-                <div style="width:36px; height:36px; border-radius:50%; background:${s.c}22; border:2px solid ${s.c}; display:inline-flex; align-items:center; justify-content:center; margin-bottom:8px;">
-                    <span style="font-size:14px; font-weight:800; color:${s.c};">${s.n}</span>
+
+        this._timelineStepsData = steps;
+
+        const progressPercent = Math.round(((currentStep - 1) / 8) * 100);
+
+        el.innerHTML = `
+            <div class="timeline-roadmap">
+                <div class="timeline-roadmap-header">
+                    <div>
+                        <h4 style="font-size:16px; font-weight:700; color:var(--text-main); margin-bottom:4px; display:flex; align-items:center; gap:8px;">
+                            <i class='bx bx-git-commit' style="color:var(--primary); font-size:22px;"></i> Roadmap Iter Accreditamento OTA
+                        </h4>
+                        <span style="font-size:12px; color:var(--text-muted);">
+                            Fase ${currentStep} di 9: <strong style="color:var(--primary);">${steps[currentStep - 1].t}</strong>
+                        </span>
+                    </div>
+                    <div style="text-align:right;">
+                        <span style="font-size:18px; font-weight:800; color:var(--success);">${progressPercent}%</span>
+                        <span style="display:block; font-size:10px; color:var(--text-muted); text-transform:uppercase;">Completamento</span>
+                    </div>
                 </div>
-                <div style="font-size:11px; font-weight:600; color:var(--text-main); line-height:1.4;">${s.t}</div>
+
+                <div class="timeline-progress-bar-bg">
+                    <div class="timeline-progress-bar-fill" style="width: ${progressPercent}%;"></div>
+                </div>
+
+                <div class="timeline-steps-grid">
+                    ${steps.map((s, idx) => {
+                        const stepNum = idx + 1;
+                        let statusClass = 'pending';
+                        let statusText = 'Da avviare';
+
+                        if (stepNum < currentStep) {
+                            statusClass = 'completed';
+                            statusText = 'Completata';
+                        } else if (stepNum === currentStep) {
+                            statusClass = 'active';
+                            statusText = 'In corso';
+                        }
+
+                        return `
+                            <div class="timeline-step-card ${statusClass}" onclick="app.showTimelineStepDetail(${stepNum});">
+                                <div class="timeline-icon-badge">
+                                    <i class='bx ${statusClass === 'completed' ? 'bx-check' : s.i}'></i>
+                                </div>
+                                <div>
+                                    <div class="timeline-step-num" style="color: ${statusClass === 'completed' ? 'var(--success)' : (statusClass === 'active' ? 'var(--primary)' : 'var(--text-muted)')};">Fase ${s.n}</div>
+                                    <div class="timeline-step-title">${s.t}</div>
+                                </div>
+                                <span class="timeline-step-status-tag">${statusText}</span>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
             </div>
-        `).join('');
+        `;
+    },
+
+    showTimelineStepDetail(stepNum) {
+        if (!this._timelineStepsData) return;
+        const step = this._timelineStepsData[stepNum - 1];
+        if (!step) return;
+
+        const modal = document.getElementById('timeline-detail-modal');
+        const body = document.getElementById('timeline-modal-body');
+        if (!modal || !body) return;
+
+        let statusBadge = '<span style="background:rgba(255,255,255,0.08); color:var(--text-muted); padding:4px 10px; border-radius:12px; font-size:12px; font-weight:600;">In Attesa</span>';
+        
+        let currentStep = 1;
+        const struct = this.state.structureData || {};
+        const reqs = this.state.requirementsData || [];
+
+        if (struct.stato === 'CERTIFIED' || struct.stato === 'APPROVED') currentStep = 9;
+        else if (struct.stato === 'WAITS_FOR_APPROVAL') currentStep = 8;
+        else if (reqs.some(r => r.status === 'REJECTED' || r.stato === 'REJECTED')) currentStep = 6;
+        else if (reqs.length > 0 && reqs.filter(r => r.status === 'APPROVED' || r.stato === 'APPROVED').length > 0) currentStep = 5;
+        else if (struct.consulente_email_fk || struct.consulente_assegnato) currentStep = 3;
+        else if (struct.ragione_sociale || struct.piva || struct.titolare_ci_url) currentStep = 2;
+
+        if (stepNum < currentStep) {
+            statusBadge = '<span style="background:var(--success-bg); color:var(--success); padding:4px 10px; border-radius:12px; font-size:12px; font-weight:600;"><i class="bx bx-check-circle"></i> Fase Completata</span>';
+        } else if (stepNum === currentStep) {
+            statusBadge = '<span style="background:rgba(59,130,246,0.2); color:var(--primary); padding:4px 10px; border-radius:12px; font-size:12px; font-weight:600;"><i class="bx bx-time-five"></i> Fase In Corso</span>';
+        }
+
+        body.innerHTML = `
+            <div style="display:flex; align-items:center; gap:16px; margin-bottom:20px;">
+                <div style="width:52px; height:52px; border-radius:50%; background:rgba(59,130,246,0.15); border:2px solid var(--primary); display:flex; align-items:center; justify-content:center; font-size:24px; color:var(--primary);">
+                    <i class='bx ${step.i}'></i>
+                </div>
+                <div>
+                    <span style="font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px;">FASE ${step.n} DI 9</span>
+                    <h3 style="font-size:18px; font-weight:700; color:var(--text-main); margin-top:2px;">${step.t}</h3>
+                </div>
+            </div>
+
+            <div style="margin-bottom:20px;">
+                ${statusBadge}
+            </div>
+
+            <div style="background:rgba(255,255,255,0.03); border:1px solid var(--glass-border); border-radius:12px; padding:16px; margin-bottom:24px;">
+                <h5 style="font-size:13px; font-weight:600; color:var(--primary); margin-bottom:6px;">Descrizione Operativa</h5>
+                <p style="font-size:13px; color:var(--text-muted); line-height:1.5;">${step.desc}</p>
+            </div>
+
+            <div style="display:flex; justify-content:flex-end; gap:12px;">
+                <button class="btn btn-outline" style="padding:8px 16px; font-size:13px;" onclick="app.closeTimelineStepDetail();">Chiudi</button>
+                <button class="btn btn-primary" style="padding:8px 16px; font-size:13px;" onclick="app.closeTimelineStepDetail(); app.navigate('${step.actionTarget}');">
+                    <i class='bx bx-right-arrow-alt'></i> ${step.actionLabel}
+                </button>
+            </div>
+        `;
+
+        modal.style.display = 'flex';
+    },
+
+    closeTimelineStepDetail() {
+        const modal = document.getElementById('timeline-detail-modal');
+        if (modal) modal.style.display = 'none';
     },
 
     // ===== PANORAMICA: Render Storico Normativa =====
