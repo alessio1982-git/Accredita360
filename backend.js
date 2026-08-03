@@ -311,12 +311,13 @@ const Backend = {
     },
 
     /**
-     * Carica un file relativo alla logica della struttura (planimetria, foto) su Supabase Storage.
+     * Carica un file relativo alla logica della struttura (planimetria, foto) su Supabase Storage con supporto al progresso.
      * @param {string} fileName - Nome originale del file
      * @param {File}   file     - Oggetto File
+     * @param {Function} [onProgress] - Callback facoltativa per la percentuale (0-100)
      * @returns {Promise<{ url: string, path: string }>}
      */
-    async uploadAnagraficaFile(fileName, file) {
+    async uploadAnagraficaFile(fileName, file, onProgress) {
         const user = this.getCurrentUser();
         if (!user) throw new Error('Sessione scaduta.');
 
@@ -324,24 +325,49 @@ const Backend = {
         const safe = fileName.replace(/[^a-zA-Z0-9._-]/g, '_');
         const path = `${user.email}/anagrafica/${ts}_${safe}`;
 
-        const { data: uploadData, error: uploadErr } = await supabase.storage
-            .from('documents')
-            .upload(path, file, { upsert: true, contentType: file.type });
+        if (typeof onProgress === 'function') onProgress(15);
+
+        // Simulazione fluida progresso per file di grande dimensione durante l'attesa
+        let progressInterval = null;
+        if (typeof onProgress === 'function') {
+            let currentPct = 15;
+            progressInterval = setInterval(() => {
+                if (currentPct < 90) {
+                    currentPct += Math.floor(Math.random() * 10) + 5;
+                    if (currentPct > 90) currentPct = 90;
+                    onProgress(currentPct);
+                }
+            }, 250);
+        }
+
+        let uploadData, uploadErr;
+        try {
+            const res = await supabase.storage
+                .from('documents')
+                .upload(path, file, { upsert: true, contentType: file.type });
+            uploadData = res.data;
+            uploadErr = res.error;
+        } finally {
+            if (progressInterval) clearInterval(progressInterval);
+        }
 
         if (uploadErr) {
-            console.error('[Backend] Errore upload anagrafica file:', uploadErr);
+            console.error('[Backend] Errore uploadAnagraficaFile:', uploadErr);
             throw new Error(uploadErr.message || 'Errore durante il caricamento del file.');
         }
 
-        // Genera URL firmato (valido 1 anno)
-        const { data: urlData } = await supabase.storage
+        if (typeof onProgress === 'function') onProgress(100);
+
+        const { data: signedData, error: signedErr } = await supabase.storage
             .from('documents')
             .createSignedUrl(path, 60 * 60 * 24 * 365);
 
-        const signedUrl = urlData?.signedUrl || null;
+        if (signedErr || !signedData?.signedUrl) {
+            const { data: pub } = supabase.storage.from('documents').getPublicUrl(path);
+            return { url: pub.publicUrl, path };
+        }
 
-        console.log(`[Backend] File di anagrafica caricato con successo: ${path}`);
-        return { url: signedUrl, path };
+        return { url: signedData.signedUrl, path };
     },
 
     /**

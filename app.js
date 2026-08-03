@@ -1806,6 +1806,11 @@ const app = {
             alert('Pratica già approvata e certificata. Impossibile modificare i dati.');
             return;
         }
+
+        if (!this.validateAnagraficaForm()) {
+            return;
+        }
+
         const btn = document.getElementById('anag-save-btn');
         const msg = document.getElementById('anag-save-msg');
         if (btn) { btn.disabled = true; btn.innerHTML = `<i class='bx bx-loader-alt bx-spin'></i> Salvataggio...`; }
@@ -1854,6 +1859,7 @@ const app = {
 
             await Backend.saveAnagrafica(data);
             this.state.anagrafica = data;
+            this.clearAnagraficaDraft();
 
             // Se salvato con successo e i consensi sono attivi, disabilita le checkbox
             if (data.privacy_accettata && data.termini_accettati) {
@@ -1879,7 +1885,7 @@ const app = {
         try {
             const data = await Backend.getAnagrafica();
             if (!data) {
-                // Se non c'è anagrafica, disabilita il salvataggio per clickwrap vuoti
+                this.loadAnagraficaDraft();
                 this.validateConsents();
                 return;
             }
@@ -2037,13 +2043,32 @@ const app = {
 
                 preview.style.display = 'block';
                 preview.style.color = 'var(--text-muted)';
-                preview.innerHTML = `<i class='bx bx-loader-alt bx-spin'></i> Caricamento in corso...`;
+                preview.innerHTML = `
+                    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:4px; font-size:11px;">
+                        <span><i class='bx bx-loader-alt bx-spin'></i> Caricamento in corso...</span>
+                        <span id="${dropzoneId}-pct" style="font-weight:700; color:var(--primary);">0%</span>
+                    </div>
+                    <div style="width:100%; height:6px; background:rgba(255,255,255,0.1); border-radius:3px; overflow:hidden;">
+                        <div id="${dropzoneId}-bar" style="height:100%; width:0%; background:linear-gradient(90deg, var(--primary), var(--success)); transition:width 0.2s ease;"></div>
+                    </div>
+                `;
+
+                const updateProgress = (pct) => {
+                    const bar = document.getElementById(`${dropzoneId}-bar`);
+                    const txt = document.getElementById(`${dropzoneId}-pct`);
+                    if (bar) bar.style.width = `${pct}%`;
+                    if (txt) txt.textContent = `${pct}%`;
+                };
 
                 try {
                     if (isMultiple) {
                         const urls = this.state.fotoUrls ? [...this.state.fotoUrls] : [];
-                        for (const file of files) {
-                            const res = await Backend.uploadAnagraficaFile(file.name, file);
+                        for (let i = 0; i < files.length; i++) {
+                            const file = files[i];
+                            const res = await Backend.uploadAnagraficaFile(file.name, file, (pct) => {
+                                const totalPct = Math.round(((i + (pct / 100)) / files.length) * 100);
+                                updateProgress(totalPct);
+                            });
                             if (res.url) urls.push(res.url);
                         }
                         this.state.fotoUrls = urls;
@@ -2051,7 +2076,7 @@ const app = {
                         preview.innerHTML = `<i class='bx bx-check-circle'></i> Caricate ${files.length} foto con successo! <a href="#" onclick="app.showFotoGallery(event)" style="color:var(--primary);text-decoration:underline;">Visualizza</a>`;
                     } else {
                         const file = files[0];
-                        const res = await Backend.uploadAnagraficaFile(file.name, file);
+                        const res = await Backend.uploadAnagraficaFile(file.name, file, updateProgress);
 
                         let labelText = "File";
                         if (dropzoneId === 'dropzone-planimetria') {
@@ -2077,6 +2102,7 @@ const app = {
                         preview.style.color = 'var(--success)';
                         preview.innerHTML = `<i class='bx bx-check-circle'></i> ${labelText} caricato con successo! <a href="${res.url}" target="_blank" style="color:var(--primary);text-decoration:underline;">Apri</a>`;
                     }
+                    this.saveAnagraficaDraft();
                 } catch (err) {
                     console.error("[Dropzone] Errore caricamento file:", err);
                     preview.style.color = 'var(--danger)';
@@ -2103,6 +2129,215 @@ const app = {
         setupDropzone('dropzone-ds-ci', 'file-ds-ci', 'ds-ci-preview', false);
         setupDropzone('dropzone-ds-ts', 'file-ds-ts', 'ds-ts-preview', false);
         setupDropzone('dropzone-video', 'file-video', 'video-preview', false);
+
+        this.initFormValidation();
+        this.initAutosave();
+    },
+
+    // ===== VALIDAZIONE FORM STRINGENTE (REGEX) =====
+    initFormValidation() {
+        const rules = {
+            'anag-codice-fiscale':  { regex: /^[A-Z]{6}[0-9LMNPQRSTUV]{2}[A-EHLMPRST][0-9LMNPQRSTUV]{2}[A-Z][0-9LMNPQRSTUV]{3}[A-Z]$/i, msg: 'Codice Fiscale non valido (16 caratteri alfanumerici).' },
+            'anag-cf-lr':           { regex: /^[A-Z]{6}[0-9LMNPQRSTUV]{2}[A-EHLMPRST][0-9LMNPQRSTUV]{2}[A-Z][0-9LMNPQRSTUV]{3}[A-Z]$/i, msg: 'CF Legale Rappresentante non valido.' },
+            'anag-cf-pf':           { regex: /^[A-Z]{6}[0-9LMNPQRSTUV]{2}[A-EHLMPRST][0-9LMNPQRSTUV]{2}[A-Z][0-9LMNPQRSTUV]{3}[A-Z]$/i, msg: 'Codice Fiscale Persona Fisica non valido.' },
+            'anag-partita-iva':     { regex: /^[0-9]{11}$/, msg: 'Partita IVA non valida (deve contenere esattamente 11 cifre).' },
+            'anag-cap':             { regex: /^[0-9]{5}$/, msg: 'CAP non valido (5 cifre numeriche).' },
+            'anag-tel-struttura':   { regex: /^(\+39)?\s?[0-9]{8,12}$/, msg: 'Numero di telefono non valido.' },
+            'anag-tel-titolare':    { regex: /^(\+39)?\s?[0-9]{8,12}$/, msg: 'Numero di telefono non valido.' },
+            'anag-email-struttura': { regex: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, msg: 'Indirizzo Email non valido.' },
+            'anag-pec':             { regex: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, msg: 'Indirizzo PEC non valido.' }
+        };
+
+        const validateSingleField = (inputEl) => {
+            if (!inputEl) return true;
+            const rule = rules[inputEl.id];
+            if (!rule) return true;
+
+            const val = inputEl.value.trim();
+            let msgEl = inputEl.parentElement.querySelector('.field-validation-msg');
+
+            if (!val) {
+                inputEl.classList.remove('input-invalid', 'input-valid');
+                if (msgEl) msgEl.remove();
+                return true;
+            }
+
+            const isValid = rule.regex.test(val);
+            if (isValid) {
+                inputEl.classList.remove('input-invalid');
+                inputEl.classList.add('input-valid');
+                if (msgEl) msgEl.remove();
+                return true;
+            } else {
+                inputEl.classList.remove('input-valid');
+                inputEl.classList.add('input-invalid');
+                if (!msgEl) {
+                    msgEl = document.createElement('div');
+                    msgEl.className = 'field-validation-msg';
+                    inputEl.parentElement.appendChild(msgEl);
+                }
+                msgEl.innerHTML = `<i class='bx bx-error-circle'></i> ${rule.msg}`;
+                return false;
+            }
+        };
+
+        Object.keys(rules).forEach(id => {
+            const el = document.getElementById(id);
+            if (el) {
+                el.addEventListener('input', () => validateSingleField(el));
+                el.addEventListener('blur', () => validateSingleField(el));
+            }
+        });
+
+        this._validateSingleField = validateSingleField;
+        this._validationRules = rules;
+    },
+
+    validateAnagraficaForm() {
+        if (!this._validationRules) return true;
+        let isAllValid = true;
+        let firstInvalidEl = null;
+
+        Object.keys(this._validationRules).forEach(id => {
+            const el = document.getElementById(id);
+            if (el && el.offsetParent !== null && el.value.trim().length > 0) {
+                const valid = this._validateSingleField(el);
+                if (!valid) {
+                    isAllValid = false;
+                    if (!firstInvalidEl) firstInvalidEl = el;
+                }
+            }
+        });
+
+        if (!isAllValid && firstInvalidEl) {
+            firstInvalidEl.focus();
+            this._showErrorToast('Controlla i campi evidenziati in rosso prima di salvare.');
+        }
+        return isAllValid;
+    },
+
+    // ===== AUTOSAVE & GESTIONE BOZZE (LOCALSTORAGE) =====
+    getDraftStorageKey() {
+        const user = Backend.getCurrentUser();
+        const email = user ? user.email : 'guest';
+        return `accredita360_draft_anagrafica_${email}`;
+    },
+
+    initAutosave() {
+        const container = document.getElementById('view-anagrafica');
+        if (!container) return;
+
+        let debounceTimer = null;
+        container.addEventListener('input', (e) => {
+            if (this.state.frozen) return;
+            if (debounceTimer) clearTimeout(debounceTimer);
+            this.updateAutosaveBadge('saving');
+            debounceTimer = setTimeout(() => {
+                this.saveAnagraficaDraft();
+            }, 600);
+        });
+
+        container.addEventListener('change', (e) => {
+            if (this.state.frozen) return;
+            this.saveAnagraficaDraft();
+        });
+    },
+
+    saveAnagraficaDraft() {
+        if (this.state.frozen) return;
+        try {
+            const container = document.getElementById('view-anagrafica');
+            if (!container) return;
+
+            const inputs = container.querySelectorAll('input, select, textarea');
+            const draftData = {};
+
+            inputs.forEach(inp => {
+                if (inp.id && inp.type !== 'file') {
+                    if (inp.type === 'checkbox') draftData[inp.id] = inp.checked;
+                    else draftData[inp.id] = inp.value;
+                }
+            });
+
+            draftData['_savedAt'] = new Date().toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
+            draftData['_urls'] = {
+                planimetriaUrl:     this.state.planimetriaUrl,
+                fotoUrls:           this.state.fotoUrls,
+                titolareCiUrl:      this.state.titolareCiUrl,
+                titolareTsUrl:      this.state.titolareTsUrl,
+                dsCiUrl:            this.state.dsCiUrl,
+                dsTsUrl:            this.state.dsTsUrl,
+                videoStrutturaUrl:  this.state.videoStrutturaUrl
+            };
+
+            localStorage.setItem(this.getDraftStorageKey(), JSON.stringify(draftData));
+            this.updateAutosaveBadge('saved', draftData['_savedAt']);
+        } catch (e) {
+            console.warn('[Autosave] Errore salvataggio bozza:', e);
+        }
+    },
+
+    loadAnagraficaDraft() {
+        try {
+            const raw = localStorage.getItem(this.getDraftStorageKey());
+            if (!raw) return false;
+            const draft = JSON.parse(raw);
+            if (!draft) return false;
+
+            Object.keys(draft).forEach(id => {
+                if (id.startsWith('_')) return;
+                const el = document.getElementById(id);
+                if (el && !el.disabled) {
+                    if (el.type === 'checkbox') el.checked = draft[id];
+                    else el.value = draft[id];
+                }
+            });
+
+            if (draft._urls) {
+                if (draft._urls.planimetriaUrl)    this.state.planimetriaUrl = draft._urls.planimetriaUrl;
+                if (draft._urls.fotoUrls)          this.state.fotoUrls = draft._urls.fotoUrls;
+                if (draft._urls.titolareCiUrl)     this.state.titolareCiUrl = draft._urls.titolareCiUrl;
+                if (draft._urls.titolareTsUrl)     this.state.titolareTsUrl = draft._urls.titolareTsUrl;
+                if (draft._urls.dsCiUrl)           this.state.dsCiUrl = draft._urls.dsCiUrl;
+                if (draft._urls.dsTsUrl)           this.state.dsTsUrl = draft._urls.dsTsUrl;
+                if (draft._urls.videoStrutturaUrl) this.state.videoStrutturaUrl = draft._urls.videoStrutturaUrl;
+            }
+
+            this.updateAutosaveBadge('restored', draft._savedAt);
+            return true;
+        } catch (e) {
+            console.warn('[Autosave] Errore ripristino bozza:', e);
+            return false;
+        }
+    },
+
+    clearAnagraficaDraft() {
+        try {
+            localStorage.removeItem(this.getDraftStorageKey());
+            const badge = document.getElementById('autosave-status-badge');
+            if (badge) badge.style.display = 'none';
+        } catch (e) {
+            console.warn('[Autosave] Errore pulizia bozza:', e);
+        }
+    },
+
+    updateAutosaveBadge(status, timeStr) {
+        const badge = document.getElementById('autosave-status-badge');
+        if (!badge) return;
+
+        badge.style.display = 'inline-flex';
+        badge.className = 'autosave-badge';
+
+        if (status === 'saving') {
+            badge.classList.add('autosave-saving');
+            badge.innerHTML = `<i class='bx bx-loader-alt bx-spin'></i> Salvataggio bozza...`;
+        } else if (status === 'saved') {
+            badge.classList.add('autosave-saved');
+            badge.innerHTML = `<i class='bx bx-check-circle'></i> Bozza salvata in locale ${timeStr ? '(' + timeStr + ')' : ''}`;
+        } else if (status === 'restored') {
+            badge.classList.add('autosave-restored');
+            badge.innerHTML = `<i class='bx bx-time-five'></i> Bozza ripristinata dal browser ${timeStr ? '(' + timeStr + ')' : ''}`;
+        }
     },
 
     showFotoGallery(e) {
