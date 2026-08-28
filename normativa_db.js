@@ -54,7 +54,8 @@ const NormativaDB = {
             { id: "RSA_07", titolo: "Locale per Attività Occupazionali e di Socializzazione", cat: "Strutturale", norma: "D.A. 890/02", tipo_doc: "Planimetria", percorso: "asp" },
             { id: "RSA_08", titolo: "Sistema di Chiamata Emergenza da Letti e Bagni", cat: "Tecnologico", norma: "D.A. 890/02", tipo_doc: "Relazione Impianti", percorso: "asp" },
             { id: "RSA_09", titolo: "Matrici di Turnazione Personale (Minutaggio Assistenza)", cat: "Organizzativo", norma: "D.A. 724/2022", tipo_doc: "Turni/Registro", percorso: "asp" },
-            { id: "RSA_10", titolo: "Piano Assistenziale Individualizzato (PAI) per Ospite", cat: "Organizzativo", norma: "D.A. 890/02", tipo_doc: "Procedura", percorso: "asp" }
+            { id: "RSA_10", titolo: "Piano Assistenziale Individualizzato (PAI) per Ospite", cat: "Organizzativo", norma: "D.A. 890/02", tipo_doc: "Procedura", percorso: "asp" },
+            { id: "RSA_11", titolo: "Verifica Disponibilità Fabbisogno Distrettuale e Bando Regionale", cat: "Amministrativo", norma: "D.A. 79/2026", tipo_doc: "Candidatura Bando / Delibera ASP", percorso: "asp" }
         ],
         "lab": [
             { id: "LAB_01", titolo: "Sala Prelievi (Min. 9 mq) con Box/Tendaggio Privacy", cat: "Strutturale", norma: "D.A. 890/02", tipo_doc: "Planimetria", percorso: "asp" },
@@ -70,7 +71,11 @@ const NormativaDB = {
             { id: "ADI_02", titolo: "Locale per Deposito Attrezzature da Domicilio", cat: "Strutturale", norma: "D.A. 890/02", tipo_doc: "Planimetria", percorso: "asp" },
             { id: "ADI_03", titolo: "Centrale Operativa per Coordinamento H12/H24", cat: "Organizzativo", norma: "D.A. 890/02", tipo_doc: "Procedura", percorso: "asp" },
             { id: "ADI_04", titolo: "Cartella Clinica / PAI Domiciliare Informatizzata", cat: "Tecnologico", norma: "D.A. 20/2024", tipo_doc: "Manuale Software", percorso: "asp" },
-            { id: "ADI_05", titolo: "Protocolli per Gestione Sicura Farmaci a Domicilio", cat: "Organizzativo", norma: "D.A. 890/02", tipo_doc: "Procedura", percorso: "asp" }
+            { id: "ADI_05", titolo: "Protocolli per Gestione Sicura Farmaci a Domicilio", cat: "Organizzativo", norma: "D.A. 890/02", tipo_doc: "Procedura", percorso: "asp" },
+            { id: "ADI_06", titolo: "Costituzione Équipe Multidisciplinare di Cure Domiciliari", cat: "Organizzativo", norma: "D.A. 71/2026", tipo_doc: "Atto di Incarico / Organigramma", percorso: "asp" },
+            { id: "ADI_07", titolo: "Interoperabilità con Fascicolo Sanitario Elettronico (FSE/FSD)", cat: "Tecnologico", norma: "D.A. 71/2026", tipo_doc: "Certificazione Integrazione / Manuale Software", percorso: "asp" },
+            { id: "ADI_08", titolo: "Piattaforma e Servizi di Telemedicina/Teleconsulto attivi", cat: "Tecnologico", norma: "D.A. 71/2026", tipo_doc: "Contratto Servizio / Relazione Tecnica", percorso: "asp" },
+            { id: "ADI_09", titolo: "Protocollo Presa in Carico Tempestiva e triage clinico", cat: "Organizzativo", norma: "D.A. 71/2026", tipo_doc: "Procedura Interna", percorso: "asp" }
         ],
         "odontoiatria": [
             { id: "ODO_01", titolo: "Locale Operativo Odontoiatrico (Min. 9 mq per poltrona)", cat: "Strutturale", norma: "D.A. 890/02", tipo_doc: "Planimetria", percorso: "asp" },
@@ -147,7 +152,8 @@ const NormativaDB = {
         ],
         "domiciliare": [
             { id: "OTA_ADI_01", titolo: "Sistema Informatizzato per il Telemonitoraggio Clinico", cat: "Tecnologico", norma: "D.A. 20/2024", tipo_doc: "Manuale Software", percorso: "ota" },
-            { id: "OTA_ADI_02", titolo: "Indicatori di Ri-Ospedalizzazione non Programmata", cat: "Risk Management", norma: "D.A. 20/2024", tipo_doc: "Report Indicatori", percorso: "ota" }
+            { id: "OTA_ADI_02", titolo: "Indicatori di Ri-Ospedalizzazione non Programmata", cat: "Risk Management", norma: "D.A. 20/2024", tipo_doc: "Report Indicatori", percorso: "ota" },
+            { id: "OTA_ADI_03", titolo: "Cruscotto Digitale Allarmi Clinici per Telemonitoraggio Domiciliare", cat: "Tecnologico", norma: "D.A. 71/2026", tipo_doc: "Report/Relazione software", percorso: "ota" }
         ],
         "odontoiatria": [
             { id: "OTA_ODO_01", titolo: "Protocollo Gestione Urgenze/Emergenze nello Studio Odontoiatrico", cat: "Clinico", norma: "D.A. 20/2024", tipo_doc: "Procedura", percorso: "ota" },
@@ -269,6 +275,24 @@ const NormativaDB = {
             nota_compliance: 'Il Sistema Qualità deve essere conforme ai criteri OTA vigenti dal 2024.',
             procedura_ota: 'ACC01 v4.0',
             manuale_ota: ['MRG-MonoP 1.1', 'MRG-MultiP 1.0']
+        },
+        'D.A. 71/2026': {
+            vigente: true,
+            nome_completo: 'D.A. 26 gennaio 2026 n. 71',
+            ambito: 'Cure Domiciliari (ADI) — Requisiti e Standard',
+            aggiornamenti: [],
+            nota_compliance: 'Nuovi requisiti su telemedicina, FSE/FSD ed équipe multidisciplinari per soggetti erogatori ADI.',
+            procedura_ota: 'ACC01 v4.0',
+            manuale_ota: ['MRG-MonoP 1.1']
+        },
+        'D.A. 79/2026': {
+            vigente: true,
+            nome_completo: 'D.A. 26 gennaio 2026 n. 79',
+            ambito: 'Rete Residenzialità Fragili (RSA) — Programmazione Distrettuale',
+            aggiornamenti: [],
+            nota_compliance: 'Verificare disponibilità fabbisogno nel distretto socio-sanitario e partecipazione a bandi regionali.',
+            procedura_ota: null,
+            manuale_ota: []
         },
         'D.A. 724/2022': {
             vigente: true,

@@ -1685,7 +1685,7 @@ const app = {
 
     // ===== PANORAMICA: Render Storico Normativa =====
     renderStoricoNormativa() {
-        const container = document.getElementById('pan-storico-container');
+        const container = document.getElementById('norm-coerenza-container');
         if (!container || container.children.length > 0) return;
 
         const sections = [
@@ -1717,7 +1717,9 @@ const app = {
                     { code: 'D.A. 02/03/2016 n. 319', name: 'Adeguamento moderno', desc: 'Adegua la Sicilia alle Intese Stato-Regioni e al nuovo sistema OTA. Definisce requisiti organizzativi, strutturali e tecnologici.' },
                     { code: 'D.A. 09/08/2022 n. 724', name: 'Aggiornamento procedure', desc: 'Aggiorna procedure, requisiti e modalità di verifica del sistema autorizzativo. Molto usato oggi nelle pratiche ASP/OTA.' },
                     { code: 'D.A. 29/05/2023 n. 560', name: 'Aggiornamento operativo', desc: 'Interviene su requisiti, procedimenti, verifiche e adeguamenti.' },
-                    { code: 'D.A. 09/01/2024 n. 20', name: 'Decreto modernissimo e fondamentale', desc: 'Introduce semplificazione requisiti, classificazione per complessità, nuove evidenze documentali e sistema standardizzato.', details: 'Importantissimo per: consulenza sanitaria · audit · checklist · piattaforme digitali' }
+                    { code: 'D.A. 09/01/2024 n. 20', name: 'Decreto modernissimo e fondamentale', desc: 'Introduce semplificazione requisiti, classificazione per complessità, nuove evidenze documentali e sistema standardizzato.', details: 'Importantissimo per: consulenza sanitaria · audit · checklist · piattaforme digitali' },
+                    { code: 'D.A. 26/01/2026 n. 71', name: 'Standard Cure Domiciliari (ADI) e Telemedicina', desc: 'Introduce standard operativi rigorosi su telemedicina, integrazione FSE/FSD ed équipe multidisciplinari per accreditamento ADI.' },
+                    { code: 'D.A. 26/01/2026 n. 79', name: 'Programmazione Rete RSA e Posti Letto', desc: 'Riorganizza la programmazione RSA per singoli distretti socio-sanitari e stabilisce bandi regionali per nuovi accreditamenti.' }
                 ]
             },
             {
@@ -1725,6 +1727,7 @@ const app = {
                 color: '#10b981',
                 icon: 'bx-medal',
                 norms: [
+                    { code: 'Sentenza CGA n. 136/2026', name: 'Libertà di accreditamento e tutela concorsuale', desc: 'Dichiara l\'illegittimità di gare competitive a monte per l\'accreditamento. Stabilisce l\'accreditamento come riconoscimento oggettivo di qualità (aperto) e sposta le procedure competitive a valle (contrattualizzazione dei budget).', details: 'Fase Accreditamento → Libera ed aperta · Fase Contratto Budget → Gara competitiva legittima' },
                     { code: 'D.P.R.S. 27/06/2019 n. 12', name: 'Istituzione formale dell\'OTA Sicilia', desc: 'Definisce organizzazione, funzioni, competenze e attività di verifica dell\'OTA. Operativo dal 1° agosto 2019.' },
                     { code: 'Intesa Stato-Regioni 20/12/2012', name: 'Rep. 259/CSR — Revisione sistema accreditamento', desc: 'Definisce standard nazionali per la revisione del sistema di accreditamento, qualità e sicurezza.' },
                     { code: 'Intesa Stato-Regioni 19/02/2015', name: 'Rep. 32/CSR — Fondamentale per OTA', desc: 'Definisce indipendenza, imparzialità, trasparenza, requisiti OTA e modalità di verifiche.' }
@@ -1744,6 +1747,7 @@ const app = {
                 color: '#06b6d4',
                 icon: 'bx-target-lock',
                 norms: [
+                    { code: 'Legge n. 50/2026 (PNRR)', name: 'Criteri di qualità per contrattualizzazione', desc: 'Integra le disposizioni del Decreto PNRR per la selezione competitiva legata ai contratti, basata su standard di sicurezza, livelli occupazionali e continuità assistenziale.' },
                     { code: 'D.M. 77/2022', name: 'Riforma assistenza territoriale', desc: 'Ridefinisce case di comunità, centrali operative, cure domiciliari e assistenza territoriale.' },
                     { code: 'DPCM 12/01/2017', name: 'LEA — Livelli Essenziali di Assistenza', desc: 'Fondamentale per prestazioni sanitarie, requisiti assistenziali e standard di qualità.' }
                 ]

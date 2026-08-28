@@ -11,7 +11,8 @@ async function testAdminLogin() {
     },
     body: JSON.stringify({
       email: 'admin@accredita360s.com',
-      password: 'admin'
+      password: 'admin',
+      target_role: 'admin'
     })
   });
   console.log("Status:", loginRes.status);
