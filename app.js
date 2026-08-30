@@ -370,6 +370,36 @@ const app = {
         const badgeBg = setRequisiti === 'Allegato_B1_Semplice' ? 'rgba(16,185,129,0.1)' : 'rgba(59,130,246,0.1)';
         
         const formaLabel = forma === 'individuale' ? 'Studio Individuale' : 'Società';
+
+        // Calcolo stima durata accreditamento (D.A. 741/2023)
+        const reqs = appState.requirements || [];
+        const total = reqs.length;
+        const green = reqs.filter(r => r.stato === 'green').length;
+        
+        let durLabel = 'Candidatura in corso';
+        let durColor = '#8b5cf6';
+        let durBg = 'rgba(139,92,246,0.1)';
+        
+        if (total > 0) {
+            const percent = (green / total) * 100;
+            if (percent === 100) {
+                durLabel = 'Stima: 5 ANNI (Accred. Istituzionale)';
+                durColor = '#10b981';
+                durBg = 'rgba(16,185,129,0.1)';
+            } else if (percent >= 90) {
+                durLabel = 'Stima: 3 ANNI (Con Prescrizioni)';
+                durColor = '#f59e0b';
+                durBg = 'rgba(245,158,11,0.1)';
+            } else if (percent >= 50) {
+                durLabel = 'Stima: 1 ANNO (Accred. Annuale)';
+                durColor = '#ec4899';
+                durBg = 'rgba(236,72,153,0.1)';
+            } else {
+                durLabel = 'Stima: Non Candidabile (<50%)';
+                durColor = '#ef4444';
+                durBg = 'rgba(239,68,68,0.1)';
+            }
+        }
         
         container.innerHTML = `
             <span style="font-size: 11px; padding: 4px 10px; background: ${badgeBg}; color: ${badgeColor}; border: 1px solid ${badgeColor}40; border-radius: 20px; font-weight: 700; display: inline-flex; align-items: center; gap: 4px;">
@@ -377,6 +407,9 @@ const app = {
             </span>
             <span style="font-size: 11px; padding: 4px 10px; background: rgba(255,255,255,0.06); color: var(--text-muted); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;">
                 <i class='bx bx-id-card'></i> ${formaLabel} (${nProf} prof.)
+            </span>
+            <span style="font-size: 11px; padding: 4px 10px; background: ${durBg}; color: ${durColor}; border: 1px solid ${durColor}40; border-radius: 20px; font-weight: 700; display: inline-flex; align-items: center; gap: 4px;">
+                <i class='bx bx-time-five'></i> ${durLabel}
             </span>
         `;
     },
@@ -782,9 +815,16 @@ const app = {
                 const useAI = confirm(`📄 "${file.name}" caricato con successo!\n\nVuoi avviare la validazione immediata con AI? (consigliato)`);
                 if (useAI) {
                     const titleEl = document.getElementById('view-title');
-                    if (titleEl) titleEl.textContent = '🤖 Analisi AI in corso...';
+                    
+                    // Simulazione scansione ispettiva a più fasi dell'agente AI
+                    if (titleEl) titleEl.textContent = '🤖 Agente AI: Apertura documento in corso...';
+                    await new Promise(r => setTimeout(r, 600));
+                    if (titleEl) titleEl.textContent = '🔍 Agente AI: Analisi e scansione dei testi...';
+                    await new Promise(r => setTimeout(r, 700));
+                    if (titleEl) titleEl.textContent = '📊 Agente AI: Controllo coerenza requisiti e Manuale MAMB...';
+                    await new Promise(r => setTimeout(r, 800));
 
-                    const aiResult = await Backend.analyzeDocumentConAI(reqId, file.name);
+                    const aiResult = await Backend.analyzeDocumentConAI(reqId, file);
 
                     if (titleEl) titleEl.textContent = 'Gap Analysis (Semaforo)';
 
@@ -1694,7 +1734,7 @@ const app = {
                 color: '#3b82f6',
                 icon: 'bx-globe',
                 norms: [
-                    { code: 'D.Lgs. 502/1992', name: 'Norma madre della sanità moderna italiana', desc: 'Introduce autorizzazione sanitaria, accreditamento istituzionale e rapporto pubblico/privato nel SSR.', details: 'Art. 8-ter → Autorizzazione · Art. 8-quater → Accreditamento · Art. 8-quinquies → Accordi contrattuali' },
+                    { code: 'D.Lgs. 502/1992', name: 'Norma madre della sanità moderna italiana', desc: 'Introduce autorizzazione, accreditamento e accordi contrattuali. L\'efficacia dell\'art. 8-quater c.7 è sospesa in Sicilia da L. 193/24 e D.A. 229/25.', details: 'Art. 8-ter → Autorizzazione · Art. 8-quater → Accreditamento · Art. 8-quinquies → Accordi contrattuali' },
                     { code: 'D.Lgs. 229/1999', name: 'Modifica al D.Lgs. 502/1992', desc: 'Rende centrali qualità, appropriatezza, requisiti organizzativi e controlli sulle strutture.' },
                     { code: 'D.P.R. 14/01/1997', name: 'Norma TECNICA fondamentale', desc: 'Definisce requisiti strutturali, tecnologici e organizzativi minimi per tutte le strutture sanitarie pubbliche e private.', details: 'Ambulatori · Laboratori · Sale operatorie · RSA · Diagnostica · Poliambulatori · Impiantistica · Sicurezza' }
                 ]
@@ -1715,9 +1755,12 @@ const app = {
                     { code: 'D.A. 17/06/2002 n. 890', name: 'Decreto base siciliano', desc: 'Introduce sistema autorizzativo, requisiti, procedure e modalità di verifica.' },
                     { code: 'D.A. 17/04/2003 n. 463', name: 'Integrazione D.A. 890/2002', desc: 'Dettaglia procedimenti, aggiorna requisiti e disciplina verifiche.' },
                     { code: 'D.A. 02/03/2016 n. 319', name: 'Adeguamento moderno', desc: 'Adegua la Sicilia alle Intese Stato-Regioni e al nuovo sistema OTA. Definisce requisiti organizzativi, strutturali e tecnologici.' },
+                    { code: 'D.A. 04/07/2023 n. 741', name: 'Competenze ispettive e durate accreditamento', desc: 'Ripartisce le verifiche (OTA per strutture complesse, ASP per strutture semplici) e definisce la durata dell\'accreditamento (1-3-5 anni).' },
                     { code: 'D.A. 09/08/2022 n. 724', name: 'Aggiornamento procedure', desc: 'Aggiorna procedure, requisiti e modalità di verifica del sistema autorizzativo. Molto usato oggi nelle pratiche ASP/OTA.' },
                     { code: 'D.A. 29/05/2023 n. 560', name: 'Aggiornamento operativo', desc: 'Interviene su requisiti, procedimenti, verifiche e adeguamenti.' },
                     { code: 'D.A. 09/01/2024 n. 20', name: 'Decreto modernissimo e fondamentale', desc: 'Introduce semplificazione requisiti, classificazione per complessità, nuove evidenze documentali e sistema standardizzato.', details: 'Importantissimo per: consulenza sanitaria · audit · checklist · piattaforme digitali' },
+                    { code: 'D.A. 11/03/2025 n. 229', name: 'Sospensione requisiti volumi e controlli in Sicilia', desc: 'Sospende temporaneamente in Sicilia l\'efficacia delle disposizioni nazionali in materia di programmazione basata sui volumi di attività (in deroga all\'art. 8-quater c.7).' },
+                    { code: 'D.A. 02/04/2025 n. 376', name: 'Nuovo Cronoprogramma Riavvio Accreditamento', desc: 'Ridefinisce le scadenze e le priorità per il riavvio del percorso di accreditamento delle strutture pubbliche e l\'aggiornamento dei requisiti.' },
                     { code: 'D.A. 26/01/2026 n. 71', name: 'Standard Cure Domiciliari (ADI) e Telemedicina', desc: 'Introduce standard operativi rigorosi su telemedicina, integrazione FSE/FSD ed équipe multidisciplinari per accreditamento ADI.' },
                     { code: 'D.A. 26/01/2026 n. 79', name: 'Programmazione Rete RSA e Posti Letto', desc: 'Riorganizza la programmazione RSA per singoli distretti socio-sanitari e stabilisce bandi regionali per nuovi accreditamenti.' }
                 ]

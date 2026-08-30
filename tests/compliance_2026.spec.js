@@ -82,15 +82,17 @@ test.describe('Verifica Aggiornamenti Legislativi 2026', () => {
                 order: () => reqChain,
                 then: (resolve) => resolve({ data: [], error: null })
               };
+              const updChain = {
+                eq: () => updChain,
+                then: (resolve) => resolve({ data: [], error: null })
+              };
               return {
                 select: () => reqChain,
                 delete: () => ({
                   eq: () => Promise.resolve({ data: [], error: null })
                 }),
                 insert: (data) => Promise.resolve({ data, error: null }),
-                update: () => ({
-                  eq: () => Promise.resolve({ data: [], error: null })
-                })
+                update: () => updChain
               };
             }
             if (table === 'users') {
@@ -164,11 +166,15 @@ test.describe('Verifica Aggiornamenti Legislativi 2026', () => {
                     order: () => reqChain,
                     then: (resolve) => resolve({ data: [], error: null })
                   };
+                  const updChain = {
+                    eq: () => updChain,
+                    then: (resolve) => resolve({ data: [], error: null })
+                  };
                   return {
                     select: () => reqChain,
                     delete: () => ({ eq: () => Promise.resolve({ data: [], error: null }) }),
                     insert: (data) => Promise.resolve({ data, error: null }),
-                    update: () => ({ eq: () => Promise.resolve({ data: [], error: null }) })
+                    update: () => updChain
                   };
                 }
                 if (table === 'users') {
@@ -313,15 +319,45 @@ test.describe('Verifica Aggiornamenti Legislativi 2026', () => {
       return { resADI_06, resRSA_11 };
     });
 
-    // ADI_06 deve riferire al D.A. 71/2026, con procedura ACC01 v4.0 e manuale MRG-MonoP 1.1
+    // ADI_06 deve riferire al D.A. 71/2026, con procedura ACC01 v4.0 e manuale MCD-SER 1.2.1
     expect(checkComplianceResult.resADI_06.norma).toBe('D.A. 71/2026');
     expect(checkComplianceResult.resADI_06.procedura_ota).toBe('ACC01 v4.0');
-    expect(checkComplianceResult.resADI_06.manuali_ota).toContain('MRG-MonoP 1.1');
+    expect(checkComplianceResult.resADI_06.manuali_ota).toContain('MCD-SER 1.2.1');
     expect(checkComplianceResult.resADI_06.nota_compliance).toContain('Nuovi requisiti su telemedicina');
 
     // RSA_11 deve riferire al D.A. 79/2026, senza procedura ota collegata
     expect(checkComplianceResult.resRSA_11.norma).toBe('D.A. 79/2026');
     expect(checkComplianceResult.resRSA_11.procedura_ota).toBeNull();
     expect(checkComplianceResult.resRSA_11.nota_compliance).toContain('Verificare disponibilità fabbisogno');
+  });
+
+  test("Verifica Sospensioni di Efficacia, Durate Accreditamento e Schede MAMB", async ({ page }) => {
+    await page.goto(`${BASE_URL}/app.html`);
+    await page.waitForFunction(() => window.appInitialized === true);
+
+    const mambAndSuspensionResults = await page.evaluate(async () => {
+      // @ts-ignore
+      const resSuspended = NormativaDB.checkCompliance('GEN_NAZ_09'); // Volume/Esiti
+      
+      // Simula analisi AI con un file di tipo Procedura
+      // @ts-ignore
+      const aiResProcedura = await Backend.analyzeDocumentConAI('ADI_09', 'procedura_triage_rev1.pdf');
+      
+      return { resSuspended, aiResProcedura };
+    });
+
+    // 1. GEN_NAZ_09 deve rilevare la sospensione (D.A. 229/2025)
+    expect(mambAndSuspensionResults.resSuspended.conforme).toBe(true);
+    expect(mambAndSuspensionResults.resSuspended.livello).toBe('attenzione');
+    expect(mambAndSuspensionResults.resSuspended.messaggi[0]).toContain('EFFICACIA SOSPESA');
+
+    // 2. La scansione AI della procedura ADI_09 deve includere la scheda MAMB-2.1-02-PROC
+    expect(mambAndSuspensionResults.aiResProcedura.comment).toContain('SCHEDA MAMB-2.1-02-PROC');
+    expect(mambAndSuspensionResults.aiResProcedura.comment).toContain('PROC.04');
+    expect(mambAndSuspensionResults.aiResProcedura.comment).toContain('Soddisfatto');
+
+    // 3. Verifichiamo che il badge di durata sia visualizzato
+    const badgeContainer = page.locator('#inquadramento-badge-container');
+    await expect(badgeContainer).toContainText('Stima:');
   });
 });

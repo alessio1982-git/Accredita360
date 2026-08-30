@@ -893,58 +893,121 @@ const Backend = {
     },
 
 
+    // Helper per estrarre la checklist MAMB simulando la scansione AI del documento
+    _generaChecklistMAMB(reqId, fileName, req, fileContent = "") {
+        const lowerName = fileName.toLowerCase();
+        const lowerContent = (fileContent || "").toLowerCase();
+        let scheda = "";
+        let criteri = [];
+
+        if (req.tipo_doc === 'Procedura' || req.tipo_doc === 'Protocollo' || reqId.includes('PROC') || reqId === 'ADI_05' || reqId === 'ADI_09' || reqId === 'POL_05') {
+            scheda = "SCHEDA MAMB-2.1-02-PROC (Validazione Procedura)";
+            criteri = [
+                { id: "PROC.01", desc: "Denominazione dell'Organizzazione", ok: true },
+                { id: "PROC.02", desc: "Titolo del documento presente", ok: true },
+                { id: "PROC.04", desc: "Numero e data di revisione/versione corrente", ok: lowerName.includes('rev') || lowerName.includes('v') || lowerName.includes('vers') || lowerContent.includes('revisione') || lowerContent.includes('versione') },
+                { id: "PROC.05", desc: "Data di emissione e/o adozione", ok: lowerName.includes('202') || /\b202\d\b/.test(lowerContent) },
+                { id: "PROC.09", desc: "Firma di adozione del Direttore/LR", ok: true },
+                { id: "PROC.10", desc: "Redazione secondo i principi EBM (se clinica)", ok: reqId === 'ADI_09' ? lowerName.includes('ebm') || lowerName.includes('linea') || lowerContent.includes('ebm') || lowerContent.includes('evidence') : 'N/A' },
+                { id: "PROC.13", desc: "Descrizione delle attività e modalità esecuzione", ok: true },
+                { id: "PROC.17", desc: "Indicatori di monitoraggio definiti", ok: lowerName.includes('ind') || lowerName.includes('monitor') || lowerName.includes('qualita') || lowerContent.includes('indicatore') || lowerContent.includes('frequenza') }
+            ];
+        } else if (req.tipo_doc === 'Relazione Tecnica' || req.tipo_doc === 'Dichiarazione' || req.tipo_doc === 'Certificato' || req.cat === 'Strutturale' || req.cat === 'Tecnologico') {
+            scheda = "SCHEDA MAMB-2.1-05-DTEC (Validazione Documentazione Tecnica)";
+            criteri = [
+                { id: "DOCT.01", desc: "Denominazione del fabbricante", ok: true },
+                { id: "DOCT.02", desc: "Informazioni identificative del fabbricante", ok: true },
+                { id: "DOCT.03", desc: "Riferimento specifico al modello installato", ok: lowerName.includes('mod') || lowerName.includes('sn') || lowerName.includes('matricola') || lowerContent.includes('modello') || lowerContent.includes('s/n') || lowerContent.includes('serial') },
+                { id: "DOCT.05", desc: "Presenza di manuale/istruzioni d'uso", ok: true },
+                { id: "DOCT.06", desc: "Informazioni sulla conformità a norme CE/nazionali", ok: lowerName.includes('ce') || lowerName.includes('conform') || lowerName.includes('dm') || lowerContent.includes('ce') || lowerContent.includes('conformità') }
+            ];
+        } else if (req.tipo_doc === 'Piano' || reqId.includes('PINT') || reqId === 'RSA_10') {
+            scheda = "SCHEDA MAMB-2.1-04-PINT (Validazione Piano di Intervento)";
+            criteri = [
+                { id: "PINT.01", desc: "Denominazione dell'Organizzazione", ok: true },
+                { id: "PINT.02", desc: "Titolo del Piano", ok: true },
+                { id: "PINT.10", desc: "Scopo e obiettivi specifici del Piano", ok: true },
+                { id: "PINT.12", desc: "Arco temporale e cronoprogramma definiti", ok: lowerName.includes('cron') || lowerName.includes('gantt') || lowerName.includes('programma') || lowerContent.includes('cronoprogramma') || lowerContent.includes('gantt') },
+                { id: "PINT.18", desc: "Criteri e modalità di monitoraggio", ok: true }
+            ];
+        } else {
+            scheda = "SCHEDA MAMB-2.1-01-DDIR (Validazione Documenti Direzione)";
+            criteri = [
+                { id: "DDIR.01", desc: "Denominazione dell'Organizzazione", ok: true },
+                { id: "DDIR.02", desc: "Titolo del documento", ok: true },
+                { id: "DDIR.04", desc: "Numero e data di revisione", ok: lowerName.includes('rev') || lowerName.includes('v') || lowerContent.includes('rev.') || lowerContent.includes('revisione') },
+                { id: "DDIR.09", desc: "Firma di adozione del LR/DS", ok: true },
+                { id: "DDIR.12", desc: "Periodo di validità chiaramente definito", ok: lowerName.includes('scadenza') || lowerName.includes('valido') || lowerContent.includes('scadenza') || lowerContent.includes('validità') }
+            ];
+        }
+
+        return { scheda, criteri };
+    },
+
     // =========================================================
-    // ANALISI AI (simulazione con engine NormativaDB)
+    // ANALISI AI (simulazione con engine NormativaDB e scansione MAMB)
     // =========================================================
-    async analyzeDocumentConAI(reqId, fileName) {
+    async analyzeDocumentConAI(reqId, fileOrName) {
         return new Promise(async (resolve) => {
             // Simula latenza AI (1–2 secondi)
             await new Promise(r => setTimeout(r, 800 + Math.random() * 1200));
 
+            const fileName = typeof fileOrName === 'string' ? fileOrName : fileOrName.name;
+            let fileContent = "";
+            if (fileOrName && typeof fileOrName.text === 'function') {
+                try {
+                    fileContent = await fileOrName.text();
+                } catch(e) {
+                    console.warn('[AI Agent] Errore lettura file text:', e);
+                }
+            }
+
             const compliance = NormativaDB.checkCompliance(reqId);
             const normaDef   = NormativaDB.findById(reqId);
             const registry   = compliance ? NormativaDB.complianceRegistry[normaDef?.norma] : null;
-            const baseCheck  = Math.random() > 0.25;
 
-            let aiResponse;
+            let aiResponse = {
+                status:          'green',
+                compliance:      'ok',
+                comment:         '',
+                nota_compliance: compliance?.nota_compliance || '',
+                procedura_ota:   compliance?.procedura_ota || null,
+                manuali_ota:     compliance?.manuali_ota || []
+            };
 
             if (compliance?.livello === 'critico') {
-                aiResponse = {
-                    status:          'red',
-                    compliance:      'critico',
-                    comment:         `❌ NON CONFORME — ${compliance.messaggi[0]}`,
-                    nota_compliance: compliance.nota_compliance,
-                    procedura_ota:   compliance.procedura_ota,
-                    manuali_ota:     compliance.manuali_ota
-                };
-            } else if (compliance?.livello === 'attenzione' && !baseCheck) {
-                aiResponse = {
-                    status:          'yellow',
-                    compliance:      'attenzione',
-                    comment:         `⚠️ ATTENZIONE NORMATIVA — ${compliance.nota_compliance} ${compliance.messaggi[0] || ''}`,
-                    nota_compliance: compliance.nota_compliance,
-                    procedura_ota:   compliance.procedura_ota,
-                    manuali_ota:     compliance.manuali_ota
-                };
-            } else if (baseCheck) {
-                const normaLabel = registry?.nome_completo || normaDef?.norma || 'normativa vigente';
-                aiResponse = {
-                    status:          'green',
-                    compliance:      'ok',
-                    comment:         `✅ Documento conforme alla ${normaLabel}.${compliance?.nota_compliance ? ' ' + compliance.nota_compliance : ''}`,
-                    nota_compliance: compliance?.nota_compliance || '',
-                    procedura_ota:   compliance?.procedura_ota || null,
-                    manuali_ota:     compliance?.manuali_ota || []
-                };
+                aiResponse.status = 'red';
+                aiResponse.compliance = 'critico';
+                aiResponse.comment = `❌ NON CONFORME — ${compliance.messaggi[0]}`;
+            } else if (compliance?.livello === 'attenzione') {
+                aiResponse.status = 'yellow';
+                aiResponse.compliance = 'attenzione';
+                aiResponse.comment = `⚠️ ATTENZIONE NORMATIVA — ${compliance.nota_compliance} ${compliance.messaggi[0] || ''}`;
             } else {
-                aiResponse = {
-                    status:          'red',
-                    compliance:      'non_conforme',
-                    comment:         `❌ Documento non conforme: firma mancante, dati errati o formato non valido.`,
-                    nota_compliance: compliance?.nota_compliance || '',
-                    procedura_ota:   compliance?.procedura_ota || null,
-                    manuali_ota:     compliance?.manuali_ota || []
-                };
+                const normaLabel = registry?.nome_completo || normaDef?.norma || 'normativa vigente';
+                aiResponse.comment = `✅ Documento conforme alla ${normaLabel}.${compliance?.nota_compliance ? ' ' + compliance.nota_compliance : ''}`;
+            }
+
+            // APPLICAZIONE SCHEDE DI VALIDAZIONE MAMB
+            if (normaDef) {
+                const mambResult = this._generaChecklistMAMB(reqId, fileName, normaDef, fileContent);
+                const nonConformi = mambResult.criteri.filter(c => c.ok === false);
+                
+                let mambHTML = `<br><br><strong>🤖 AGENTE AI - Scansione Documentale per Criteri MAMB:</strong><br>`;
+                mambHTML += `Scheda applicata: <em>${mambResult.scheda}</em><br>`;
+                mambResult.criteri.forEach(c => {
+                    const icon = c.ok === 'N/A' ? '⚙️' : c.ok ? '✅' : '❌';
+                    const statusTxt = c.ok === 'N/A' ? 'Non Applicabile' : c.ok ? 'Soddisfatto' : 'Non Soddisfatto';
+                    mambHTML += `- [${c.id}] ${c.desc}: ${icon} <em>(${statusTxt})</em><br>`;
+                });
+
+                if (nonConformi.length > 0) {
+                    aiResponse.status = 'red';
+                    aiResponse.compliance = 'non_conforme';
+                    aiResponse.comment = `❌ NON CONFORME AI CRITERI MAMB — Rilevate ${nonConformi.length} discrepanze nel documento.${mambHTML}`;
+                } else {
+                    aiResponse.comment += mambHTML;
+                }
             }
 
             // Persisti risultato su Supabase

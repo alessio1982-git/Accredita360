@@ -33,7 +33,8 @@ const NormativaDB = {
         { id: "GEN_REG_08", titolo: "Sala d'Attesa con Posti a Sedere Adeguati", cat: "Strutturale", norma: "D.A. 890/02", tipo_doc: "Planimetria", percorso: "asp" },
         { id: "GEN_REG_09", titolo: "Servizi Igienici Utenza (di cui 1 accessibile Disabili)", cat: "Strutturale", norma: "D.A. 890/02", tipo_doc: "Planimetria", percorso: "asp" },
         { id: "GEN_REG_10", titolo: "Servizi Igienici e Spogliatoi per il Personale", cat: "Strutturale", norma: "D.A. 890/02", tipo_doc: "Planimetria", percorso: "asp" },
-        { id: "GEN_REG_11", titolo: "Locale/Armadio per Stoccaggio Rifiuti Speciali", cat: "Strutturale", norma: "D.A. 890/02", tipo_doc: "Planimetria", percorso: "asp" }
+        { id: "GEN_REG_11", titolo: "Locale/Armadio per Stoccaggio Rifiuti Speciali", cat: "Strutturale", norma: "D.A. 890/02", tipo_doc: "Planimetria", percorso: "asp" },
+        { id: "GEN_NAZ_09", titolo: "Verifica Programmazione Volumi e Fabbisogno Prestazioni", cat: "Amministrativo", norma: "D.Lgs. 502/1992 art. 8-quater, c. 7", tipo_doc: "Autovalutazione", percorso: "ota" }
     ],
 
     requisitiSpecifici: {
@@ -256,7 +257,7 @@ const NormativaDB = {
             aggiornamenti: ['D.A. 463/2003', 'D.A. 319/2016', 'D.A. 724/2022', 'D.A. 560/2023'],
             nota_compliance: 'Verificare che il documento rispetti anche gli aggiornamenti D.A. 724/2022 e D.A. 560/2023.',
             procedura_ota: 'AUT01 v3.0',
-            manuale_ota: ['MAMB 3.0', 'MAO-SRO 1.0']
+            manuale_ota: ['MAMB 2.1', 'MAO-SRO 1.0', 'MRG-MonoP 1.1']
         },
         'D.A. 20/2024': {
             vigente: true,
@@ -265,7 +266,7 @@ const NormativaDB = {
             aggiornamenti: [],
             nota_compliance: 'Decreto più recente. I documenti devono rispettare le nuove evidenze documentali e la classificazione per complessità.',
             procedura_ota: 'ACC01 v4.0',
-            manuale_ota: ['MRG-MonoP 1.1', 'MRG-MultiP 1.0']
+            manuale_ota: ['MRG-MonoP 1.1', 'MRG-MultiP 1.0', 'MAMB 2.1']
         },
         'D.A. 20/2024 (OTA)': {
             vigente: true,
@@ -274,7 +275,7 @@ const NormativaDB = {
             aggiornamenti: [],
             nota_compliance: 'Il Sistema Qualità deve essere conforme ai criteri OTA vigenti dal 2024.',
             procedura_ota: 'ACC01 v4.0',
-            manuale_ota: ['MRG-MonoP 1.1', 'MRG-MultiP 1.0']
+            manuale_ota: ['MRG-MonoP 1.1', 'MRG-MultiP 1.0', 'MAMB 2.1']
         },
         'D.A. 71/2026': {
             vigente: true,
@@ -283,7 +284,7 @@ const NormativaDB = {
             aggiornamenti: [],
             nota_compliance: 'Nuovi requisiti su telemedicina, FSE/FSD ed équipe multidisciplinari per soggetti erogatori ADI.',
             procedura_ota: 'ACC01 v4.0',
-            manuale_ota: ['MRG-MonoP 1.1']
+            manuale_ota: ['MCD-SER 1.2.1', 'MCD-SGO 2.0']
         },
         'D.A. 79/2026': {
             vigente: true,
@@ -291,6 +292,33 @@ const NormativaDB = {
             ambito: 'Rete Residenzialità Fragili (RSA) — Programmazione Distrettuale',
             aggiornamenti: [],
             nota_compliance: 'Verificare disponibilità fabbisogno nel distretto socio-sanitario e partecipazione a bandi regionali.',
+            procedura_ota: null,
+            manuale_ota: []
+        },
+        'D.A. 741/2023': {
+            vigente: true,
+            nome_completo: 'D.A. 4 luglio 2023 n. 741',
+            ambito: 'Autorizzazione e Accreditamento — Verifiche ed Enti',
+            aggiornamenti: [],
+            nota_compliance: 'Definisce le competenze ispettive: OTA per strutture complesse/ricovero/pubbliche, ASP per studi/strutture semplici. Regola le durate (1, 3, 5 anni).',
+            procedura_ota: 'ACC02 v1.0',
+            manuale_ota: ['MAMB 2.1', 'MCD-SER 1.2.1', 'MRG-MonoP 1.1']
+        },
+        'D.A. 376/2025': {
+            vigente: true,
+            nome_completo: 'D.A. 2 aprile 2025 n. 376',
+            ambito: 'Cronoprogramma Riavvio Accreditamento Strutture Pubbliche',
+            aggiornamenti: [],
+            nota_compliance: 'Aggiornamento ufficiale del cronoprogramma per il riavvio dell\'accreditamento e dei requisiti generali regionali.',
+            procedura_ota: null,
+            manuale_ota: []
+        },
+        'D.A. 229/2025': {
+            vigente: true,
+            nome_completo: 'D.A. 11 marzo 2025 n. 229',
+            ambito: 'Sospensione Efficacia Requisiti Nazionali Volume/Esiti',
+            aggiornamenti: [],
+            nota_compliance: 'Sospende temporaneamente in Sicilia l\'efficacia dell\'art. 8-quater comma 7 del D.Lgs. 502/1992 in linea con l\'art. 36 della Legge n. 193/2024.',
             procedura_ota: null,
             manuale_ota: []
         },
@@ -440,6 +468,11 @@ const NormativaDB = {
         { norma: 'MDD 93/42/CEE', sostituita_da: 'MDR (Reg. UE 2017/745)', motivo: 'Direttiva dispositivi medici sostituita dal Regolamento MDR' }
     ],
 
+    // Norme con efficacia sospesa o in deroga
+    normeSospese: [
+        { norma: 'D.Lgs. 502/1992 art. 8-quater, c. 7', sospesa_da: 'Legge 193/2024 / D.A. 229/2025', motivo: 'Efficacia sospesa temporaneamente per la Regione Siciliana riguardo ai requisiti di qualità, volumi e controlli.' }
+    ],
+
     // Verifica conformità normativa di un requisito
     checkCompliance(reqId) {
         const req = this.findById(reqId);
@@ -473,6 +506,14 @@ const NormativaDB = {
                     result.messaggi.push(`⚠️ La norma ${ns} è stata ABROGATA. Documenti che la citano sono non conformi.`);
                 });
             }
+        }
+
+        // Controlla se la norma ha efficacia sospesa
+        const sospesa = this.normeSospese.find(s => norma.includes(s.norma));
+        if (sospesa) {
+            result.conforme = true; // È comunque conforme per deroga
+            result.livello = 'attenzione';
+            result.messaggi.push(`⚠️ EFFICACIA SOSPESA: La norma nazionale ${sospesa.norma} è temporaneamente SOSPESA in Sicilia da ${sospesa.sospesa_da}. ${sospesa.motivo}`);
         }
 
         // Controlla se la norma è tra quelle superate
