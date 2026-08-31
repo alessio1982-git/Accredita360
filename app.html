@@ -646,7 +646,15 @@
                             </table>
                         </div>
                     </div>
-                    <div class="stats-grid" style="margin-bottom:24px;">
+                    <div class="stats-grid" style="margin-bottom:24px; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));">
+                        <div class="stat-card glass-card" style="flex-direction: column; align-items: flex-start; gap: 10px; border-left: 4px solid #0284c7;">
+                            <h4 style="color: #0284c7;"><i class='bx bx-file-find'></i> Relazione Autovalutazione</h4>
+                            <p style="font-size: 13px; color: var(--text-muted);">Relazione tecnica ufficiale ASP &amp; OTA (D.A. 20/2024 e D.A. 890/2002) con dichiarazione D.P.R. 445/2000.</p>
+                            <div style="display: flex; gap: 8px; width: 100%;">
+                                <button class="btn btn-outline" style="flex: 1; padding: 8px 12px; font-size: 12px;" onclick="app.generaRelazioneAutovalutazione('docx')"><i class='bx bx-file'></i> DOCX</button>
+                                <button class="btn btn-outline" style="flex: 1; padding: 8px 12px; font-size: 12px; border-color: rgba(2, 132, 199, 0.5); color: #0284c7;" onclick="app.generaRelazioneAutovalutazione('pdf')"><i class='bx bxs-file-pdf'></i> PDF</button>
+                            </div>
+                        </div>
                         <div class="stat-card glass-card" style="flex-direction: column; align-items: flex-start; gap: 10px;">
                             <h4 style="color: var(--primary);"><i class='bx bx-file-blank'></i> Istanza Autorizzazione ASP</h4>
                             <p style="font-size: 13px; color: var(--text-muted);">Modulo standard generato in base al D.A. 890/2002.</p>

@@ -893,64 +893,103 @@ const Backend = {
     },
 
 
-    // Helper per estrarre la checklist MAMB simulando la scansione AI del documento
+    // Helper per estrarre la checklist MAMB simulando la scansione AI avanzata del documento
     _generaChecklistMAMB(reqId, fileName, req, fileContent = "") {
-        const lowerName = fileName.toLowerCase();
+        const lowerName = (fileName || "").toLowerCase();
         const lowerContent = (fileContent || "").toLowerCase();
         let scheda = "";
         let criteri = [];
+        let raccomandazioni = [];
 
-        if (req.tipo_doc === 'Procedura' || req.tipo_doc === 'Protocollo' || reqId.includes('PROC') || reqId === 'ADI_05' || reqId === 'ADI_09' || reqId === 'POL_05') {
-            scheda = "SCHEDA MAMB-2.1-02-PROC (Validazione Procedura)";
+        // Selezione intelligente della scheda MAMB
+        if (reqId === 'GEN_NAZ_01' || reqId === 'GEN_NAZ_03' || reqId === 'GEN_NAZ_08' || reqId === 'GEN_NAZ_04' || reqId === 'ODO_06' || reqId === 'LAB_05') {
+            scheda = "SCHEDA MAMB-2.1-07-EMERG (Validazione Sicurezza Lavoro, Emergenze & CPI)";
             criteri = [
-                { id: "PROC.01", desc: "Denominazione dell'Organizzazione", ok: true },
-                { id: "PROC.02", desc: "Titolo del documento presente", ok: true },
-                { id: "PROC.04", desc: "Numero e data di revisione/versione corrente", ok: lowerName.includes('rev') || lowerName.includes('v') || lowerName.includes('vers') || lowerContent.includes('revisione') || lowerContent.includes('versione') },
-                { id: "PROC.05", desc: "Data di emissione e/o adozione", ok: lowerName.includes('202') || /\b202\d\b/.test(lowerContent) },
-                { id: "PROC.09", desc: "Firma di adozione del Direttore/LR", ok: true },
-                { id: "PROC.10", desc: "Redazione secondo i principi EBM (se clinica)", ok: reqId === 'ADI_09' ? lowerName.includes('ebm') || lowerName.includes('linea') || lowerContent.includes('ebm') || lowerContent.includes('evidence') : 'N/A' },
-                { id: "PROC.13", desc: "Descrizione delle attività e modalità esecuzione", ok: true },
-                { id: "PROC.17", desc: "Indicatori di monitoraggio definiti", ok: lowerName.includes('ind') || lowerName.includes('monitor') || lowerName.includes('qualita') || lowerContent.includes('indicatore') || lowerContent.includes('frequenza') }
+                { id: "EMERG.01", desc: "Documento Valutazione Rischi redatto ex D.Lgs 81/08 con data certa", peso: 30, ok: lowerName.includes('dvr') || lowerName.includes('rischi') || lowerContent.includes('valutazione dei rischi') || lowerContent.includes('d.lgs 81') || lowerContent.includes('81/08') },
+                { id: "EMERG.02", desc: "Certificato Prevenzione Incendi (CPI/SCIA VVF) o verifica antincendio", peso: 30, ok: lowerName.includes('cpi') || lowerName.includes('incendi') || lowerName.includes('vvf') || lowerName.includes('scia') || lowerContent.includes('prevenzione incendi') || lowerContent.includes('vigili del fuoco') },
+                { id: "EMERG.03", desc: "Piano di emergenza ed evacuazione con vie di fuga definite", peso: 20, ok: true },
+                { id: "EMERG.04", desc: "Designazione addetti antincendio e primo soccorso con relativi attestati", peso: 20, ok: lowerName.includes('addett') || lowerName.includes('primo soccorso') || lowerName.includes('formaz') || lowerContent.includes('primo soccorso') || lowerContent.includes('antincendio') }
             ];
-        } else if (req.tipo_doc === 'Relazione Tecnica' || req.tipo_doc === 'Dichiarazione' || req.tipo_doc === 'Certificato' || req.cat === 'Strutturale' || req.cat === 'Tecnologico') {
-            scheda = "SCHEDA MAMB-2.1-05-DTEC (Validazione Documentazione Tecnica)";
+        } else if (reqId === 'GEN_EU_01' || reqId === 'GEN_EU_03' || reqId === 'ADI_04' || reqId === 'ADI_07' || reqId === 'ADI_08' || reqId === 'OTA_09') {
+            scheda = "SCHEDA MAMB-2.1-06-CLIN (Validazione Documentazione Clinica, FSE & Telemedicina)";
             criteri = [
-                { id: "DOCT.01", desc: "Denominazione del fabbricante", ok: true },
-                { id: "DOCT.02", desc: "Informazioni identificative del fabbricante", ok: true },
-                { id: "DOCT.03", desc: "Riferimento specifico al modello installato", ok: lowerName.includes('mod') || lowerName.includes('sn') || lowerName.includes('matricola') || lowerContent.includes('modello') || lowerContent.includes('s/n') || lowerContent.includes('serial') },
-                { id: "DOCT.05", desc: "Presenza di manuale/istruzioni d'uso", ok: true },
-                { id: "DOCT.06", desc: "Informazioni sulla conformità a norme CE/nazionali", ok: lowerName.includes('ce') || lowerName.includes('conform') || lowerName.includes('dm') || lowerContent.includes('ce') || lowerContent.includes('conformità') }
+                { id: "CLIN.01", desc: "Modulistica informativa e consenso informato con informativa privacy GDPR", peso: 25, ok: true },
+                { id: "CLIN.02", desc: "Tracciabilità e conservazione sicura dei dati clinici e fascicoli sanitari", peso: 25, ok: lowerName.includes('cartella') || lowerName.includes('clin') || lowerName.includes('privacy') || lowerContent.includes('trattamento') || lowerContent.includes('sanitar') },
+                { id: "CLIN.03", desc: "Interoperabilità con FSE/FSD o sistemi informativi regionali", peso: 25, ok: reqId === 'ADI_07' ? (lowerName.includes('fse') || lowerName.includes('fsd') || lowerContent.includes('fascicolo sanitario') || lowerContent.includes('interoperab')) : true },
+                { id: "CLIN.04", desc: "Standard di sicurezza, firma digitale e cifratura teleconsulto", peso: 25, ok: reqId === 'ADI_08' ? (lowerName.includes('tele') || lowerName.includes('piattaforma') || lowerContent.includes('telemedicina') || lowerContent.includes('crittografia')) : true }
             ];
-        } else if (req.tipo_doc === 'Piano' || reqId.includes('PINT') || reqId === 'RSA_10') {
-            scheda = "SCHEDA MAMB-2.1-04-PINT (Validazione Piano di Intervento)";
+        } else if (reqId === 'GEN_EU_02' || reqId === 'GEN_NAZ_02' || reqId === 'GEN_REG_03' || reqId === 'ADI_06' || reqId.startsWith('RAD_04') || reqId.startsWith('RAD_05') || reqId.startsWith('RAD_07') || reqId === 'HOSP_09') {
+            scheda = "SCHEDA MAMB-2.1-05-ORGA (Validazione Organigramma, Nomine & Incarichi)";
             criteri = [
-                { id: "PINT.01", desc: "Denominazione dell'Organizzazione", ok: true },
-                { id: "PINT.02", desc: "Titolo del Piano", ok: true },
-                { id: "PINT.10", desc: "Scopo e obiettivi specifici del Piano", ok: true },
-                { id: "PINT.12", desc: "Arco temporale e cronoprogramma definiti", ok: lowerName.includes('cron') || lowerName.includes('gantt') || lowerName.includes('programma') || lowerContent.includes('cronoprogramma') || lowerContent.includes('gantt') },
-                { id: "PINT.18", desc: "Criteri e modalità di monitoraggio", ok: true }
+                { id: "ORGA.01", desc: "Atto formale di nomina/incarico con data certa", peso: 25, ok: true },
+                { id: "ORGA.02", desc: "Dati anagrafici, codice fiscale e iscrizione all'Albo/Ordine professionale", peso: 25, ok: lowerName.includes('albo') || lowerName.includes('ord') || lowerName.includes('nomina') || lowerName.includes('dr') || lowerContent.includes('iscrizione') || lowerContent.includes('ordine') || lowerContent.includes('medico') },
+                { id: "ORGA.03", desc: "Accettazione formale e sottoscrizione dell'incaricato", peso: 25, ok: true },
+                { id: "ORGA.04", desc: "Definizione puntuale di mansioni, responsabilità e deleghe", peso: 25, ok: reqId === 'ADI_06' ? (lowerName.includes('equipe') || lowerName.includes('équipe') || lowerName.includes('organigramma') || lowerContent.includes('multidisciplinare') || lowerContent.includes('infermier')) : true }
+            ];
+        } else if (req.tipo_doc === 'Piano' || reqId.includes('PINT') || reqId === 'RSA_10' || reqId === 'OTA_02' || reqId === 'OTA_05' || reqId === 'OTA_07' || reqId === 'OTA_11' || reqId === 'RIAB_05') {
+            scheda = "SCHEDA MAMB-2.1-04-PINT (Validazione Piani di Intervento & Formazione)";
+            criteri = [
+                { id: "PINT.01", desc: "Denominazione dell'Organizzazione e anno di riferimento", peso: 15, ok: true },
+                { id: "PINT.02", desc: "Titolo del Piano, obiettivi specifici e indicatori attesi", peso: 20, ok: true },
+                { id: "PINT.10", desc: "Scopo, fabbisogni formativi o azioni di miglioramento dettagliate", peso: 25, ok: true },
+                { id: "PINT.12", desc: "Arco temporale e cronoprogramma definiti (Gantt/Scadenze)", peso: 20, ok: lowerName.includes('cron') || lowerName.includes('gantt') || lowerName.includes('programma') || lowerName.includes('piano') || lowerContent.includes('cronoprogramma') || lowerContent.includes('gantt') || lowerContent.includes('calendario') },
+                { id: "PINT.18", desc: "Criteri e modalità di riesame e monitoraggio periodico", peso: 20, ok: true }
+            ];
+        } else if (req.tipo_doc === 'Relazione Tecnica' || req.tipo_doc === 'Dichiarazione' || req.tipo_doc === 'Certificato' || req.tipo_doc === 'Certificato CE' || req.cat === 'Strutturale' || req.cat === 'Tecnologico' || reqId.startsWith('DEP_ELET')) {
+            scheda = "SCHEDA MAMB-2.1-03-DOCT (Validazione Dotazioni Tecniche & Elettromedicali)";
+            criteri = [
+                { id: "DOCT.01", desc: "Denominazione e identificazione del fabbricante/installatore", peso: 20, ok: true },
+                { id: "DOCT.02", desc: "Riferimento specifico a modello, matricola o ubicazione impianti", peso: 25, ok: lowerName.includes('mod') || lowerName.includes('sn') || lowerName.includes('matricola') || lowerName.includes('impianto') || lowerContent.includes('modello') || lowerContent.includes('s/n') || lowerContent.includes('matricola') || lowerContent.includes('conformità') },
+                { id: "DOCT.05", desc: "Presenza di manuale/istruzioni d'uso o registri manutenzione", peso: 25, ok: true },
+                { id: "DOCT.07", desc: "Informazioni sulla conformità a norme CE / D.M. 37/08 / CEI 62-5", peso: 30, ok: lowerName.includes('ce') || lowerName.includes('conform') || lowerName.includes('dm') || lowerName.includes('verbale') || lowerContent.includes('ce') || lowerContent.includes('conformità') || lowerContent.includes('dm 37') || lowerContent.includes('cei') }
+            ];
+        } else if (req.tipo_doc === 'Procedura' || req.tipo_doc === 'Protocollo' || reqId.includes('PROC') || reqId === 'ADI_05' || reqId === 'ADI_09' || reqId === 'POL_05' || reqId.startsWith('OTA_')) {
+            scheda = "SCHEDA MAMB-2.1-02-PROC (Validazione Procedure Operative & Istruzioni POS)";
+            criteri = [
+                { id: "PROC.01", desc: "Intestazione formale, identificativo univoco e titolo procedura", peso: 15, ok: true },
+                { id: "PROC.02", desc: "Scopo, campo di applicazione e destinatari chiaramente definiti", peso: 15, ok: true },
+                { id: "PROC.04", desc: "Numero e data di revisione/versione corrente (vX.X)", peso: 25, ok: lowerName.includes('rev') || lowerName.includes('v') || lowerName.includes('vers') || lowerContent.includes('revisione') || lowerContent.includes('versione') },
+                { id: "PROC.07", desc: "Descrizione puntuale del flusso operativo e responsabilità", peso: 25, ok: true },
+                { id: "PROC.11", desc: "Firma di approvazione e indicatori di monitoraggio definiti", peso: 20, ok: lowerName.includes('ind') || lowerName.includes('monitor') || lowerName.includes('qualita') || lowerName.includes('triage') || lowerContent.includes('indicatore') || lowerContent.includes('approvazione') }
             ];
         } else {
-            scheda = "SCHEDA MAMB-2.1-01-DDIR (Validazione Documenti Direzione)";
+            scheda = "SCHEDA MAMB-2.1-01-DDIR (Validazione Documenti di Direzione & Politiche)";
             criteri = [
-                { id: "DDIR.01", desc: "Denominazione dell'Organizzazione", ok: true },
-                { id: "DDIR.02", desc: "Titolo del documento", ok: true },
-                { id: "DDIR.04", desc: "Numero e data di revisione", ok: lowerName.includes('rev') || lowerName.includes('v') || lowerContent.includes('rev.') || lowerContent.includes('revisione') },
-                { id: "DDIR.09", desc: "Firma di adozione del LR/DS", ok: true },
-                { id: "DDIR.12", desc: "Periodo di validità chiaramente definito", ok: lowerName.includes('scadenza') || lowerName.includes('valido') || lowerContent.includes('scadenza') || lowerContent.includes('validità') }
+                { id: "DDIR.01", desc: "Denominazione e dati identificativi dell'Organizzazione", peso: 15, ok: true },
+                { id: "DDIR.02", desc: "Titolo, finalità e campo di applicazione del documento", peso: 15, ok: true },
+                { id: "DDIR.04", desc: "Numero di revisione e data di adozione aggiornata", peso: 25, ok: lowerName.includes('rev') || lowerName.includes('v') || lowerContent.includes('rev.') || lowerContent.includes('revisione') || lowerContent.includes('versione') },
+                { id: "DDIR.09", desc: "Firma di adozione del Legale Rappresentante / Direttore Sanitario", peso: 25, ok: true },
+                { id: "DDIR.12", desc: "Periodo di validità ed evidenza del riesame periodico", peso: 20, ok: lowerName.includes('scadenza') || lowerName.includes('valido') || lowerName.includes('202') || lowerContent.includes('scadenza') || lowerContent.includes('validità') || /\b202\d\b/.test(lowerContent) }
             ];
         }
 
-        return { scheda, criteri };
+        // Calcolo punteggio pesato di qualità documentale (0-100%)
+        let totalWeight = 0;
+        let earnedWeight = 0;
+        criteri.forEach(c => {
+            const w = c.peso || 20;
+            totalWeight += w;
+            if (c.ok === true) {
+                earnedWeight += w;
+            } else if (c.ok === 'N/A') {
+                earnedWeight += w; // N/A non penalizza
+            } else {
+                raccomandazioni.push(`Integrare criterio [${c.id}]: ${c.desc}`);
+            }
+        });
+
+        const punteggio = totalWeight > 0 ? Math.round((earnedWeight / totalWeight) * 100) : 100;
+
+        return { scheda, criteri, punteggio, raccomandazioni };
     },
 
     // =========================================================
-    // ANALISI AI (simulazione con engine NormativaDB e scansione MAMB)
+    // ANALISI AI (simulazione con engine NormativaDB e scansione MAMB estesa)
     // =========================================================
     async analyzeDocumentConAI(reqId, fileOrName) {
         return new Promise(async (resolve) => {
-            // Simula latenza AI (1–2 secondi)
-            await new Promise(r => setTimeout(r, 800 + Math.random() * 1200));
+            // Simula latenza di computazione AI (800ms – 1.8s)
+            await new Promise(r => setTimeout(r, 600 + Math.random() * 800));
 
             const fileName = typeof fileOrName === 'string' ? fileOrName : fileOrName.name;
             let fileContent = "";
@@ -969,6 +1008,7 @@ const Backend = {
             let aiResponse = {
                 status:          'green',
                 compliance:      'ok',
+                score:           100,
                 comment:         '',
                 nota_compliance: compliance?.nota_compliance || '',
                 procedura_ota:   compliance?.procedura_ota || null,
@@ -988,23 +1028,32 @@ const Backend = {
                 aiResponse.comment = `✅ Documento conforme alla ${normaLabel}.${compliance?.nota_compliance ? ' ' + compliance.nota_compliance : ''}`;
             }
 
-            // APPLICAZIONE SCHEDE DI VALIDAZIONE MAMB
+            // APPLICAZIONE SCHEDE DI VALIDAZIONE MAMB & SCORING
             if (normaDef) {
                 const mambResult = this._generaChecklistMAMB(reqId, fileName, normaDef, fileContent);
+                aiResponse.score = mambResult.punteggio;
                 const nonConformi = mambResult.criteri.filter(c => c.ok === false);
                 
                 let mambHTML = `<br><br><strong>🤖 AGENTE AI - Scansione Documentale per Criteri MAMB:</strong><br>`;
                 mambHTML += `Scheda applicata: <em>${mambResult.scheda}</em><br>`;
+                mambHTML += `<strong>Indice di Coerenza Formale:</strong> ${mambResult.punteggio}%<br>`;
                 mambResult.criteri.forEach(c => {
                     const icon = c.ok === 'N/A' ? '⚙️' : c.ok ? '✅' : '❌';
                     const statusTxt = c.ok === 'N/A' ? 'Non Applicabile' : c.ok ? 'Soddisfatto' : 'Non Soddisfatto';
                     mambHTML += `- [${c.id}] ${c.desc}: ${icon} <em>(${statusTxt})</em><br>`;
                 });
 
-                if (nonConformi.length > 0) {
+                if (mambResult.raccomandazioni.length > 0) {
+                    mambHTML += `<br><strong>💡 Raccomandazioni di Adeguamento:</strong><br>`;
+                    mambResult.raccomandazioni.forEach(r => {
+                        mambHTML += `• ${r}<br>`;
+                    });
+                }
+
+                if (nonConformi.length > 0 && aiResponse.status !== 'yellow') {
                     aiResponse.status = 'red';
                     aiResponse.compliance = 'non_conforme';
-                    aiResponse.comment = `❌ NON CONFORME AI CRITERI MAMB — Rilevate ${nonConformi.length} discrepanze nel documento.${mambHTML}`;
+                    aiResponse.comment = `❌ NON CONFORME AI CRITERI MAMB — Rilevate ${nonConformi.length} discrepanze nel documento (Punteggio: ${mambResult.punteggio}%).${mambHTML}`;
                 } else {
                     aiResponse.comment += mambHTML;
                 }

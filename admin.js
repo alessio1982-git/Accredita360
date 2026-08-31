@@ -225,26 +225,65 @@ const admin = {
             }
         }
 
-        // Smistamento Pratiche
+        // Salva riferimenti globali per il filtraggio
+        this._allStructures = allStructures || [];
+        this._consultants = consultants || [];
+
+        // Aggiorna contatori e tabella smistamento
+        this.renderDispatchTable();
+    },
+
+    renderDispatchTable() {
+        const allStructures = this._allStructures || [];
+        const consultants = this._consultants || [];
+
         const totalClients = allStructures.length;
         const unassignedClients = allStructures.filter(item => !item.user.consulente_email_fk).length;
         const assignedClients = totalClients - unassignedClients;
 
+        const setEl = (id, val) => { const e = document.getElementById(id); if (e) e.textContent = val; };
         setEl('dispatch-stat-total', totalClients);
         setEl('dispatch-stat-unassigned', unassignedClients);
         setEl('dispatch-stat-assigned', assignedClients);
 
+        const filterStatus = document.getElementById('dispatch-filter-status')?.value || 'all';
+        const filterType   = document.getElementById('dispatch-filter-type')?.value || 'all';
+        const searchQuery  = (document.getElementById('dispatch-search')?.value || '').toLowerCase().trim();
+
+        let filtered = allStructures.filter(item => {
+            const u = item.user;
+            const s = item.structure;
+            const hasConsultant = !!u.consulente_email_fk;
+
+            if (filterStatus === 'unassigned' && hasConsultant) return false;
+            if (filterStatus === 'assigned' && !hasConsultant) return false;
+
+            if (filterType !== 'all') {
+                if (!s || s.type !== filterType) return false;
+            }
+
+            if (searchQuery) {
+                const nameMatch = (u.name || '').toLowerCase().includes(searchQuery);
+                const emailMatch = (u.email || '').toLowerCase().includes(searchQuery);
+                const structMatch = (s?.data?.nome_struttura || s?.data?.ragione_sociale || '').toLowerCase().includes(searchQuery);
+                const consMatch = (u.consulente_email_fk || '').toLowerCase().includes(searchQuery);
+                if (!nameMatch && !emailMatch && !structMatch && !consMatch) return false;
+            }
+
+            return true;
+        });
+
         const dispatchTbody = document.getElementById('admin-dispatch-table');
         if (dispatchTbody) {
-            if (allStructures.length === 0) {
-                dispatchTbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:20px; color:var(--text-muted); font-size:13px;">Nessuna struttura sanitaria profilata nel sistema.</td></tr>`;
+            if (filtered.length === 0) {
+                dispatchTbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:24px; color:var(--text-muted); font-size:13px;"><i class='bx bx-filter-alt'></i> Nessuna pratica corrisponde ai criteri di ricerca impostati.</td></tr>`;
             } else {
                 const tipoLabels = {
                     'poliambulatorio':'Poliambulatorio','rsa':'RSA','lab':'Laboratorio Analisi',
                     'domiciliare':'Cure Domiciliari','odontoiatria':'Studio Odontoiatrico',
                     'radiologia':'Diagnostica Immagini','riabilitazione':'Riabilitazione','casa_cura':'Casa di Cura'
                 };
-                dispatchTbody.innerHTML = allStructures.map(item => {
+                dispatchTbody.innerHTML = filtered.map(item => {
                     const u = item.user;
                     const s = item.structure;
                     const cEmail = u.consulente_email_fk || '';
@@ -283,9 +322,6 @@ const admin = {
                 }).join('');
             }
         }
-
-        // Non occorre caricare la tabella dei documenti globale poiché ora
-        // i dettagli e la Gap Analysis sono richiamati per singolo utente.
     },
 
     async saveDispatch(clientEmail) {
@@ -456,9 +492,11 @@ const admin = {
             'red':    `<span class="status-badge status-red"><i class='bx bx-x-circle'></i> Critico</span>`
         };
 
+        const templates = (typeof NormativaDB !== 'undefined' && NormativaDB.quickFeedbackTemplates) ? NormativaDB.quickFeedbackTemplates : [];
+
         tbody.innerHTML = reqs.map(req => {
             const fileLink = req.file
-                ? `<div style="font-size:12px;margin-top:6px;display:flex;align-items:center;gap:8px;">
+                ? `<div style="font-size:12px;margin-top:6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
                     <span style="color:var(--primary);font-weight:600;"><i class='bx bx-file'></i> ${_s(req.file)}</span>
                     <a href="https://kvthfnkgfbxtjgkqpbwj.supabase.co/storage/v1/object/public/documents/${encodeURIComponent(this._detClientEmail)}/${encodeURIComponent(req.file)}" target="_blank" class="btn btn-outline" style="padding:2px 8px;font-size:10px;">
                         <i class='bx bx-download'></i> Scarica File
@@ -473,6 +511,9 @@ const admin = {
                    </div>`
                 : '';
 
+            const templateOptions = `<option value="">⚡ Template Feedback Rapido...</option>` +
+                templates.map((t, idx) => `<option value="${idx}">${_s(t.label)}</option>`).join('');
+
             return `<tr>
                 <td>${statusBadges[req.stato] || req.stato}</td>
                 <td>
@@ -484,7 +525,10 @@ const admin = {
                 <td style="font-size:11px;color:var(--text-muted);">${_s(req.norma)}</td>
                 <td>
                     <div style="display:flex;flex-direction:column;gap:6px;">
-                        <textarea class="input-box" id="note-req-${req.id}" style="padding:6px;font-size:12px;height:45px;resize:vertical;" placeholder="Note di correzione o deroga...">${_s(noteVal)}</textarea>
+                        <select class="input-box" style="font-size:11px; padding:3px 6px;" onchange="admin.applyQuickFeedback('${req.id}', this.value)">
+                            ${templateOptions}
+                        </select>
+                        <textarea class="input-box" id="note-req-${req.id}" style="padding:6px;font-size:12px;height:45px;resize:vertical;" placeholder="Note di correzione, prescrizioni o deroga...">${_s(noteVal)}</textarea>
                         <div style="display:flex;gap:6px;">
                             <button class="btn" style="flex:1;padding:4px 8px;font-size:11px;background:var(--success);border-color:var(--success);color:#fff;" onclick="admin.consultantReviewDocument('${req.id}', 'APPROVE')">
                                 <i class='bx bx-check'></i> Approva
@@ -499,6 +543,18 @@ const admin = {
         }).join('');
     },
 
+    applyQuickFeedback(reqId, templateIndex) {
+        if (templateIndex === '' || templateIndex === undefined) return;
+        const templates = (typeof NormativaDB !== 'undefined' && NormativaDB.quickFeedbackTemplates) ? NormativaDB.quickFeedbackTemplates : [];
+        const tmpl = templates[templateIndex];
+        if (!tmpl) return;
+
+        const textarea = document.getElementById(`note-req-${reqId}`);
+        if (textarea) {
+            textarea.value = tmpl.text;
+        }
+    },
+
     async consultantReviewDocument(reqId, action) {
         const noteEl = document.getElementById(`note-req-${reqId}`);
         const notes = noteEl ? noteEl.value.trim() : '';
@@ -508,7 +564,21 @@ const admin = {
         try {
             const success = await B.adminValidateRequirement(this._detClientEmail, reqId, status, notes);
             if (success) {
-                console.log(`Requisito ${reqId} aggiornato con stato ${status}`);
+                console.log(`[Admin Review] Requisito ${reqId} aggiornato con stato ${status}`);
+                // Invia notifica automatica alla struttura cliente
+                try {
+                    await B.createNotification({
+                        targetEmail: this._detClientEmail,
+                        title: `Aggiornamento Revisione: ${reqId}`,
+                        message: status === 'green'
+                            ? `Il requisito ${reqId} è stato convalidato positivamente dall'Amministratore.`
+                            : `Richieste modifiche o integrazioni per il requisito ${reqId}: "${notes.substring(0, 70)}..."`,
+                        type: status === 'green' ? 'approval' : 'rejection'
+                    });
+                } catch(nErr) {
+                    console.warn('[Admin] Errore notifica:', nErr);
+                }
+
                 await this.loadClientDetails();
             } else {
                 alert("Errore durante l'aggiornamento del requisito.");

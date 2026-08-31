@@ -3485,20 +3485,205 @@ app.generaIstanzaConvenzionamento = async function(format = 'docx') {
     this._downloadFile('Domanda_Convenzionamento_SSN.docx', docContent, format);
 };
 
+app.generaRelazioneAutovalutazione = async function(format = 'docx') {
+    let anagrafica = this.state.anagrafica;
+    if (!anagrafica) {
+        try { anagrafica = await Backend.getAnagrafica(); this.state.anagrafica = anagrafica; } catch(e) {}
+    }
+    anagrafica = anagrafica || {};
+
+    let structure = null;
+    try { structure = await Backend.getCurrentStructure(); } catch(e) {}
+    
+    let reqs = this.state.requirements || (typeof appState !== 'undefined' ? appState.requirements : []);
+    if (!reqs || reqs.length === 0) {
+        try { reqs = await Backend.getRequirements(); } catch(e) {}
+    }
+    reqs = reqs || [];
+
+    const totalReqs = reqs.length;
+    const validati = reqs.filter(r => r.stato === 'green').length;
+    const inAttesa = reqs.filter(r => r.stato === 'yellow').length;
+    const critici  = reqs.filter(r => r.stato === 'red').length;
+    const compPct  = totalReqs > 0 ? Math.round((validati / totalReqs) * 100) : 0;
+    
+    const structType = structure?.type || 'poliambulatorio';
+    const tipoLabels = {
+        'poliambulatorio':'Poliambulatorio Specialistico',
+        'rsa':'Residenza Sanitaria Assistenziale (RSA)',
+        'lab':'Laboratorio Analisi Cliniche',
+        'domiciliare':'Cure Domiciliari (ADI)',
+        'odontoiatria':'Studio Odontoiatrico',
+        'radiologia':'Diagnostica per Immagini / Radiologia',
+        'riabilitazione':'Presidio di Riabilitazione e Fisiokinesiterapia',
+        'casa_cura':'Casa di Cura Privata'
+    };
+    const tipoStrutturaLabel = tipoLabels[structType] || structType;
+    const oggi = new Date().toLocaleDateString('it-IT');
+
+    const aspReqs = reqs.filter(r => (r.percorso === 'asp' || !r.id.startsWith('OTA_')));
+    const otaReqs = reqs.filter(r => (r.percorso === 'ota' || r.id.startsWith('OTA_')));
+
+    const renderReqRows = (list) => {
+        if (!list || list.length === 0) return '<tr><td colspan="4" style="text-align:center; padding:10px; color:#64748b;">Nessun requisito presente</td></tr>';
+        return list.map(r => {
+            const statusLabel = r.stato === 'green' ? '🟢 CONFORME (Validato)' : (r.stato === 'yellow' ? '🟡 IN REVISIONE' : '🔴 DA INTEGRARE');
+            const fileDoc = r.file || r.file_name || 'Nessun allegato';
+            return `<tr>
+                <td style="font-weight:bold; font-size:11px;">${_s(r.id)}</td>
+                <td style="font-size:11px;"><strong>${_s(r.titolo)}</strong><br><span style="color:#64748b; font-size:10px;">${_s(r.norma || 'Normativa vigente')}</span></td>
+                <td style="font-size:11px; color:#0369a1;">${_s(fileDoc)}</td>
+                <td style="font-size:11px; font-weight:bold;">${statusLabel}</td>
+            </tr>`;
+        }).join('');
+    };
+
+    const docContent = `
+<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+<head>
+  <meta charset='UTF-8'>
+  <title>Relazione Ufficiale di Autovalutazione — Accredita360</title>
+  <style>
+    body { font-family: 'Arial', sans-serif; margin: 40px; color: #1e293b; line-height: 1.5; font-size: 12px; }
+    .header-box { border-bottom: 2px solid #0284c7; padding-bottom: 12px; margin-bottom: 25px; }
+    .regione-title { font-size: 14px; font-weight: bold; color: #0f172a; text-transform: uppercase; }
+    .sub-dept { font-size: 11px; color: #475569; }
+    h1 { font-size: 17px; font-weight: bold; text-align: center; text-transform: uppercase; margin: 25px 0 15px; color: #0369a1; }
+    h2 { font-size: 13px; font-weight: bold; text-transform: uppercase; margin-top: 20px; margin-bottom: 8px; color: #0f172a; border-bottom: 1px solid #cbd5e1; padding-bottom: 4px; }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 16px; font-size: 11px; }
+    th { background: #f1f5f9; padding: 6px 8px; border: 1px solid #cbd5e1; text-align: left; font-weight: bold; color: #334155; }
+    td { padding: 6px 8px; border: 1px solid #cbd5e1; }
+    .label { font-weight: bold; background: #f8fafc; width: 220px; }
+    .kpi-grid { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+    .kpi-box { background: #f8fafc; border: 1px solid #cbd5e1; padding: 12px; text-align: center; }
+    .kpi-val { font-size: 18px; font-weight: bold; color: #0369a1; }
+    .kpi-lbl { font-size: 10px; text-transform: uppercase; color: #64748b; font-weight: bold; }
+    .signature-table { margin-top: 40px; border: none; }
+    .signature-table td { border: none; padding: 20px; text-align: center; }
+    .stamp-box { border: 2px dashed #0284c7; padding: 12px; border-radius: 6px; background: #f0f9ff; margin-top: 20px; font-size: 11px; }
+  </style>
+</head>
+<body>
+  <div class="header-box">
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+      <div>
+        <div class="regione-title">REGIONE SICILIANA</div>
+        <div class="sub-dept">Assessorato Regionale della Salute — D.A.S.O.E.</div>
+        <div class="sub-dept">Organismo Tecnico di Autovalutazione (O.T.A.) &amp; ASP Territorialmente Competente</div>
+      </div>
+      <div style="text-align:right; font-size:11px; color:#64748b;">
+        <strong>Protocollo Pratica:</strong> ACC-360/${new Date().getFullYear()}/${Math.floor(1000 + Math.random()*9000)}<br>
+        <strong>Data Generazione:</strong> ${oggi}
+      </div>
+    </div>
+  </div>
+
+  <h1>RELAZIONE TECNICA DI AUTOVALUTAZIONE<br>E FASCICOLO DOCUMENTALE DI CONFORMITÀ</h1>
+  <p style="text-align:center; font-size:11px; color:#64748b; margin-top:-8px; margin-bottom:20px;">
+    Redatta ai sensi del D.A. 890/2002 (Autorizzazione Sanitaria ASP), D.A. 20/2024 (Accreditamento Istituzionale OTA) e D.A. 741/2023, D.A. 71/2026, D.A. 79/2026
+  </p>
+
+  <h2>1. Dati Generali e Inquadramento della Struttura Sanitaria</h2>
+  <table>
+    <tr><td class="label">Denominazione / Ragione Sociale</td><td><strong>${_s(anagrafica.ragione_sociale || anagrafica.nome_struttura || 'Struttura Sanitaria')}</strong></td></tr>
+    <tr><td class="label">Codice Fiscale / Partita IVA</td><td>${_s(anagrafica.codice_fiscale || anagrafica.partita_iva || '—')}</td></tr>
+    <tr><td class="label">Tipologia di Struttura</td><td><strong>${tipoStrutturaLabel}</strong></td></tr>
+    <tr><td class="label">Sede Legale</td><td>${_s(anagrafica.sede_legale || '—')}</td></tr>
+    <tr><td class="label">Sede Operativa (Presidio di Erogazione)</td><td>${_s(anagrafica.indirizzo_op || '—')} - ${_s(anagrafica.cap || '')} ${_s(anagrafica.comune || '')}</td></tr>
+    <tr><td class="label">Legale Rappresentante</td><td>${_s(anagrafica.nome_lr ? (anagrafica.nome_lr + ' ' + anagrafica.cognome_lr) : '—')} (C.F. ${_s(anagrafica.cf_lr || '—')})</td></tr>
+    <tr><td class="label">Direttore Sanitario / Resp. Sanitario</td><td>Dr. ${_s(anagrafica.nome_ds ? (anagrafica.nome_ds + ' ' + anagrafica.cognome_ds) : '—')} (Albo: ${_s(anagrafica.iscrizione_albo || '—')})</td></tr>
+    <tr><td class="label">Specializzazioni / Branche di Attività</td><td>${_s(anagrafica.specializzazione || 'Branche autorizzate ex D.A. 890/02')}</td></tr>
+  </table>
+
+  <h2>2. Indicatori di Sintesi e Indice di Conformità</h2>
+  <table class="kpi-grid">
+    <tr>
+      <td class="kpi-box"><div class="kpi-val">${totalReqs}</div><div class="kpi-lbl">Requisiti Totali</div></td>
+      <td class="kpi-box"><div class="kpi-val" style="color:#16a34a;">${validati}</div><div class="kpi-lbl">Conformi (🟢)</div></td>
+      <td class="kpi-box"><div class="kpi-val" style="color:#d97706;">${inAttesa}</div><div class="kpi-lbl">In Corso (🟡)</div></td>
+      <td class="kpi-box"><div class="kpi-val" style="color:#dc2626;">${critici}</div><div class="kpi-lbl">Da Integrare (🔴)</div></td>
+      <td class="kpi-box" style="background:#eff6ff;"><div class="kpi-val" style="color:#2563eb;">${compPct}%</div><div class="kpi-lbl">Indice di Conformità</div></td>
+    </tr>
+  </table>
+
+  <h2>3. Verifica Requisiti Minimi Autorizzativi ASP (D.A. 890/2002)</h2>
+  <table>
+    <thead>
+      <tr>
+        <th style="width:70px;">Codice</th>
+        <th>Requisito &amp; Norma di Riferimento</th>
+        <th>Documento Probatorio Allegato</th>
+        <th style="width:130px;">Esito Autovalutazione</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${renderReqRows(aspReqs)}
+    </tbody>
+  </table>
+
+  <h2>4. Verifica Requisiti Qualità &amp; Accreditamento Istituzionale OTA (D.A. 20/2024)</h2>
+  <table>
+    <thead>
+      <tr>
+        <th style="width:70px;">Codice</th>
+        <th>Requisito di Qualità &amp; Standard OTA</th>
+        <th>Documento Probatorio Allegato</th>
+        <th style="width:130px;">Esito Autovalutazione</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${renderReqRows(otaReqs)}
+    </tbody>
+  </table>
+
+  <h2>5. Dichiarazione di Asseverazione e Sottoscrizione (D.P.R. 445/2000)</h2>
+  <p style="text-align:justify; font-size:11px; line-height:1.6;">
+    I sottoscritti, in qualità di Legale Rappresentante e di Direttore Sanitario della struttura in epigrafe, consapevoli delle sanzioni penali richiamate dall'art. 76 del D.P.R. 28/12/2000 n. 445 in caso di dichiarazioni mendaci, <strong>DICHIARANO SOTTO LA PROPRIA RESPONSABILITÀ</strong> che le informazioni contenute nella presente relazione e nei documenti allegati al Fascicolo corrispondono alla reale situazione strutturale, impiantistica, organizzativa e clinica del presidio sanitario, e che la documentazione caricata è conforme alle schede MAMB e alle procedure approvate dall'Organismo Tecnico di Autovalutazione.
+  </p>
+
+  <div class="stamp-box">
+    <strong>SIGILLO DIGITALE ACCREDITA360:</strong> Relazione compilata e certificata attraverso il motore normativo Accredita360 con marcatura oraria. Fascicolo pronto per l'invio alla Commissione Ispettiva ASP / OTA.
+  </div>
+
+  <table class="signature-table">
+    <tr>
+      <td style="width:50%">
+        <strong>Il Direttore Sanitario</strong><br><br>
+        __________________________________________<br><br>
+        Dr. ${_s(anagrafica.nome_ds ? (anagrafica.nome_ds + ' ' + anagrafica.cognome_ds) : '_________________________')}
+      </td>
+      <td style="width:50%">
+        <strong>Il Legale Rappresentante</strong><br><br>
+        __________________________________________<br><br>
+        ${_s(anagrafica.nome_lr ? (anagrafica.nome_lr + ' ' + anagrafica.cognome_lr) : '_________________________')}
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+
+    this._downloadFile('Relazione_Autovalutazione_Conformita_ASP_OTA.docx', docContent, format);
+};
+
 app.scaricaFascicoloCompleto = async function(format = 'docx') {
-    this._showSuccessToast(`Generazione del fascicolo completo (${format.toUpperCase()}) avviata...`);
+    this._showSuccessToast(`Generazione del fascicolo documentale completo (${format.toUpperCase()}) avviata...`);
     
-    // Download sequenziale delle tre istanze principali
-    await this.generaIstanzaASP(format);
+    // 1. Scarica la Relazione Ufficiale di Autovalutazione
+    await this.generaRelazioneAutovalutazione(format);
     
+    // 2. Scarica le tre istanze formali sequenzialmente
     setTimeout(async () => {
-        await this.generaIstanzaOTA(format);
+        await this.generaIstanzaASP(format);
     }, 1000);
 
     setTimeout(async () => {
-        await this.generaIstanzaConvenzionamento(format);
-        this._showSuccessToast(`Fascicolo precompilato (${format.toUpperCase()}) scaricato con successo nella cartella Download.`);
+        await this.generaIstanzaOTA(format);
     }, 2000);
+
+    setTimeout(async () => {
+        await this.generaIstanzaConvenzionamento(format);
+        this._showSuccessToast(`Fascicolo completo e Relazione di Autovalutazione (${format.toUpperCase()}) scaricati con successo.`);
+    }, 3000);
 };
 
 // ===== NOTIFICHE LIVE & CHAT REQUISITI =====

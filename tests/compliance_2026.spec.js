@@ -360,4 +360,61 @@ test.describe('Verifica Aggiornamenti Legislativi 2026', () => {
     const badgeContainer = page.locator('#inquadramento-badge-container');
     await expect(badgeContainer).toContainText('Stima:');
   });
+
+  test("Verifica Schede MAMB Estese (01..07), Relazione di Autovalutazione e Feedback Rapido", async ({ page }) => {
+    await page.goto(`${BASE_URL}/app.html`);
+    await page.waitForFunction(() => window.appInitialized === true);
+
+    const testResults = await page.evaluate(async () => {
+      // 1. Test scansione MAMB-07 Sicurezza/Emergenze su DVR
+      // @ts-ignore
+      const resDVR = await Backend.analyzeDocumentConAI('GEN_NAZ_01', 'DVR_aziendale_rev2_2026.pdf');
+      
+      // 2. Test scansione MAMB-05 Organigramma/Nomine su Direttore Sanitario
+      // @ts-ignore
+      const resDS = await Backend.analyzeDocumentConAI('GEN_REG_03', 'nomina_direttore_sanitario_albo_medici.pdf');
+
+      // 3. Test presenza schede e template in NormativaDB
+      // @ts-ignore
+      const schedeKeys = Object.keys(NormativaDB.schedeMAMB || {});
+      // @ts-ignore
+      const templates = NormativaDB.quickFeedbackTemplates || [];
+
+      // 4. Test funzione generaRelazioneAutovalutazione su app
+      // @ts-ignore
+      const hasRelazioneMethod = typeof app.generaRelazioneAutovalutazione === 'function';
+
+      return { resDVR, resDS, schedeKeys, templates, hasRelazioneMethod };
+    });
+
+    // Validazione DVR (MAMB-07)
+    expect(testResults.resDVR.comment).toContain('SCHEDA MAMB-2.1-07-EMERG');
+    expect(testResults.resDVR.score).toBeGreaterThan(0);
+
+    // Validazione Nomina DS (MAMB-05)
+    expect(testResults.resDS.comment).toContain('SCHEDA MAMB-2.1-05-ORGA');
+    expect(testResults.resDS.score).toBeGreaterThan(0);
+
+    // Validazione 7 schede MAMB
+    expect(testResults.schedeKeys).toContain('MAMB-2.1-01-DDIR');
+    expect(testResults.schedeKeys).toContain('MAMB-2.1-02-PROC');
+    expect(testResults.schedeKeys).toContain('MAMB-2.1-03-DOCT');
+    expect(testResults.schedeKeys).toContain('MAMB-2.1-04-PINT');
+    expect(testResults.schedeKeys).toContain('MAMB-2.1-05-ORGA');
+    expect(testResults.schedeKeys).toContain('MAMB-2.1-06-CLIN');
+    expect(testResults.schedeKeys).toContain('MAMB-2.1-07-EMERG');
+
+    // Validazione template feedback rapido
+    expect(testResults.templates.length).toBeGreaterThanOrEqual(5);
+    expect(testResults.templates[0].action).toBe('APPROVE');
+
+    // Validazione metodo Relazione Autovalutazione
+    expect(testResults.hasRelazioneMethod).toBe(true);
+
+    // Verifichiamo che nel Fascicolo Documentale (#view-documents) sia presente la card Relazione Autovalutazione
+    await page.click('.nav-links li[data-view="documents"]');
+    const fascicoloView = page.locator('#view-documents');
+    await expect(fascicoloView).toContainText('Relazione Autovalutazione');
+  });
 });
+

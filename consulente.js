@@ -520,9 +520,11 @@ const consulente = {
             'red':    `<span class="status-badge status-red"><i class='bx bx-x-circle'></i> Critico</span>`
         };
 
+        const templates = (typeof NormativaDB !== 'undefined' && NormativaDB.quickFeedbackTemplates) ? NormativaDB.quickFeedbackTemplates : [];
+
         tbody.innerHTML = reqs.map(req => {
             const fileLink = req.file
-                ? `<div style="font-size:12px;margin-top:6px;display:flex;align-items:center;gap:8px;">
+                ? `<div style="font-size:12px;margin-top:6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
                     <span style="color:var(--primary);font-weight:600;"><i class='bx bx-file'></i> ${_s(req.file)}</span>
                     <a href="https://kvthfnkgfbxtjgkqpbwj.supabase.co/storage/v1/object/public/documents/${encodeURIComponent(this._detClientEmail)}/${encodeURIComponent(req.file)}" target="_blank" class="btn btn-outline" style="padding:2px 8px;font-size:10px;">
                         <i class='bx bx-download'></i> Scarica File
@@ -537,6 +539,9 @@ const consulente = {
                    </div>`
                 : '';
 
+            const templateOptions = `<option value="">⚡ Template Feedback Rapido...</option>` +
+                templates.map((t, idx) => `<option value="${idx}">${_s(t.label)}</option>`).join('');
+
             return `<tr>
                 <td>${statusBadges[req.stato] || req.stato}</td>
                 <td>
@@ -548,7 +553,10 @@ const consulente = {
                 <td style="font-size:11px;color:var(--text-muted);">${_s(req.norma)}</td>
                 <td>
                     <div style="display:flex;flex-direction:column;gap:6px;">
-                        <textarea class="input-box" id="note-req-${req.id}" style="padding:6px;font-size:12px;height:45px;resize:vertical;" placeholder="Note di correzione o deroga...">${_s(noteVal)}</textarea>
+                        <select class="input-box" style="font-size:11px; padding:3px 6px;" onchange="consulente.applyQuickFeedback('${req.id}', this.value)">
+                            ${templateOptions}
+                        </select>
+                        <textarea class="input-box" id="note-req-${req.id}" style="padding:6px;font-size:12px;height:45px;resize:vertical;" placeholder="Note di correzione, prescrizioni o deroga...">${_s(noteVal)}</textarea>
                         <div style="display:flex;gap:6px;">
                             <button class="btn" style="flex:1;padding:4px 8px;font-size:11px;background:var(--success);border-color:var(--success);color:#fff;" onclick="consulente.consultantReviewDocument('${req.id}', 'APPROVE')">
                                 <i class='bx bx-check'></i> Approva
@@ -563,6 +571,18 @@ const consulente = {
         }).join('');
     },
 
+    applyQuickFeedback(reqId, templateIndex) {
+        if (templateIndex === '' || templateIndex === undefined) return;
+        const templates = (typeof NormativaDB !== 'undefined' && NormativaDB.quickFeedbackTemplates) ? NormativaDB.quickFeedbackTemplates : [];
+        const tmpl = templates[templateIndex];
+        if (!tmpl) return;
+
+        const textarea = document.getElementById(`note-req-${reqId}`);
+        if (textarea) {
+            textarea.value = tmpl.text;
+        }
+    },
+
     async consultantReviewDocument(reqId, action) {
         const noteEl = document.getElementById(`note-req-${reqId}`);
         const notes = noteEl ? noteEl.value.trim() : '';
@@ -572,7 +592,21 @@ const consulente = {
         try {
             const success = await B.adminValidateRequirement(this._detClientEmail, reqId, status, notes);
             if (success) {
-                console.log(`Requisito ${reqId} aggiornato con stato ${status}`);
+                console.log(`[Consulente Review] Requisito ${reqId} aggiornato con stato ${status}`);
+                // Invia notifica automatica alla struttura cliente
+                try {
+                    await B.createNotification({
+                        targetEmail: this._detClientEmail,
+                        title: `Revisione Consulente: ${reqId}`,
+                        message: status === 'green'
+                            ? `Il tuo consulente ha validato positivamente il requisito ${reqId}.`
+                            : `Il tuo consulente richiede modifiche per ${reqId}: "${notes.substring(0, 70)}..."`,
+                        type: status === 'green' ? 'approval' : 'rejection'
+                    });
+                } catch(nErr) {
+                    console.warn('[Consulente] Errore notifica:', nErr);
+                }
+
                 await this.loadClientDetails();
             } else {
                 alert("Errore durante l'aggiornamento del requisito.");

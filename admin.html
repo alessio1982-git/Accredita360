@@ -240,6 +240,28 @@
                             <div style="font-size:11px; color:#10b981; font-weight:600; text-transform:uppercase;">In Carico</div>
                             <div style="font-size:20px; font-weight:800; color:#10b981;" id="dispatch-stat-assigned">—</div>
                         </div>
+                    <!-- Filtri e Ricerca Smistamento -->
+                    <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap; padding:0 20px 16px 20px; border-bottom:1px solid var(--glass-border);">
+                        <span style="font-weight:600; color:var(--text-muted); font-size:13px;"><i class='bx bx-filter'></i> Filtra:</span>
+                        <select id="dispatch-filter-status" class="input-box" style="padding:6px 12px; font-size:12px; width:auto;" onchange="admin.renderDispatchTable()">
+                            <option value="all">Tutti gli stati</option>
+                            <option value="unassigned">🔴 Da Assegnare</option>
+                            <option value="assigned">🟢 In Carico</option>
+                        </select>
+                        <select id="dispatch-filter-type" class="input-box" style="padding:6px 12px; font-size:12px; width:auto;" onchange="admin.renderDispatchTable()">
+                            <option value="all">Tutte le tipologie</option>
+                            <option value="poliambulatorio">Poliambulatorio</option>
+                            <option value="rsa">RSA</option>
+                            <option value="lab">Laboratorio</option>
+                            <option value="domiciliare">Cure Domiciliari (ADI)</option>
+                            <option value="odontoiatria">Odontoiatria</option>
+                            <option value="radiologia">Radiologia</option>
+                            <option value="riabilitazione">Riabilitazione</option>
+                            <option value="casa_cura">Casa di Cura</option>
+                        </select>
+                        <div style="margin-left:auto; display:flex; align-items:center; gap:8px;">
+                            <input type="text" id="dispatch-search" class="input-box" style="padding:6px 12px; font-size:12px; width:220px;" placeholder="Cerca struttura..." oninput="admin.renderDispatchTable()">
+                        </div>
                     </div>
 
                     <div class="checklist-table-wrapper">

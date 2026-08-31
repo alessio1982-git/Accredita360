@@ -525,5 +525,93 @@ const NormativaDB = {
         }
 
         return result;
-    }
+    },
+
+    // Schede di validazione documentale MAMB (Manuale Accreditamento Macrostrutture e Branche)
+    schedeMAMB: {
+        'MAMB-2.1-01-DDIR': {
+            titolo: 'Validazione Documenti di Direzione & Politiche',
+            descrizione: 'Applicabile a Regolamenti interni, Carte dei Servizi, Codici Etici e Politiche Aziendali.',
+            criteri: [
+                { id: 'DDIR.01', desc: 'Denominazione e dati identificativi dell\'Organizzazione', peso: 15 },
+                { id: 'DDIR.02', desc: 'Titolo, finalità e campo di applicazione del documento', peso: 15 },
+                { id: 'DDIR.04', desc: 'Numero di versione e data di adozione/revisione', peso: 25 },
+                { id: 'DDIR.09', desc: 'Firma di approvazione del Legale Rappresentante o Direttore Sanitario', peso: 25 },
+                { id: 'DDIR.12', desc: 'Periodo di validità ed evidenza del monitoraggio periodico', peso: 20 }
+            ]
+        },
+        'MAMB-2.1-02-PROC': {
+            titolo: 'Validazione Procedure Operative & Istruzioni (POS)',
+            descrizione: 'Applicabile a Procedure operative, Protocolli sanitari, Istruzioni di lavoro e Triage.',
+            criteri: [
+                { id: 'PROC.01', desc: 'Intestazione formale, identificativo univoco e titolo procedura', peso: 15 },
+                { id: 'PROC.02', desc: 'Scopo, campo di applicazione e destinatari chiaramente definiti', peso: 15 },
+                { id: 'PROC.04', desc: 'Flusso operativo delle attività, ruoli e responsabilità descritti', peso: 30 },
+                { id: 'PROC.07', desc: 'Riferimenti normativi e linee guida scientifiche aggiornate', peso: 20 },
+                { id: 'PROC.11', desc: 'Data di emissione/revisione e firma del Responsabile di Processo/DS', peso: 20 }
+            ]
+        },
+        'MAMB-2.1-03-DOCT': {
+            titolo: 'Validazione Dotazioni Tecniche & Elettromedicali',
+            descrizione: 'Applicabile a Inventari attrezzature, Verifiche CEI 62-5, Schede manutenzione e Marchiature CE.',
+            criteri: [
+                { id: 'DOCT.01', desc: 'Inventario con marca, modello, matricola/serial number e ubicazione', peso: 25 },
+                { id: 'DOCT.03', desc: 'Dichiarazione / Marcatura di conformità CE (MDR/Direttive applicabili)', peso: 25 },
+                { id: 'DOCT.05', desc: 'Disponibilità manuali d\'uso e istruzioni del fabbricante', peso: 20 },
+                { id: 'DOCT.07', desc: 'Verifiche periodiche di sicurezza elettrica CEI 62-5 e tarature in corso di validità', peso: 30 }
+            ]
+        },
+        'MAMB-2.1-04-PINT': {
+            titolo: 'Validazione Piani di Intervento & Formazione',
+            descrizione: 'Applicabile a Piano Formazione ECM, Piani di Risk Management e Piani di Manutenzione.',
+            criteri: [
+                { id: 'PINT.01', desc: 'Denominazione dell\'Organizzazione e anno di riferimento', peso: 15 },
+                { id: 'PINT.02', desc: 'Titolo, obiettivi strategici e indicatori di risultato', peso: 20 },
+                { id: 'PINT.10', desc: 'Dettaglio delle attività, moduli formativi o azioni di miglioramento', peso: 25 },
+                { id: 'PINT.12', desc: 'Cronoprogramma temporale (Gantt o scadenze trimestrali/annuali)', peso: 20 },
+                { id: 'PINT.18', desc: 'Modalità di monitoraggio, valutazione efficacia e riesame direzione', peso: 20 }
+            ]
+        },
+        'MAMB-2.1-05-ORGA': {
+            titolo: 'Validazione Organigramma, Nomine & Requisiti Personale',
+            descrizione: 'Applicabile ad Atti di nomina DS/RSPP/DPO, Organigrammi, Mansionari e Équipe.',
+            criteri: [
+                { id: 'ORGA.01', desc: 'Atto formale di nomina/incarico con data certa', peso: 25 },
+                { id: 'ORGA.02', desc: 'Dati anagrafici, titolo professionale e iscrizione all\'Albo/Ordine ove prescritto', peso: 25 },
+                { id: 'ORGA.03', desc: 'Accettazione formale e sottoscrizione dell\'incaricato', peso: 25 },
+                { id: 'ORGA.04', desc: 'Definizione puntuale di compiti, poteri di spesa e deleghe operative', peso: 25 }
+            ]
+        },
+        'MAMB-2.1-06-CLIN': {
+            titolo: 'Validazione Documentazione Clinica, FSE & Telemedicina',
+            descrizione: 'Applicabile a Cartelle Cliniche, PAI, Consensi Informati, Privacy e Telemedicina.',
+            criteri: [
+                { id: 'CLIN.01', desc: 'Modulistica informativa e consenso informato con informativa privacy GDPR', peso: 25 },
+                { id: 'CLIN.02', desc: 'Tracciabilità e conservazione sicura dei dati clinici/sanitari', peso: 25 },
+                { id: 'CLIN.03', desc: 'Interoperabilità con FSE/FSD e sistemi sanitari regionali', peso: 25 },
+                { id: 'CLIN.04', desc: 'Standard di sicurezza e crittografia per teleconsulto e firma digitale', peso: 25 }
+            ]
+        },
+        'MAMB-2.1-07-EMERG': {
+            titolo: 'Validazione Sicurezza Lavoro, Emergenze & CPI',
+            descrizione: 'Applicabile a DVR 81/08, Piani di Emergenza ed Evacuazione, Certificati Antincendio CPI.',
+            criteri: [
+                { id: 'EMERG.01', desc: 'Documento Valutazione Rischi redatto ex D.Lgs 81/08 con data certa', peso: 30 },
+                { id: 'EMERG.02', desc: 'Certificato Prevenzione Incendi (CPI/SCIA VVF) in corso di validità', peso: 30 },
+                { id: 'EMERG.03', desc: 'Piano di emergenza ed evacuazione con planimetrie delle vie di fuga', peso: 20 },
+                { id: 'EMERG.04', desc: 'Designazione e attestati formazione per addetti antincendio e primo soccorso', peso: 20 }
+            ]
+        }
+    },
+
+    // Template preimpostati di feedback per la revisione rapida
+    quickFeedbackTemplates: [
+        { label: 'Conforme e Approvato', text: 'Documentazione completa e conforme agli standard normativi e alle schede MAMB applicabili.', action: 'APPROVE' },
+        { label: 'Firma Direttore Sanitario mancante', text: 'Manca la firma formale o digitale del Direttore Sanitario/Responsabile sul documento.', action: 'REJECT' },
+        { label: 'Numero di revisione / Data assente', text: 'Il documento non riporta il numero di revisione aggiornato o la data di adozione.', action: 'REJECT' },
+        { label: 'Manca attestazione CE / D.M. 37/08', text: 'Allegare la dichiarazione di conformità CE o il certificato di conformità degli impianti a norma di legge.', action: 'REJECT' },
+        { label: 'Ricevuta telematica non allegata', text: 'È necessario allegare la ricevuta di invio/accettazione telematica (PEC o portale regionale).', action: 'REJECT' },
+        { label: 'Conforme con riserva di aggiornamento', text: 'Documento provvisoriamente idoneo; procedere con l\'aggiornamento alla prossima scadenza programmata.', action: 'APPROVE' }
+    ]
 };
+
