@@ -610,6 +610,151 @@
             box-shadow: 0 20px 45px rgba(2,132,199,0.55);
         }
 
+        /* ── NANO BANANA EXTENSION TRIGGER & MODAL ── */
+        .btn-nanobanana {
+            position: fixed;
+            top: 24px;
+            right: 210px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            z-index: 1000;
+            color: #fef08a;
+            font-size: 13px;
+            font-weight: 700;
+            padding: 9px 18px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, rgba(234, 179, 8, 0.15), rgba(245, 158, 11, 0.25));
+            border: 1px solid rgba(250, 204, 21, 0.4);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            transition: all 0.3s;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(234, 179, 8, 0.2);
+        }
+        .btn-nanobanana:hover {
+            background: linear-gradient(135deg, rgba(234, 179, 8, 0.3), rgba(245, 158, 11, 0.45));
+            border-color: #facc15;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(234, 179, 8, 0.35);
+        }
+
+        .nanobanana-modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(2, 6, 23, 0.8);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            z-index: 2000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .nanobanana-modal.active {
+            display: flex;
+            animation: modalFadeIn 0.3s ease-out;
+        }
+        @keyframes modalFadeIn {
+            from { opacity: 0; transform: scale(0.96); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        .nanobanana-card {
+            background: #0f172a;
+            border: 1px solid rgba(250, 204, 21, 0.3);
+            border-radius: 20px;
+            max-width: 680px;
+            width: 100%;
+            padding: 30px;
+            box-shadow: 0 25px 60px rgba(0,0,0,0.8), 0 0 30px rgba(234, 179, 8, 0.15);
+            position: relative;
+            text-align: left;
+        }
+        .nanobanana-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            padding-bottom: 16px;
+            margin-bottom: 20px;
+        }
+        .nanobanana-title {
+            font-size: 20px;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #fef08a;
+        }
+        .nanobanana-close {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            font-size: 24px;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+        .nanobanana-close:hover { color: white; }
+
+        .nanobanana-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .nb-tab {
+            padding: 8px 16px;
+            border-radius: 8px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: var(--text-muted);
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .nb-tab.active {
+            background: rgba(234, 179, 8, 0.2);
+            border-color: #facc15;
+            color: #fef08a;
+        }
+
+        .nb-content { display: none; }
+        .nb-content.active { display: block; }
+
+        .nb-btn-primary {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 24px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #eab308, #ca8a04);
+            color: #020617;
+            font-size: 14px;
+            font-weight: 700;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .nb-btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(234, 179, 8, 0.4);
+        }
+
+        .nb-textarea {
+            width: 100%;
+            height: 140px;
+            background: rgba(2,6,23,0.7);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 10px;
+            color: #38bdf8;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            padding: 12px;
+            resize: none;
+            margin-bottom: 14px;
+        }
+
         /* ── RESPONSIVE ──────────────── */
         @media (max-width: 1024px) {
             .slide { padding: 40px 30px 90px; }
@@ -638,10 +783,15 @@
         </div>
     </div>
 
-    <!-- Exit button -->
-    <a href="index.html" class="btn-back">
-        <i class='bx bx-left-arrow-alt'></i> Torna al Portale
-    </a>
+    <!-- Exit button & Nano Banana Studio trigger -->
+    <div style="display: flex; gap: 10px; position: fixed; top: 24px; right: 32px; z-index: 1000;">
+        <button id="open-nanobanana-modal" class="btn-nanobanana" title="Apri studio Nano Banana AI">
+            <i class='bx bxs-magic-wand'></i> <span>Estensione Nano Banana</span>
+        </button>
+        <a href="index.html" class="btn-back" style="position: static;">
+            <i class='bx bx-left-arrow-alt'></i> Torna al Portale
+        </a>
+    </div>
 
     <!-- Live Teleprompter (Sottotitoli sincronizzati) -->
     <div class="teleprompter" id="teleprompter">
@@ -1207,6 +1357,86 @@
             speakText(NARRATIVES[currentSlide]);
         }
 
+    <!-- ══════════════════════════════════════════════════════════ -->
+    <!-- MODALE ESTENSIONE NANO BANANA AI STUDIO                   -->
+    <!-- ══════════════════════════════════════════════════════════ -->
+    <div class="nanobanana-modal" id="nanobanana-modal">
+        <div class="nanobanana-card">
+            <div class="nanobanana-header">
+                <div class="nanobanana-title">
+                    <i class='bx bxs-magic-wand'></i> Nano Banana AI Studio 2026
+                </div>
+                <button class="nanobanana-close" id="close-nanobanana-modal">&times;</button>
+            </div>
+
+            <!-- Tabs -->
+            <div class="nanobanana-tabs">
+                <button class="nb-tab active" data-tab="tab-record">🎬 Registra Video HD</button>
+                <button class="nb-tab" data-tab="tab-prompt">🍌 Prompt Nano Banana Pro</button>
+                <button class="nb-tab" data-tab="tab-voice">🎙️ Voce & Configurazione</button>
+            </div>
+
+            <!-- Tab 1: Screen & Audio Recorder -->
+            <div class="nb-content active" id="tab-record">
+                <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px; line-height: 1.5;">
+                    Avvia la registrazione diretta della presentazione a schermo con la voce narrante in italiano. Il file video (<strong style="color:white;">.webm / .mp4</strong>) verrà scaricato automaticamente al termine della presentazione o cliccando su Termina.
+                </p>
+                <div style="display: flex; gap: 12px; align-items: center; margin-bottom: 18px;">
+                    <button class="nb-btn-primary" id="btn-start-record">
+                        <i class='bx bx-play-circle'></i> Avvia Registrazione Demo
+                    </button>
+                    <button class="nb-btn-primary" id="btn-stop-record" style="display: none; background: linear-gradient(135deg, #ef4444, #dc2626); color: white;">
+                        <i class='bx bx-stop-circle'></i> Termina & Scarica Video
+                    </button>
+                    <span id="record-status" style="font-size: 12px; font-weight: 700; color: #facc15;"></span>
+                </div>
+                <div style="font-size: 11.5px; color: #94a3b8; background: rgba(255,255,255,0.03); padding: 10px; border-radius: 8px;">
+                    💡 <em>Suggerimento:</em> Per la massima qualità Full HD, seleziona "Questa scheda" o "Finestra intera" quando il browser chiede la condivisione dello schermo.
+                </div>
+            </div>
+
+            <!-- Tab 2: Prompt Generator -->
+            <div class="nb-content" id="tab-prompt">
+                <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 10px;">
+                    Pacchetto prompt compilato per <strong>Nano Banana Pro</strong> / <strong>Google Gemini Veo</strong>:
+                </p>
+                <textarea class="nb-textarea" id="nb-prompt-area" readonly></textarea>
+                <div style="display: flex; gap: 10px;">
+                    <button class="nb-btn-primary" id="btn-copy-prompt">
+                        <i class='bx bx-copy'></i> Copia Payload JSON
+                    </button>
+                    <a href="https://nanobananavideo.com/" target="_blank" class="nb-btn-primary" style="background: rgba(255,255,255,0.08); color: white; text-decoration: none;">
+                        <i class='bx bx-link-external'></i> Apri Nano Banana Web
+                    </a>
+                </div>
+            </div>
+
+            <!-- Tab 3: Voice & Config -->
+            <div class="nb-content" id="tab-voice">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px;">
+                    <div>
+                        <label style="font-size: 12px; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 6px;">PROFILO VOCALE</label>
+                        <select id="voice-select" style="width: 100%; padding: 8px 12px; border-radius: 8px; background: rgba(2,6,23,0.8); border: 1px solid rgba(255,255,255,0.15); color: white; font-size: 12px;">
+                            <option value="auto">Auto (Migliore voce italiana disponibile)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="font-size: 12px; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 6px;">RITMO / VELOCITÀ</label>
+                        <select id="voice-speed-select" style="width: 100%; padding: 8px 12px; border-radius: 8px; background: rgba(2,6,23,0.8); border: 1px solid rgba(255,255,255,0.15); color: white; font-size: 12px;">
+                            <option value="0.85">0.85x — Chiaro e Rilassato (Consigliato)</option>
+                            <option value="1.0">1.0x — Standard</option>
+                            <option value="1.15">1.15x — Rapido</option>
+                        </select>
+                    </div>
+                </div>
+                <button class="nb-btn-primary" id="btn-test-voice" style="font-size: 12px; padding: 8px 16px;">
+                    <i class='bx bx-volume-full'></i> Test Voce Live
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
         // Event Listeners
         playBtn.addEventListener('click', (e) => { e.stopPropagation(); togglePlay(); });
         prevBtn.addEventListener('click', (e) => { e.stopPropagation(); prevSlide(); });
@@ -1222,18 +1452,173 @@
         });
 
         document.addEventListener('click', (e) => {
-            if (e.target.tagName !== 'A' && !e.target.closest('.video-controls') && !e.target.closest('.btn-back')) {
+            if (e.target.tagName !== 'A' && !e.target.closest('.video-controls') && !e.target.closest('.btn-back') && !e.target.closest('.btn-nanobanana') && !e.target.closest('.nanobanana-card')) {
                 nextSlide();
             }
         });
 
+        // ══════ NANO BANANA STUDIO LOGIC ══════
+        const nbModal = document.getElementById('nanobanana-modal');
+        const openNbBtn = document.getElementById('open-nanobanana-modal');
+        const closeNbBtn = document.getElementById('close-nanobanana-modal');
+        const nbTabs = document.querySelectorAll('.nb-tab');
+        const nbContents = document.querySelectorAll('.nb-content');
+        const nbPromptArea = document.getElementById('nb-prompt-area');
+        const btnCopyPrompt = document.getElementById('btn-copy-prompt');
+        const voiceSelect = document.getElementById('voice-select');
+        const voiceSpeedSelect = document.getElementById('voice-speed-select');
+        const btnTestVoice = document.getElementById('btn-test-voice');
+
+        // Recording state
+        let mediaRecorder = null;
+        let recordedChunks = [];
+        const btnStartRecord = document.getElementById('btn-start-record');
+        const btnStopRecord = document.getElementById('btn-stop-record');
+        const recordStatus = document.getElementById('record-status');
+
+        function generateNanoBananaPayload() {
+            const payload = {
+                generator: "Nano Banana Pro / Google Gemini Veo 2026",
+                project: "Accredita360 - Health Compliance Demo",
+                aspectRatio: "16:9",
+                resolution: "1080p",
+                fps: 30,
+                language: "it-IT",
+                scenes: Object.keys(NARRATIVES).map(num => ({
+                    slide: parseInt(num),
+                    motionPrompt: `Smooth cinematic UI camera transition, dark sleek healthcare SaaS theme, glowing indicators, high clarity typography for Slide ${num}`,
+                    voiceoverScript: NARRATIVES[num]
+                }))
+            };
+            return JSON.stringify(payload, null, 2);
+        }
+
+        nbPromptArea.value = generateNanoBananaPayload();
+
+        openNbBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            nbModal.classList.add('active');
+            isPaused = true;
+            updatePlayIcon();
+            if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+        });
+
+        closeNbBtn.addEventListener('click', () => {
+            nbModal.classList.remove('active');
+        });
+
+        nbModal.addEventListener('click', (e) => {
+            if (e.target === nbModal) nbModal.classList.remove('active');
+        });
+
+        nbTabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                nbTabs.forEach(t => t.classList.remove('active'));
+                nbContents.forEach(c => c.classList.remove('active'));
+                tab.classList.add('active');
+                const targetId = tab.dataset.tab;
+                document.getElementById(targetId).classList.add('active');
+            });
+        });
+
+        btnCopyPrompt.addEventListener('click', () => {
+            navigator.clipboard.writeText(nbPromptArea.value).then(() => {
+                const prev = btnCopyPrompt.innerHTML;
+                btnCopyPrompt.innerHTML = "<i class='bx bx-check'></i> Copiato!";
+                setTimeout(() => btnCopyPrompt.innerHTML = prev, 2000);
+            });
+        });
+
+        function populateVoices() {
+            if (!('speechSynthesis' in window)) return;
+            const voices = window.speechSynthesis.getVoices().filter(v => v.lang.startsWith('it') || v.lang.startsWith('IT'));
+            voiceSelect.innerHTML = '<option value="auto">Auto (Migliore voce italiana disponibile)</option>';
+            voices.forEach(v => {
+                const opt = document.createElement('option');
+                opt.value = v.name;
+                opt.textContent = `${v.name} (${v.lang})`;
+                voiceSelect.appendChild(opt);
+            });
+        }
+
         if ('speechSynthesis' in window) {
             window.speechSynthesis.onvoiceschanged = () => {
+                populateVoices();
                 if (currentSlide === 1 && !isPaused && !isMuted) {
                     speakText(NARRATIVES[1]);
                 }
             };
         }
+
+        btnTestVoice.addEventListener('click', () => {
+            const selectedVoiceName = voiceSelect.value;
+            const selectedSpeed = parseFloat(voiceSpeedSelect.value);
+            const testUtterance = new SpeechSynthesisUtterance("Test narrazione Accredita trecentosessanta con estensione Nano Banana completato con successo.");
+            testUtterance.lang = 'it-IT';
+            testUtterance.rate = selectedSpeed;
+            if (selectedVoiceName !== 'auto') {
+                const v = window.speechSynthesis.getVoices().find(x => x.name === selectedVoiceName);
+                if (v) testUtterance.voice = v;
+            }
+            window.speechSynthesis.cancel();
+            window.speechSynthesis.speak(testUtterance);
+        });
+
+        // ── IN-BROWSER SCREEN & AUDIO RECORDER ──
+        btnStartRecord.addEventListener('click', async () => {
+            try {
+                const stream = await navigator.mediaDevices.getDisplayMedia({
+                    video: { frameRate: { ideal: 30 } },
+                    audio: true
+                });
+
+                recordedChunks = [];
+                mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm; codecs=vp9' });
+
+                mediaRecorder.ondataavailable = (e) => {
+                    if (e.data && e.data.size > 0) recordedChunks.push(e.data);
+                };
+
+                mediaRecorder.onstop = () => {
+                    const blob = new Blob(recordedChunks, { type: 'video/webm' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.style.display = 'none';
+                    a.href = url;
+                    a.download = `Accredita360_Video_Demo_${new Date().toISOString().slice(0,10)}.webm`;
+                    document.body.appendChild(a);
+                    a.click();
+                    setTimeout(() => {
+                        document.body.removeChild(a);
+                        URL.revokeObjectURL(url);
+                    }, 100);
+                    btnStartRecord.style.display = 'inline-flex';
+                    btnStopRecord.style.display = 'none';
+                    recordStatus.textContent = "✅ Download avviato!";
+                };
+
+                mediaRecorder.start(1000);
+                btnStartRecord.style.display = 'none';
+                btnStopRecord.style.display = 'inline-flex';
+                recordStatus.textContent = "🔴 Registrazione attiva...";
+
+                // Chiudi modale e avvia la demo dal principio
+                nbModal.classList.remove('active');
+                isPaused = false;
+                updatePlayIcon();
+                goToSlide(1);
+
+            } catch (err) {
+                console.error("Errore avvio registrazione:", err);
+                recordStatus.textContent = "⚠️ Registrazione annullata dall'utente.";
+            }
+        });
+
+        btnStopRecord.addEventListener('click', () => {
+            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                mediaRecorder.stop();
+            }
+        });
 
         window.addEventListener('beforeunload', () => {
             if ('speechSynthesis' in window) window.speechSynthesis.cancel();
@@ -1244,6 +1629,7 @@
         updatePlayIcon();
         updateVoiceIcon();
         startPlaybackLoop();
+        populateVoices();
     </script>
 </body>
 </html>
