@@ -54,7 +54,7 @@
             transform: scale(1.03);
             transition: opacity 0.8s cubic-bezier(0.4,0,0.2,1), transform 0.8s cubic-bezier(0.4,0,0.2,1);
             pointer-events: none;
-            padding: 50px 80px 100px;
+            padding: 85px 80px 75px;
             text-align: center;
             box-sizing: border-box;
         }
@@ -394,27 +394,27 @@
         /* ── SUBTITLE TELEPROMPTER ───── */
         .teleprompter {
             position: fixed;
-            bottom: 74px;
+            top: 20px;
             left: 50%;
             transform: translateX(-50%);
-            max-width: 860px;
-            width: 90%;
-            background: rgba(2, 6, 23, 0.85);
+            max-width: 660px;
+            width: calc(100% - 620px);
+            background: rgba(15, 23, 42, 0.88);
             border: 1px solid rgba(56, 189, 248, 0.25);
             backdrop-filter: blur(16px);
             -webkit-backdrop-filter: blur(16px);
-            padding: 10px 24px;
-            border-radius: 20px;
-            font-size: 14px;
-            line-height: 1.5;
+            padding: 8px 20px;
+            border-radius: 24px;
+            font-size: 13px;
+            line-height: 1.4;
             color: #f8fafc;
             text-align: center;
             z-index: 900;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.5);
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 12px;
+            gap: 10px;
             transition: all 0.3s;
         }
         .teleprompter-dot {
@@ -581,14 +581,6 @@
             font-weight: 800;
             color: var(--primary-light);
             letter-spacing: 0.5px;
-        }
-        .logo-watermark .badge-year {
-            font-size: 10px;
-            font-weight: 800;
-            padding: 2px 7px;
-            border-radius: 6px;
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            color: white;
         }
 
         .final-cta-btn {
@@ -774,13 +766,10 @@
 </head>
 <body>
 
-    <!-- Logo & Year Badge -->
+    <!-- Logo -->
     <div class="logo-watermark">
         <img src="logo.png" alt="Accredita360 Logo">
-        <div style="display: flex; align-items: center; gap: 8px;">
-            <span class="brand-name">Accredita360</span>
-            <span class="badge-year">EDIZIONE 2026</span>
-        </div>
+        <span class="brand-name">Accredita360</span>
     </div>
 
     <!-- Exit button & Nano Banana Studio trigger -->
