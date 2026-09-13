@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Accredita360 - Kit Loghi Ufficiali su Sfondo Bianco</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Playfair+Display:wght@700;800;900&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+    <style>
+        :root {
+            --bg-page: #f8fafc;
+            --primary: #0284c7;
+            --primary-dark: #0369a1;
+            --emerald: #059669;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --border-color: #e2e8f0;
+            --card-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: var(--bg-page);
+            color: var(--text-main);
+            padding: 40px 24px 80px;
+            line-height: 1.5;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 48px;
+        }
+        header .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: #e0f2fe;
+            color: var(--primary-dark);
+            font-weight: 700;
+            font-size: 13px;
+            padding: 6px 16px;
+            border-radius: 999px;
+            margin-bottom: 16px;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+        header h1 {
+            font-size: 38px;
+            font-weight: 800;
+            color: var(--text-main);
+            margin-bottom: 12px;
+        }
+        header p {
+            font-size: 16px;
+            color: var(--text-muted);
+            max-width: 680px;
+            margin: 0 auto;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+            gap: 28px;
+        }
+
+        .card {
+            background: #ffffff;
+            border-radius: 20px;
+            border: 1px solid var(--border-color);
+            box-shadow: var(--card-shadow);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 16px 40px rgba(2, 132, 199, 0.12);
+        }
+
+        .card.featured {
+            grid-column: 1 / -1;
+            border: 2px solid #bae6fd;
+        }
+
+        .card-preview {
+            background: #ffffff;
+            padding: 40px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-bottom: 1px solid var(--border-color);
+            min-height: 200px;
+            position: relative;
+        }
+        .card-preview img {
+            max-width: 100%;
+            max-height: 180px;
+            object-fit: contain;
+        }
+        .card.featured .card-preview img {
+            max-height: 140px;
+        }
+
+        .card-body {
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            justify-content: space-between;
+            gap: 16px;
+        }
+
+        .card-title-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .card-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+        .tag {
+            font-size: 11px;
+            font-weight: 700;
+            padding: 3px 8px;
+            border-radius: 6px;
+            background: #f1f5f9;
+            color: #475569;
+            text-transform: uppercase;
+        }
+        .tag.primary {
+            background: #e0f2fe;
+            color: var(--primary);
+        }
+
+        .card-desc {
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        .actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 10px 16px;
+            font-size: 13px;
+            font-weight: 600;
+            border-radius: 10px;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: none;
+        }
+        .btn-primary {
+            background: var(--primary);
+            color: #ffffff;
+        }
+        .btn-primary:hover {
+            background: var(--primary-dark);
+        }
+        .btn-outline {
+            background: #ffffff;
+            color: var(--text-main);
+            border: 1px solid var(--border-color);
+        }
+        .btn-outline:hover {
+            background: #f8fafc;
+            border-color: #cbd5e1;
+        }
+
+        .footer-note {
+            margin-top: 50px;
+            text-align: center;
+            font-size: 13px;
+            color: var(--text-muted);
+            padding: 20px;
+            background: #ffffff;
+            border-radius: 14px;
+            border: 1px solid var(--border-color);
+        }
+
+        .copied-toast {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: #0f172a;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+            font-size: 14px;
+            font-weight: 600;
+            display: none;
+            z-index: 1000;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <div class="badge"><i class='bx bxs-badge-check'></i> Brand Identity Kit</div>
+            <h1>Loghi Accredita360 con Sfondo Bianco</h1>
+            <p>Tutti i file ad altissima risoluzione (300 DPI / UHD) e vettoriali SVG per documenti ufficiali, presentazioni, relazioni sanitarie, intestazioni e web.</p>
+        </header>
+
+        <div class="grid">
+            <!-- 1. FEATURED: Logo Principale Orizzontale -->
+            <div class="card featured">
+                <div class="card-preview">
+                    <img src="logo_accredita_360_sfondo_bianco.png" alt="Accredita360 Logo Sfondo Bianco">
+                </div>
+                <div class="card-body">
+                    <div class="card-title-row">
+                        <div>
+                            <div class="card-title">Logo Principale Ufficiale (Orizzontale Clean)</div>
+                            <div class="card-desc">File: <code>logo_accredita_360_sfondo_bianco.png</code> &bull; Risoluzione Ultra HD (300 DPI) &bull; Sfondo 100% Bianco Puro</div>
+                        </div>
+                        <span class="tag primary">Consigliato</span>
+                    </div>
+                    <div class="actions">
+                        <a href="logo_accredita_360_sfondo_bianco.png" download class="btn btn-primary"><i class='bx bx-download'></i> Scarica PNG HD</a>
+                        <a href="logo_accredita360_orizzontale.svg" download class="btn btn-outline"><i class='bx bx-code-alt'></i> Scarica Vettoriale SVG</a>
+                        <button onclick="copyPath('logo_accredita_360_sfondo_bianco.png')" class="btn btn-outline"><i class='bx bx-copy'></i> Copia Nome File</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2. Orizzontale con Spazio 'Accredita 360' -->
+            <div class="card">
+                <div class="card-preview">
+                    <img src="logo_accredita_360_orizzontale_spaziato.png" alt="Accredita 360 Logo Spaziato">
+                </div>
+                <div class="card-body">
+                    <div class="card-title-row">
+                        <div class="card-title">Logo con Spazio: "Accredita 360"</div>
+                        <span class="tag">PNG / SVG</span>
+                    </div>
+                    <div class="card-desc">Con spaziatura definita tra "Accredita" e "360".</div>
+                    <div class="actions">
+                        <a href="logo_accredita_360_orizzontale_spaziato.png" download class="btn btn-primary"><i class='bx bx-download'></i> PNG</a>
+                        <a href="logo_accredita_360_spaziato.svg" download class="btn btn-outline"><i class='bx bx-code-alt'></i> SVG</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. Corporate con Tagline Sanitaria -->
+            <div class="card">
+                <div class="card-preview">
+                    <img src="logo_accredita360_corporate_tagline.png" alt="Accredita360 Corporate Tagline">
+                </div>
+                <div class="card-body">
+                    <div class="card-title-row">
+                        <div class="card-title">Corporate con Payoff Sanitario</div>
+                        <span class="tag">Documenti</span>
+                    </div>
+                    <div class="card-desc">Con dicitura <em>"SISTEMI DI QUALITÀ & ACCREDITAMENTO SANITARIO"</em>.</div>
+                    <div class="actions">
+                        <a href="logo_accredita360_corporate_tagline.png" download class="btn btn-primary"><i class='bx bx-download'></i> PNG</a>
+                        <a href="logo_accredita360_corporate.svg" download class="btn btn-outline"><i class='bx bx-code-alt'></i> SVG</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 4. Verticale / Stacked -->
+            <div class="card">
+                <div class="card-preview">
+                    <img src="logo_accredita360_verticale.png" alt="Accredita360 Verticale">
+                </div>
+                <div class="card-body">
+                    <div class="card-title-row">
+                        <div class="card-title">Formato Verticale / Centrato</div>
+                        <span class="tag">Cover / Report</span>
+                    </div>
+                    <div class="card-desc">Emblema grande centrato sopra la scritta per frontespizi di documenti.</div>
+                    <div class="actions">
+                        <a href="logo_accredita360_verticale.png" download class="btn btn-primary"><i class='bx bx-download'></i> PNG</a>
+                        <a href="logo_accredita360_verticale.svg" download class="btn btn-outline"><i class='bx bx-code-alt'></i> SVG</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 5. Stile Istituzionale Serif (Playfair) -->
+            <div class="card">
+                <div class="card-preview">
+                    <img src="logo_accredita360_serif_istituzionale.png" alt="Accredita360 Serif">
+                </div>
+                <div class="card-body">
+                    <div class="card-title-row">
+                        <div class="card-title">Stile Istituzionale Serif (Playfair)</div>
+                        <span class="tag">Executive</span>
+                    </div>
+                    <div class="card-desc">Tipografia classica ed autorevole per presentazioni aziendali.</div>
+                    <div class="actions">
+                        <a href="logo_accredita360_serif_istituzionale.png" download class="btn btn-primary"><i class='bx bx-download'></i> PNG</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 6. Solo Emblema su Sfondo Bianco -->
+            <div class="card">
+                <div class="card-preview">
+                    <img src="logo_accredita360_emblema_puro.png" alt="Accredita360 Emblema">
+                </div>
+                <div class="card-body">
+                    <div class="card-title-row">
+                        <div class="card-title">Solo Emblema / Icona Scudo</div>
+                        <span class="tag">Icona</span>
+                    </div>
+                    <div class="card-desc">Emblema puro 360 centrato e ritagliato su sfondo bianco perfetto.</div>
+                    <div class="actions">
+                        <a href="logo_accredita360_emblema_puro.png" download class="btn btn-primary"><i class='bx bx-download'></i> PNG</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 7. Banner Header -->
+            <div class="card">
+                <div class="card-preview">
+                    <img src="logo_accredita360_banner_header.png" alt="Accredita360 Banner">
+                </div>
+                <div class="card-body">
+                    <div class="card-title-row">
+                        <div class="card-title">Banner Card Header</div>
+                        <span class="tag">Banner</span>
+                    </div>
+                    <div class="card-desc">Formato panoramico con badge di conformità normativa D.A. 890.</div>
+                    <div class="actions">
+                        <a href="logo_accredita360_banner_header.png" download class="btn btn-primary"><i class='bx bx-download'></i> PNG</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer-note">
+            Tutti i file sono salvati nella cartella principale del progetto <strong><code>c:\Users\siapa\Dropbox\ANTIGRAVITY\test app</code></strong> pronti per essere utilizzati in Word, PowerPoint, PDF, email, e codice HTML/CSS.
+        </div>
+    </div>
+
+    <div id="toast" class="copied-toast">Nome file copiato negli appunti!</div>
+
+    <script>
+        function copyPath(filename) {
+            navigator.clipboard.writeText(filename).then(() => {
+                const toast = document.getElementById('toast');
+                toast.style.display = 'block';
+                setTimeout(() => {
+                    toast.style.display = 'none';
+                }, 2000);
+            });
+        }
+    </script>
+</body>
+</html>

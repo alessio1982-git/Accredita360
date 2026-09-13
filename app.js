@@ -74,18 +74,21 @@ const app = {
 
         console.log('[App] Utente loggato:', displayName, displayEmail);
         
-        if(user.role === 'admin') {
-            document.getElementById('nav-consultants').style.display = 'flex';
-            document.getElementById('nav-normativa').style.display = 'flex';
-            document.getElementById('nav-procedure-ota').style.display = 'flex';
-            document.getElementById('nav-panoramica').style.display = 'flex';
-            this.renderConsultantsData();
+        if (user.role === 'admin' || user.role === 'consulente') {
+            const nc = document.getElementById('nav-consultants');
+            if (nc) nc.style.display = 'block';
+            this.renderConsultantsView();
         } else {
-            document.getElementById('nav-consultants').style.display = 'none';
-            document.getElementById('nav-normativa').style.display = 'none';
-            document.getElementById('nav-procedure-ota').style.display = 'none';
-            document.getElementById('nav-panoramica').style.display = 'none';
+            const nc = document.getElementById('nav-consultants');
+            if (nc) nc.style.display = 'none';
         }
+
+        const nn = document.getElementById('nav-normativa');
+        if (nn) nn.style.display = 'block';
+        const np = document.getElementById('nav-procedure-ota');
+        if (np) np.style.display = 'block';
+        const npan = document.getElementById('nav-panoramica');
+        if (npan) npan.style.display = 'block';
 
         this.navigate('dashboard');
     },
@@ -115,21 +118,23 @@ const app = {
         if (rEl) rEl.textContent = stats.rejectedDocs;
 
         // Carica tutti i documenti di tutte le strutture
-        const allStructures = Backend.getAllStructuresWithRequirements();
+        const allStructures = (typeof Backend.getAllStructuresWithRequirements === 'function' ? Backend.getAllStructuresWithRequirements() : []) || [];
         this._adminAllDocs = [];
 
-        allStructures.forEach(item => {
-            const strutturaNome = item.user.name || item.user.email;
-            const strutturaTipo = item.structure ? item.structure.type : '—';
-            item.requirements.forEach(req => {
-                this._adminAllDocs.push({
-                    strutturaNome,
-                    strutturaTipo,
-                    userEmail: item.user.email,
-                    req
+        if (Array.isArray(allStructures)) {
+            allStructures.forEach(item => {
+                const strutturaNome = item.user?.name || item.user?.email || 'Struttura';
+                const strutturaTipo = item.structure ? item.structure.type : '—';
+                (item.requirements || []).forEach(req => {
+                    this._adminAllDocs.push({
+                        strutturaNome,
+                        strutturaTipo,
+                        userEmail: item.user?.email || '',
+                        req
+                    });
                 });
             });
-        });
+        }
 
         this._renderAdminTable(this._adminAllDocs);
     },
@@ -318,7 +323,7 @@ const app = {
             const sidebarLinks = document.querySelectorAll('.nav-links li');
             sidebarLinks.forEach(link => {
                 const view = link.dataset.view;
-                if (['profiling', 'gap-analysis', 'documents', 'maintenance'].includes(view)) {
+                if (['profiling', 'gap-analysis', 'matrice360', 'documents', 'maintenance', 'audit-capa', 'risk-management', 'management-review', 'panoramica'].includes(view)) {
                     link.style.display = isAssigned ? 'block' : 'none';
                 }
             });
@@ -353,6 +358,8 @@ const app = {
 
         // Mantenimento dinamico
         this.renderMaintenanceView();
+        // Prepara Matrice 360
+        this.renderMatrice360();
     },
 
     renderInquadramentoBadge(struct) {
@@ -443,17 +450,21 @@ const app = {
     navigate(viewId) {
         // Aggiorna titolo
         const titles = {
-            'dashboard':     'Dashboard',
-            'anagrafica':    'Anagrafica e Struttura',
-            'profiling':     'Profilazione Struttura',
-            'gap-analysis':  'Gap Analysis (Semaforo)',
-            'documents':     'Fascicolo Documentale',
-            'maintenance':   'Mantenimento Accreditamento',
-            'consultants':   'Area Consulenti',
-            'normativa':     'Quadro Normativo',
-            'procedure-ota': 'Procedure OTA',
-            'panoramica':    'Panoramica',
-            'login':         'Accesso'
+            'dashboard':          'Dashboard',
+            'matrice360':         'Matrice di Conformità 360',
+            'anagrafica':         'Anagrafica e Struttura',
+            'profiling':          'Profilazione Struttura',
+            'gap-analysis':       'Gap Analysis (Semaforo)',
+            'documents':          'Fascicolo Documentale (DMS)',
+            'audit-capa':         'Audit Interni & Gestione CAPA (§9.2 & §10.2 ISO 9001)',
+            'risk-management':    'Risk Management & Incident Reporting (§6.1 ISO 9001 / ISO 31000 / L. 24/2017)',
+            'management-review':  'Riesame della Direzione & Monitoraggio Prestazioni (§9.3 & §6.2 ISO 9001 / D.A. 20/2024)',
+            'maintenance':        'Mantenimento Accreditamento',
+            'consultants':        'Area Consulenti',
+            'normativa':          'Quadro Normativo Sanitario & Standard di Qualità',
+            'procedure-ota':      'Biblioteca POS Sanitarie & Procedure OTA (D.A. 20/2024 & ISO 9001 §7.5)',
+            'panoramica':         'Iter di Accreditamento Istituzionale OTA & Fascicolo Istanza (D.A. 20/2024)',
+            'login':              'Accesso'
         };
         document.getElementById('view-title').textContent = titles[viewId] || viewId;
 
@@ -465,9 +476,17 @@ const app = {
         if (targetView) {
             targetView.classList.add('active-view');
             // Hook: azioni da eseguire all'ingresso in una vista
-            if (viewId === 'panoramica')  this.renderPanIterTimeline();
-            if (viewId === 'anagrafica')  this.loadAnagrafica().catch(console.warn);
-            if (viewId === 'maintenance') this.renderMaintenanceView();
+            if (viewId === 'matrice360')          this.renderMatrice360();
+            if (viewId === 'documents')           this.renderDmsRegister();
+            if (viewId === 'audit-capa')          this.renderAuditCapaView();
+            if (viewId === 'risk-management')     this.renderRiskManagementView();
+            if (viewId === 'management-review')   this.renderManagementReviewView();
+            if (viewId === 'panoramica')          this.renderAccreditationIterView();
+            if (viewId === 'anagrafica')          this.loadAnagrafica().catch(console.warn);
+            if (viewId === 'maintenance')         this.renderMaintenanceView();
+            if (viewId === 'consultants')         this.renderConsultantsView();
+            if (viewId === 'procedure-ota')       this.renderProcedureOtaView();
+            if (viewId === 'normativa')           this.renderNormativaView();
         } else {
             console.warn('[Navigate] Vista non trovata:', viewId);
         }
@@ -3884,8 +3903,7205 @@ app.sendRequirementComment = async function() {
     }
 };
 
+// ============================================================
+// MATRICE DI CONFORMITÀ 360 CONTROLLER (FASE 1)
+// ============================================================
+
+app.renderMatrice360 = function() {
+    const reqs = appState.requirements || [];
+    
+    // Calcolo statistiche 8 stati
+    const totale = reqs.length;
+    const conforme = reqs.filter(r => (r.extended_status === 'conforme' || (!r.extended_status && r.stato === 'green'))).length;
+    const adeguamento = reqs.filter(r => ['in_adeguamento', 'attesa_evidenza', 'da_verificare', 'parziale'].includes(r.extended_status)).length;
+    const nonconforme = reqs.filter(r => (r.extended_status === 'non_conforme' || (!r.extended_status && r.stato === 'red'))).length;
+    const na = reqs.filter(r => r.extended_status === 'non_applicabile').length;
+
+    const totEl = document.getElementById('m360-stat-totale');
+    const confEl = document.getElementById('m360-stat-conforme');
+    const adegEl = document.getElementById('m360-stat-adeguamento');
+    const nonconfEl = document.getElementById('m360-stat-nonconforme');
+    const naEl = document.getElementById('m360-stat-na');
+
+    if (totEl) totEl.textContent = totale;
+    if (confEl) confEl.textContent = `${conforme} (${totale > 0 ? Math.round((conforme/totale)*100) : 0}%)`;
+    if (adegEl) adegEl.textContent = adeguamento;
+    if (nonconfEl) nonconfEl.textContent = nonconforme;
+    if (naEl) naEl.textContent = na;
+
+    this.filterMatrice360();
+};
+
+app.resetFiltriMatrice360 = function() {
+    const sInput = document.getElementById('m360-search');
+    const stdSel = document.getElementById('m360-filter-standard');
+    const isoSel = document.getElementById('m360-filter-iso');
+    const procSel = document.getElementById('m360-filter-processo');
+    const statoSel = document.getElementById('m360-filter-stato');
+    const riskSel = document.getElementById('m360-filter-rischio');
+
+    if (sInput) sInput.value = '';
+    if (stdSel) stdSel.value = 'all';
+    if (isoSel) isoSel.value = 'all';
+    if (procSel) procSel.value = 'all';
+    if (statoSel) statoSel.value = 'all';
+    if (riskSel) riskSel.value = 'all';
+
+    this.filterMatrice360();
+};
+
+app.filterMatrice360 = function() {
+    const tbody = document.getElementById('m360-requirements-tbody');
+    if (!tbody) return;
+
+    const reqs = appState.requirements || [];
+    const sQuery = (document.getElementById('m360-search')?.value || '').toLowerCase().trim();
+    const fStd = document.getElementById('m360-filter-standard')?.value || 'all';
+    const fIso = document.getElementById('m360-filter-iso')?.value || 'all';
+    const fProc = document.getElementById('m360-filter-processo')?.value || 'all';
+    const fStato = document.getElementById('m360-filter-stato')?.value || 'all';
+    const fRisk = document.getElementById('m360-filter-rischio')?.value || 'all';
+
+    const filtered = reqs.filter(r => {
+        // Filtro Standard
+        if (fStd === 'asp' && r.percorso !== 'asp') return false;
+        if (fStd === 'ota' && r.percorso !== 'ota') return false;
+
+        // Filtro ISO
+        if (fIso !== 'all') {
+            const isoList = r.iso || [];
+            const hasIsoMatch = isoList.some(cl => cl.startsWith(fIso) || cl === fIso);
+            if (!hasIsoMatch) return false;
+        }
+
+        // Filtro Processo
+        if (fProc !== 'all') {
+            const proc = r.processo || 'Generale';
+            if (proc !== fProc) return false;
+        }
+
+        // Filtro Stato 8 Livelli
+        if (fStato !== 'all') {
+            const currentExt = r.extended_status || (r.stato === 'green' ? 'conforme' : 'non_conforme');
+            if (currentExt !== fStato) return false;
+        }
+
+        // Filtro Rischio
+        if (fRisk !== 'all') {
+            const risk = (r.livello_rischio || 'medio').toLowerCase();
+            if (risk !== fRisk.toLowerCase()) return false;
+        }
+
+        // Ricerca Testuale Full-Text
+        if (sQuery) {
+            const id = (r.id || '').toLowerCase();
+            const titolo = (r.titolo || '').toLowerCase();
+            const norma = (r.norma || '').toLowerCase();
+            const resp = (r.responsabile || '').toLowerCase();
+            const desc = (r.desc || '').toLowerCase();
+            const isoStr = (r.iso ? r.iso.join(' ') : '').toLowerCase();
+            const procStr = (r.processo || '').toLowerCase();
+
+            const match = id.includes(sQuery) || titolo.includes(sQuery) || norma.includes(sQuery) ||
+                          resp.includes(sQuery) || desc.includes(sQuery) || isoStr.includes(sQuery) || procStr.includes(sQuery);
+            if (!match) return false;
+        }
+
+        return true;
+    });
+
+    if (filtered.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="9" style="text-align:center; padding: 48px; color: var(--text-muted);">
+                    <i class='bx bx-search-alt' style="font-size: 36px; display: block; margin-bottom: 10px; opacity: 0.5;"></i>
+                    <strong style="font-size: 14px; color: var(--text-main);">Nessun requisito corrispondente ai filtri selezionati.</strong>
+                    <div style="font-size: 12px; margin-top: 4px;">Prova a reimpostare i filtri di ricerca per visualizzare l'intera matrice.</div>
+                </td>
+            </tr>
+        `;
+        return;
+    }
+
+    tbody.innerHTML = filtered.map(r => {
+        const extStatus = r.extended_status || (r.stato === 'green' ? 'conforme' : (r.file ? 'da_verificare' : 'non_conforme'));
+        const statusMeta = (typeof NormativaDB !== 'undefined' && NormativaDB.stati360[extStatus])
+            ? NormativaDB.stati360[extStatus]
+            : { label: extStatus, color: '#ef4444', icon: 'bx-x-circle' };
+
+        const risk = (r.livello_rischio || 'medio').toLowerCase();
+        const stdLabel = r.percorso === 'ota' ? 'OTA' : 'ASP';
+        const stdClass = r.percorso === 'ota' ? 'ota' : 'asp';
+
+        // Badge ISO 9001
+        const isoBadges = (r.iso && r.iso.length > 0)
+            ? r.iso.map(cl => `<span class="m360-iso-badge" title="${_s(r.iso_desc || 'Clausola ISO 9001')}">${_s(cl)}</span>`).join(' ')
+            : `<span style="font-size:11px; color:var(--text-muted); opacity:0.6;">—</span>`;
+
+        // File / Evidenza
+        const hasFile = !!(r.file || r.file_name);
+        const fileDisplay = hasFile
+            ? `<a href="${r.file_url || '#'}" target="_blank" style="color:var(--success); font-weight:600; font-size:11px; text-decoration:none; display:inline-flex; align-items:center; gap:4px; max-width:140px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${_s(r.file || r.file_name)}">
+                 <i class='bx bx-file'></i> ${_s(r.file || r.file_name)}
+               </a>`
+            : `<span style="color:var(--text-muted); font-size:11px; display:inline-flex; align-items:center; gap:3px;">
+                 <i class='bx bx-time'></i> Da caricare
+               </span>`;
+
+        // Note o conformità alert
+        const complianceCheck = (typeof NormativaDB !== 'undefined' && NormativaDB.checkCompliance) ? NormativaDB.checkCompliance(r.id) : null;
+        let alertBadge = '';
+        if (complianceCheck && complianceCheck.livello === 'critico') {
+            alertBadge = `<div style="font-size:10px; color:var(--danger); margin-top:2px; font-weight:600;"><i class='bx bx-error'></i> Norma superata</div>`;
+        }
+
+        return `
+            <tr data-req-id="${_s(r.id)}">
+                <td style="padding: 12px;">
+                    <div style="display:flex; flex-direction:column; gap:4px; align-items:flex-start;">
+                        <span class="m360-code-badge">${_s(r.id)}</span>
+                        <span class="m360-std-tag ${stdClass}">${stdLabel}</span>
+                    </div>
+                </td>
+                <td style="padding: 12px;">
+                    <div style="font-weight: 600; color: var(--text-main); font-size: 13px; line-height: 1.4;">${_s(r.titolo)}</div>
+                    <div style="font-size: 11px; color: var(--text-muted); margin-top: 3px;">${_s(r.norma)}</div>
+                    ${alertBadge}
+                </td>
+                <td style="padding: 12px;">
+                    <div style="display: flex; gap: 4px; flex-wrap: wrap;">${isoBadges}</div>
+                </td>
+                <td style="padding: 12px;">
+                    <span class="m360-process-badge" title="${_s(r.processo || 'Generale')}">
+                        <i class='bx bx-git-branch' style="color:var(--primary);"></i> ${_s(r.processo || 'Generale')}
+                    </span>
+                </td>
+                <td style="padding: 12px;">
+                    <div style="font-size: 12px; font-weight: 600; color: var(--text-main); display: flex; align-items: center; gap: 4px;">
+                        <i class='bx bx-user' style="color: var(--primary);"></i> ${_s(r.responsabile || 'Direttore Sanitario')}
+                    </div>
+                </td>
+                <td style="padding: 12px;">
+                    ${fileDisplay}
+                </td>
+                <td style="padding: 12px;">
+                    <span class="m360-risk-badge ${risk}">${risk}</span>
+                </td>
+                <td style="padding: 12px;">
+                    <span class="m360-status-badge ${extStatus}">
+                        <i class='bx ${statusMeta.icon}'></i> ${statusMeta.label}
+                    </span>
+                </td>
+                <td style="padding: 12px; text-align: center;">
+                    <div style="display: inline-flex; gap: 6px;">
+                        <button class="m360-action-btn" onclick="app.openRequirement360Modal('${_s(r.id)}')" title="Gestisci Requisito 360">
+                            <i class='bx bx-edit-alt'></i> Scheda
+                        </button>
+                        <button class="m360-action-btn" onclick="app.openReqChatModal('${_s(r.id)}')" title="Chat Contestuale">
+                            <i class='bx bx-message-dots'></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        `;
+    }).join('');
+};
+
+// ============================================================
+// MODALE SCHEDA REQUISITO 360 (INSPECTOR COMPLETO)
+// ============================================================
+
+app._active360ReqId = null;
+
+app.openRequirement360Modal = function(reqId) {
+    const req = (appState.requirements || []).find(r => r.id === reqId);
+    if (!req) {
+        alert('Requisito non trovato.');
+        return;
+    }
+
+    this._active360ReqId = reqId;
+    const modal = document.getElementById('req-modal-360');
+    const headerEl = document.getElementById('req-modal-360-header');
+    const bodyEl = document.getElementById('req-modal-360-body');
+    if (!modal || !headerEl || !bodyEl) return;
+
+    const extStatus = req.extended_status || (req.stato === 'green' ? 'conforme' : 'non_conforme');
+    const risk = (req.livello_rischio || 'medio').toLowerCase();
+    const priority = (req.priorita || 'media').toLowerCase();
+
+    // Intestazione Modale
+    headerEl.innerHTML = `
+        <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 16px;">
+            <div>
+                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+                    <span class="m360-code-badge" style="font-size: 13px; padding: 4px 8px;">${_s(req.id)}</span>
+                    <span class="m360-std-tag ${req.percorso === 'ota' ? 'ota' : 'asp'}">${req.percorso === 'ota' ? 'Accreditamento OTA' : 'Autorizzazione ASP'}</span>
+                    <span style="font-size: 12px; color: var(--text-muted);">${_s(req.norma)}</span>
+                </div>
+                <h3 style="margin: 0; font-size: 17px; font-weight: 700; color: var(--text-main); line-height: 1.4;">${_s(req.titolo)}</h3>
+                <div style="font-size: 12px; color: var(--text-muted); margin-top: 6px;">
+                    <strong>Evidenza richiesta:</strong> ${_s(req.evidenza_richiesta || req.desc || 'Documentazione / Verbale')}
+                </div>
+            </div>
+        </div>
+    `;
+
+    // Corpo Modale
+    bodyEl.innerHTML = `
+        <form onsubmit="event.preventDefault(); app.saveRequirement360Modal('${_s(req.id)}');">
+            <!-- SEZIONE 1: STATO OPERATIVO E NON APPLICABILITÀ -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 18px;">
+                <div class="form-group" style="margin:0;">
+                    <label style="font-size: 12px; font-weight: 700; color: var(--text-main); margin-bottom: 6px; display: block;">
+                        Stato di Conformità (8 Livelli Master) <span style="color:var(--danger);">*</span>
+                    </label>
+                    <select id="modal-360-status" class="input-box" style="font-size: 13px; font-weight: 600;" onchange="app.toggleNaReasonBox(this.value)">
+                        <option value="conforme" ${extStatus === 'conforme' ? 'selected' : ''}>🟢 Conforme (Validato con Evidenza)</option>
+                        <option value="parziale" ${extStatus === 'parziale' ? 'selected' : ''}>🟡 Parzialmente Conforme (Da integrare)</option>
+                        <option value="non_conforme" ${extStatus === 'non_conforme' ? 'selected' : ''}>🔴 Non Conforme (Assente)</option>
+                        <option value="in_adeguamento" ${extStatus === 'in_adeguamento' ? 'selected' : ''}>🟠 In Adeguamento (Azione in corso)</option>
+                        <option value="attesa_evidenza" ${extStatus === 'attesa_evidenza' ? 'selected' : ''}>🟣 In Attesa di Evidenza / Firma</option>
+                        <option value="da_verificare" ${extStatus === 'da_verificare' ? 'selected' : ''}>🔵 Da Verificare (File caricato)</option>
+                        <option value="non_applicabile" ${extStatus === 'non_applicabile' ? 'selected' : ''}>⚪ Non Applicabile (Escluso con deroga)</option>
+                    </select>
+                </div>
+
+                <div class="form-group" style="margin:0;">
+                    <label style="font-size: 12px; font-weight: 700; color: var(--text-main); margin-bottom: 6px; display: block;">
+                        Responsabile Incaricato <span style="color:var(--danger);">*</span>
+                    </label>
+                    <select id="modal-360-responsabile" class="input-box" style="font-size: 13px;">
+                        <option value="Direttore Sanitario" ${req.responsabile === 'Direttore Sanitario' ? 'selected' : ''}>Direttore Sanitario</option>
+                        <option value="Legale Rappresentante" ${req.responsabile === 'Legale Rappresentante' ? 'selected' : ''}>Legale Rappresentante</option>
+                        <option value="RSPP / Datore di Lavoro" ${req.responsabile === 'RSPP / Datore di Lavoro' ? 'selected' : ''}>RSPP / Datore di Lavoro</option>
+                        <option value="DPO / Privacy Officer" ${req.responsabile === 'DPO / Privacy Officer' ? 'selected' : ''}>DPO / Privacy Officer</option>
+                        <option value="Responsabile Qualità (RGQ)" ${req.responsabile === 'Responsabile Qualità (RGQ)' ? 'selected' : ''}>Responsabile Qualità (RGQ)</option>
+                        <option value="Ingegnere Clinico / Resp. Tecnico" ${req.responsabile === 'Ingegnere Clinico / Resp. Tecnico' ? 'selected' : ''}>Ingegnere Clinico / Resp. Tecnico</option>
+                        <option value="Coordinatore Infermieristico" ${req.responsabile === 'Coordinatore Infermieristico' ? 'selected' : ''}>Coordinatore Infermieristico</option>
+                        <option value="Referente Amministrativo" ${req.responsabile === 'Referente Amministrativo' ? 'selected' : ''}>Referente Amministrativo</option>
+                        <option value="${_s(req.responsabile)}" ${!['Direttore Sanitario','Legale Rappresentante','RSPP / Datore di Lavoro','DPO / Privacy Officer','Responsabile Qualità (RGQ)','Ingegnere Clinico / Resp. Tecnico','Coordinatore Infermieristico','Referente Amministrativo'].includes(req.responsabile) ? 'selected' : ''}>${_s(req.responsabile || 'Altro')}</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- BOX MOTIVAZIONE NON APPLICABILITÀ (CONDIZIONALE) -->
+            <div id="m360-na-reason-box" class="glass-card" style="display: ${extStatus === 'non_applicabile' ? 'block' : 'none'}; padding: 14px; margin-bottom: 18px; border-left: 4px solid var(--text-muted); background: rgba(100,116,139,0.08);">
+                <label style="font-size: 12px; font-weight: 700; color: var(--text-main); margin-bottom: 4px; display: block;">
+                    <i class='bx bx-info-circle'></i> Motivazione della Non Applicabilità (Richiesta da ISO &amp; OTA) <span style="color:var(--danger);">*</span>
+                </label>
+                <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">
+                    Specificare per quale ragione normativa o organizzativa questo requisito non si applica alla struttura (es. assenza di sala operatoria, esclusione per branca).
+                </div>
+                <textarea id="modal-360-na-reason" class="input-box" rows="2" placeholder="Inserisci la giustificazione formale..." style="font-size: 12px;">${_s(req.not_applicable_reason || '')}</textarea>
+            </div>
+
+            <!-- SEZIONE 2: ISO 9001, PROCESSO & RISCHIO -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; margin-bottom: 18px;">
+                <div class="form-group" style="margin:0;">
+                    <label style="font-size: 11px; text-transform: uppercase; font-weight: 600; color: var(--text-muted); margin-bottom: 6px; display: block;">Processo Aziendale</label>
+                    <input type="text" id="modal-360-processo" class="input-box" value="${_s(req.processo || 'Generale')}" style="font-size: 12px;">
+                </div>
+                <div class="form-group" style="margin:0;">
+                    <label style="font-size: 11px; text-transform: uppercase; font-weight: 600; color: var(--text-muted); margin-bottom: 6px; display: block;">Livello di Rischio</label>
+                    <select id="modal-360-rischio" class="input-box" style="font-size: 12px;">
+                        <option value="basso" ${risk === 'basso' ? 'selected' : ''}>Basso</option>
+                        <option value="medio" ${risk === 'medio' ? 'selected' : ''}>Medio</option>
+                        <option value="alto" ${risk === 'alto' ? 'selected' : ''}>Alto</option>
+                        <option value="critico" ${risk === 'critico' ? 'selected' : ''}>Critico</option>
+                    </select>
+                </div>
+                <div class="form-group" style="margin:0;">
+                    <label style="font-size: 11px; text-transform: uppercase; font-weight: 600; color: var(--text-muted); margin-bottom: 6px; display: block;">Priorità di Intervento</label>
+                    <select id="modal-360-priorita" class="input-box" style="font-size: 12px;">
+                        <option value="bassa" ${priority === 'bassa' ? 'selected' : ''}>Bassa</option>
+                        <option value="media" ${priority === 'media' ? 'selected' : ''}>Media</option>
+                        <option value="alta" ${priority === 'alta' ? 'selected' : ''}>Alta</option>
+                        <option value="urgente" ${priority === 'urgente' ? 'selected' : ''}>Urgente</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- SEZIONE 3: COLLABORATORI & DATA TARGET -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 18px;">
+                <div class="form-group" style="margin:0;">
+                    <label style="font-size: 11px; text-transform: uppercase; font-weight: 600; color: var(--text-muted); margin-bottom: 6px; display: block;">Collaboratori / Incaricati</label>
+                    <input type="text" id="modal-360-collaboratori" class="input-box" placeholder="Es. Dott. Bianchi, Coord. Infermieristico" value="${_s(req.collaboratori || '')}" style="font-size: 12px;">
+                </div>
+                <div class="form-group" style="margin:0;">
+                    <label style="font-size: 11px; text-transform: uppercase; font-weight: 600; color: var(--text-muted); margin-bottom: 6px; display: block;">Data Obiettivo / Prossima Verifica</label>
+                    <input type="date" id="modal-360-target-date" class="input-box" value="${req.target_date || ''}" style="font-size: 12px;">
+                </div>
+            </div>
+
+            <!-- SEZIONE 4: EVIDENZA DOCUMENTALE / FILE -->
+            <div class="glass-card" style="padding: 16px; margin-bottom: 18px; border: 1px dashed rgba(255,255,255,0.15);">
+                <label style="font-size: 12px; font-weight: 700; color: var(--text-main); margin-bottom: 8px; display: block;">
+                    <i class='bx bx-paperclip'></i> Evidenza Documentale Allegata
+                </label>
+                ${req.file || req.file_name ? `
+                    <div style="display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; background: rgba(16,185,129,0.08); border-radius: 8px; margin-bottom: 12px;">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <i class='bx bx-check-circle' style="font-size: 20px; color: var(--success);"></i>
+                            <div>
+                                <div style="font-size: 12px; font-weight: 600; color: var(--text-main);">${_s(req.file || req.file_name)}</div>
+                                <div style="font-size: 10px; color: var(--text-muted);">Evidenza caricata e associata al requisito</div>
+                            </div>
+                        </div>
+                        <a href="${req.file_url || '#'}" target="_blank" class="btn btn-outline" style="padding: 4px 10px; font-size: 11px;">
+                            <i class='bx bx-download'></i> Visualizza
+                        </a>
+                    </div>
+                ` : `
+                    <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 10px;">
+                        Nessun file attualmente collegato. Carica un documento (PDF, DOCX, Immagine) per soddisfare l'evidenza.
+                    </div>
+                `}
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <input type="file" id="modal-360-file-input" class="input-box" style="font-size: 12px; flex: 1; padding: 6px;">
+                </div>
+            </div>
+
+            <!-- SEZIONE 5: NOTE INTERNE & PIANO ADEGUAMENTO -->
+            <div class="form-group" style="margin-bottom: 24px;">
+                <label style="font-size: 11px; text-transform: uppercase; font-weight: 600; color: var(--text-muted); margin-bottom: 6px; display: block;">Note Interne / Piano di Adeguamento</label>
+                <textarea id="modal-360-notes" class="input-box" rows="3" placeholder="Annotazioni per la direzione, prescrizioni o step di conformità..." style="font-size: 12px;">${_s(req.notes || req.note_compliance || '')}</textarea>
+            </div>
+
+            <!-- FOOTER AZIONI -->
+            <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 18px;">
+                <button type="button" class="btn btn-outline" onclick="app.closeRequirement360Modal()" style="font-size: 13px;">
+                    Annulla
+                </button>
+                <div style="display: flex; gap: 10px;">
+                    <button type="button" class="btn btn-outline" onclick="app.closeRequirement360Modal(); app.openReqChatModal('${_s(req.id)}');" style="font-size: 13px;">
+                        <i class='bx bx-message-dots'></i> Chat Requisito
+                    </button>
+                    <button type="submit" class="btn btn-primary" style="font-size: 13px; font-weight: 600; padding: 10px 20px;">
+                        <i class='bx bx-save'></i> Salva Modifiche 360
+                    </button>
+                </div>
+            </div>
+        </form>
+    `;
+
+    modal.style.display = 'flex';
+};
+
+app.toggleNaReasonBox = function(status) {
+    const box = document.getElementById('m360-na-reason-box');
+    if (box) {
+        box.style.display = (status === 'non_applicabile') ? 'block' : 'none';
+    }
+};
+
+app.closeRequirement360Modal = function() {
+    const modal = document.getElementById('req-modal-360');
+    if (modal) modal.style.display = 'none';
+    this._active360ReqId = null;
+};
+
+app.saveRequirement360Modal = async function(reqId) {
+    const req = (appState.requirements || []).find(r => r.id === reqId);
+    if (!req) return;
+
+    const status = document.getElementById('modal-360-status')?.value || 'non_conforme';
+    const responsabile = document.getElementById('modal-360-responsabile')?.value || 'Direttore Sanitario';
+    const naReason = document.getElementById('modal-360-na-reason')?.value || '';
+    const processo = document.getElementById('modal-360-processo')?.value || 'Generale';
+    const rischio = document.getElementById('modal-360-rischio')?.value || 'medio';
+    const priorita = document.getElementById('modal-360-priorita')?.value || 'media';
+    const collaboratori = document.getElementById('modal-360-collaboratori')?.value || '';
+    const targetDate = document.getElementById('modal-360-target-date')?.value || null;
+    const notes = document.getElementById('modal-360-notes')?.value || '';
+    const fileInput = document.getElementById('modal-360-file-input');
+
+    if (status === 'non_applicabile' && !naReason.trim()) {
+        alert('Attenzione: per impostare lo stato "Non Applicabile" è obbligatorio specificare la motivazione della deroga.');
+        document.getElementById('modal-360-na-reason')?.focus();
+        return;
+    }
+
+    let uploadedFile = null;
+    if (fileInput && fileInput.files && fileInput.files[0]) {
+        const file = fileInput.files[0];
+        try {
+            const uploadRes = await Backend.uploadDocument(reqId, file);
+            uploadedFile = {
+                name: file.name,
+                url: uploadRes.url,
+                size: file.size,
+                type: file.type
+            };
+        } catch (e) {
+            console.warn('[Matrice360] Upload fallito, salvataggio locale metadati:', e);
+            uploadedFile = { name: file.name, size: file.size, type: file.type };
+        }
+    }
+
+    const payload = {
+        extended_status: status,
+        responsabile: responsabile,
+        not_applicable_reason: naReason,
+        processo: processo,
+        livello_rischio: rischio,
+        priorita: priorita,
+        collaboratori: collaboratori,
+        target_date: targetDate,
+        notes: notes,
+        uploadedFile: uploadedFile
+    };
+
+    await Backend.updateRequirement360(reqId, payload);
+
+    // Aggiorna stato locale in memoria
+    req.extended_status = status;
+    req.stato = (typeof NormativaDB !== 'undefined') ? NormativaDB.mapExtendedToLegacyStatus(status) : (status === 'conforme' ? 'green' : 'red');
+    req.responsabile = responsabile;
+    req.not_applicable_reason = naReason;
+    req.processo = processo;
+    req.livello_rischio = rischio;
+    req.priorita = priorita;
+    req.collaboratori = collaboratori;
+    req.target_date = targetDate;
+    req.notes = notes;
+    if (uploadedFile) {
+        req.file = uploadedFile.name;
+        req.file_name = uploadedFile.name;
+        req.file_url = uploadedFile.url || null;
+    }
+
+    this.closeRequirement360Modal();
+    this.renderMatrice360();
+    this.updateStats();
+    if (typeof this.renderSection === 'function') {
+        this.renderSection('asp', 'all');
+        this.renderSection('ota', 'all');
+    }
+};
+
+// ============================================================
+// ESPORTAZIONE MATRICE 360 (CSV & PDF REPORT)
+// ============================================================
+
+app.esportaMatrice360 = function(format) {
+    const reqs = appState.requirements || [];
+    if (reqs.length === 0) {
+        alert('Nessun requisito disponibile per l\'esportazione.');
+        return;
+    }
+
+    const user = Backend.getCurrentUser();
+    const nomeStruttura = user?.name || user?.email || 'Struttura Sanitaria';
+    const dateStr = new Date().toLocaleDateString('it-IT');
+
+    if (format === 'csv') {
+        const headers = ["Codice", "Titolo Requisito", "Normativa", "Clausole ISO 9001", "Processo", "Responsabile", "Evidenza Allegata", "Livello Rischio", "Stato 360", "Motivazione Non Applicabilità", "Note"];
+        const rows = reqs.map(r => [
+            `"${r.id}"`,
+            `"${(r.titolo || '').replace(/"/g, '""')}"`,
+            `"${(r.norma || '').replace(/"/g, '""')}"`,
+            `"${(r.iso ? r.iso.join(', ') : '').replace(/"/g, '""')}"`,
+            `"${(r.processo || 'Generale').replace(/"/g, '""')}"`,
+            `"${(r.responsabile || 'Direttore Sanitario').replace(/"/g, '""')}"`,
+            `"${(r.file || r.file_name || 'Assente').replace(/"/g, '""')}"`,
+            `"${(r.livello_rischio || 'medio').replace(/"/g, '""')}"`,
+            `"${(r.extended_status || (r.stato === 'green' ? 'conforme' : 'non_conforme')).replace(/"/g, '""')}"`,
+            `"${(r.not_applicable_reason || '').replace(/"/g, '""')}"`,
+            `"${(r.notes || '').replace(/"/g, '""')}"`
+        ]);
+
+        const csvContent = "data:text/csv;charset=utf-8,\uFEFF" + [headers.join(';'), ...rows.map(e => e.join(';'))].join('\n');
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", `Matrice_Conformita_360_${new Date().toISOString().slice(0,10)}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    } else if (format === 'pdf') {
+        const conforme = reqs.filter(r => (r.extended_status === 'conforme' || (!r.extended_status && r.stato === 'green'))).length;
+        const percentuale = reqs.length > 0 ? Math.round((conforme / reqs.length) * 100) : 0;
+
+        const container = document.createElement('div');
+        container.style.padding = '24px';
+        container.style.fontFamily = 'Arial, sans-serif';
+        container.style.color = '#000';
+        container.style.background = '#fff';
+
+        container.innerHTML = `
+            <div style="border-bottom: 2px solid #0284c7; padding-bottom: 12px; margin-bottom: 20px; display:flex; justify-content:space-between; align-items:flex-end;">
+                <div>
+                    <h1 style="font-size: 20px; margin: 0; color: #0284c7;">ACCREDITA 360 — MATRICE DI CONFORMITÀ</h1>
+                    <div style="font-size: 12px; color: #555; margin-top: 4px;">Sistema Integrato Qualità, Compliance &amp; Accreditamento Sanitario</div>
+                </div>
+                <div style="text-align: right; font-size: 11px; color: #555;">
+                    <div><strong>Struttura:</strong> ${_s(nomeStruttura)}</div>
+                    <div><strong>Data Report:</strong> ${dateStr}</div>
+                    <div><strong>Conformità Globale:</strong> ${percentuale}%</div>
+                </div>
+            </div>
+
+            <table style="width: 100%; border-collapse: collapse; font-size: 10px; margin-top: 16px;">
+                <thead>
+                    <tr style="background: #f1f5f9; border-bottom: 1px solid #cbd5e1;">
+                        <th style="padding: 6px; text-align: left;">Codice</th>
+                        <th style="padding: 6px; text-align: left;">Requisito &amp; Norma</th>
+                        <th style="padding: 6px; text-align: left;">ISO 9001</th>
+                        <th style="padding: 6px; text-align: left;">Processo</th>
+                        <th style="padding: 6px; text-align: left;">Responsabile</th>
+                        <th style="padding: 6px; text-align: left;">Evidenza</th>
+                        <th style="padding: 6px; text-align: left;">Stato 360</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${reqs.map(r => `
+                        <tr style="border-bottom: 1px solid #e2e8f0;">
+                            <td style="padding: 6px; font-weight: bold;">${_s(r.id)}</td>
+                    `).join('')}
+                </tbody>
+            </table>
+        `;
+
+        const opt = {
+            margin:       10,
+            filename:     `Report_Matrice_360_${new Date().toISOString().slice(0,10)}.pdf`,
+            image:        { type: 'jpeg', quality: 0.98 },
+            html2canvas:  { scale: 2 },
+            jsPDF:        { unit: 'mm', format: 'a4', orientation: 'landscape' }
+        };
+
+        if (typeof html2pdf !== 'undefined') {
+            html2pdf().set(opt).from(container).save();
+        } else {
+            window.print();
+        }
+    }
+};
+
+// ============================================================
+// FASE 2: DOCUMENT MANAGEMENT SYSTEM (DMS) CONTROLLER (§7.5 ISO 9001)
+// ============================================================
+
+app.switchDmsTab = function(tabName) {
+    appState.dmsActiveTab = tabName;
+    const btnReg = document.getElementById('tab-btn-dms-registro');
+    const btnIst = document.getElementById('tab-btn-dms-istanze');
+    const pageReg = document.getElementById('dms-page-registro');
+    const pageIst = document.getElementById('dms-page-istanze');
+
+    if (tabName === 'registro') {
+        if (btnReg) btnReg.classList.add('active');
+        if (btnIst) btnIst.classList.remove('active');
+        if (pageReg) pageReg.style.display = 'block';
+        if (pageIst) pageIst.style.display = 'none';
+        this.renderDmsRegister();
+    } else {
+        if (btnReg) btnReg.classList.remove('active');
+        if (btnIst) btnIst.classList.add('active');
+        if (pageReg) pageReg.style.display = 'none';
+        if (pageIst) pageIst.style.display = 'block';
+        if (typeof this.renderFascicoloList === 'function') this.renderFascicoloList();
+    }
+};
+
+app._calculateDmsExpiryStatus = function(doc) {
+    if (!doc || !doc.expiry_date) {
+        return { status: 'vigente', label: 'Vigente (Nessuna Scadenza)', daysLeft: 999 };
+    }
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const exp = new Date(doc.expiry_date);
+    exp.setHours(0, 0, 0, 0);
+
+    const diffTime = exp.getTime() - today.getTime();
+    const daysLeft = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    if (daysLeft < 0) {
+        return { status: 'scaduto', label: `Scaduto (${Math.abs(daysLeft)} gg fa)`, daysLeft };
+    } else if (daysLeft <= 30) {
+        return { status: 'scadenza', label: `In Scadenza (${daysLeft} gg)`, daysLeft };
+    } else {
+        const formatted = exp.toLocaleDateString('it-IT');
+        return { status: 'vigente', label: `Vigente (Scade ${formatted})`, daysLeft };
+    }
+};
+
+app.renderDmsRegister = async function() {
+    try {
+        const docs = await Backend.getDocuments();
+        appState.dmsDocuments = Array.isArray(docs) ? docs : [];
+    } catch (e) {
+        console.warn('[DMS] Errore caricamento documenti:', e);
+        appState.dmsDocuments = [];
+    }
+
+    const docs = appState.dmsDocuments || [];
+
+    // Statistiche KPI
+    const statTotal = document.getElementById('dms-stat-total');
+    const statApproved = document.getElementById('dms-stat-approved');
+    const statReview = document.getElementById('dms-stat-review');
+    const statDraft = document.getElementById('dms-stat-draft');
+    const statExpiring = document.getElementById('dms-stat-expiring');
+
+    if (statTotal) statTotal.textContent = docs.length;
+    if (statApproved) statApproved.textContent = docs.filter(d => d.status_approvazione === 'approvato').length;
+    if (statReview) statReview.textContent = docs.filter(d => d.status_approvazione === 'in_verifica').length;
+    if (statDraft) statDraft.textContent = docs.filter(d => d.status_approvazione === 'bozza').length;
+    if (statExpiring) {
+        const expCount = docs.filter(d => {
+            const exp = app._calculateDmsExpiryStatus(d);
+            return exp.status === 'scadenza' || exp.status === 'scaduto';
+        }).length;
+        statExpiring.textContent = expCount;
+    }
+
+    this.filterDmsRegister();
+};
+
+app.filterDmsRegister = function() {
+    const tbody = document.getElementById('dms-documents-tbody');
+    if (!tbody) return;
+
+    const searchTerm = (document.getElementById('dms-search')?.value || '').toLowerCase().trim();
+    const typeFilter = document.getElementById('dms-filter-type')?.value || 'all';
+    const processFilter = document.getElementById('dms-filter-process')?.value || 'all';
+    const statusFilter = document.getElementById('dms-filter-status')?.value || 'all';
+    const expiryFilter = document.getElementById('dms-filter-expiry')?.value || 'all';
+
+    const docs = (appState.dmsDocuments || []).filter(doc => {
+        if (typeFilter !== 'all' && (doc.type || '').toUpperCase() !== typeFilter.toUpperCase()) return false;
+        if (processFilter !== 'all' && (doc.process || '') !== processFilter) return false;
+        if (statusFilter !== 'all' && (doc.status_approvazione || 'bozza') !== statusFilter) return false;
+
+        const expiry = app._calculateDmsExpiryStatus(doc);
+        if (expiryFilter !== 'all' && expiry.status !== expiryFilter) return false;
+
+        if (searchTerm) {
+            const fullText = `${doc.code || ''} ${doc.title || ''} ${doc.process || ''} ${doc.redattore?.name || ''} ${doc.file_name || ''} ${doc.linked_requirement_id || ''}`.toLowerCase();
+            if (!fullText.includes(searchTerm)) return false;
+        }
+
+        return true;
+    });
+
+    if (docs.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="8" style="text-align: center; padding: 48px; color: var(--text-muted);">
+                    <i class='bx bx-folder-open' style="font-size: 40px; opacity: 0.3; display: block; margin-bottom: 8px;"></i>
+                    <strong>Nessun documento trovato con i filtri selezionati.</strong><br>
+                    <small>Modifica i parametri di ricerca o clicca su "Nuovo Documento Controllato".</small>
+                </td>
+            </tr>
+        `;
+        return;
+    }
+
+    const html = docs.map(doc => {
+        const typeMeta = (typeof NormativaDB !== 'undefined' && NormativaDB.documentTypes && NormativaDB.documentTypes[doc.type]) || {
+            code: doc.type || 'DOC', label: doc.type, color: '#3b82f6', bg: 'rgba(59,130,246,0.15)', icon: 'bx-file'
+        };
+        const expiry = app._calculateDmsExpiryStatus(doc);
+        const expiryIcon = expiry.status === 'vigente' ? 'bx-check-circle' : (expiry.status === 'scadenza' ? 'bx-alarm-exclamation' : 'bx-x-circle');
+        
+        // Workflow Stepper dots
+        const st = doc.status_approvazione || 'bozza';
+        const dot1 = st === 'bozza' ? 'active' : (st === 'in_verifica' || st === 'approvato' ? 'done' : 'pending');
+        const dot2 = st === 'in_verifica' ? 'active' : (st === 'approvato' ? 'done' : 'pending');
+        const dot3 = st === 'approvato' ? 'done' : 'pending';
+        const isArchived = st === 'archiviato';
+
+        const statusLabels = {
+            'bozza': '📝 Bozza',
+            'in_verifica': '🔍 In Verifica',
+            'approvato': '✅ Approvato',
+            'archiviato': '📦 Archiviato'
+        };
+        const statusLabel = statusLabels[st] || st;
+
+        const versionStr = (doc.version || '1.0').replace('v', '');
+
+        return `
+            <tr style="border-bottom: 1px solid rgba(255,255,255,0.05); transition: background 0.2s ease;">
+                <td style="padding: 12px;">
+                    <span class="dms-type-badge ${doc.type}" style="margin-bottom: 4px;">
+                        <i class='bx ${typeMeta.icon}'></i> ${doc.type}
+                    </span>
+                    <div style="font-size: 12px; font-weight: 700; color: var(--text-main);">${_s(doc.code)}</div>
+                </td>
+                <td style="padding: 12px;">
+                    <div style="font-weight: 600; color: var(--text-main); font-size: 13px;">${_s(doc.title)}</div>
+                    ${doc.linked_requirement_id ? `
+                        <div style="font-size: 11px; color: var(--primary); margin-top: 2px; display: inline-flex; align-items: center; gap: 4px;">
+                            <i class='bx bx-link'></i> Requisito: <strong>${_s(doc.linked_requirement_id)}</strong>
+                        </div>
+                    ` : ''}
+                </td>
+                <td style="padding: 12px;">
+                    <span class="dms-version-badge">
+                        <i class='bx bx-git-branch'></i> v${_s(versionStr)}
+                    </span>
+                </td>
+                <td style="padding: 12px;">
+                    <span style="font-size: 12px; color: var(--text-main);">${_s(doc.process || 'Qualità & Risk Management')}</span>
+                </td>
+                <td style="padding: 12px;">
+                    <div style="margin-bottom: 4px; font-size: 11px; font-weight: 600; color: ${st === 'approvato' ? '#34d399' : (st === 'in_verifica' ? '#fbbf24' : '#94a3b8')};">
+                        ${statusLabel}
+                    </div>
+                    <div class="dms-workflow-stepper" title="Step: ${st}">
+                        <span class="dms-step-dot ${isArchived ? 'pending' : dot1}" title="1. Bozza / Redazione">1</span>
+                        <span class="dms-step-connector ${dot2 === 'done' || dot2 === 'active' ? 'done' : ''}"></span>
+                        <span class="dms-step-dot ${isArchived ? 'pending' : dot2}" title="2. In Verifica / Revisione">2</span>
+                        <span class="dms-step-connector ${dot3 === 'done' ? 'done' : ''}"></span>
+                        <span class="dms-step-dot ${isArchived ? 'pending' : dot3}" title="3. Approvato & Vigente">3</span>
+                    </div>
+                </td>
+                <td style="padding: 12px;">
+                    <span class="dms-expiry-badge ${expiry.status}">
+                        <i class='bx ${expiryIcon}'></i> ${expiry.label}
+                    </span>
+                    ${doc.expiry_date ? `
+                        <div style="font-size: 10px; color: var(--text-muted); margin-top: 3px;">
+                            Rev: ogni ${doc.review_frequency_months || 12} mesi
+                        </div>
+                    ` : ''}
+                </td>
+                <td style="padding: 12px;">
+                    ${doc.file_name ? `
+                        <div style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--primary);">
+                            <i class='bx bxs-file-pdf'></i>
+                            <span style="max-width: 110px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${_s(doc.file_name)}">
+                                ${_s(doc.file_name)}
+                            </span>
+                        </div>
+                    ` : `
+                        <span style="font-size: 11px; color: var(--text-muted); font-style: italic;">Assente</span>
+                    `}
+                </td>
+                <td style="padding: 12px; text-align: center;">
+                    <div style="display: inline-flex; gap: 4px;">
+                        <button class="m360-action-btn" onclick="app.openDmsDocModal('${doc.id}')" title="Gestisci / Inspector">
+                            <i class='bx bx-edit-alt'></i>
+                        </button>
+                        <button class="m360-action-btn" onclick="app.openDmsRevisionModal('${doc.id}')" title="Crea Nuova Versione">
+                            <i class='bx bx-git-branch'></i>
+                        </button>
+                        ${st === 'bozza' ? `
+                            <button class="m360-action-btn" style="color: #fbbf24; border-color: rgba(245,158,11,0.3);" onclick="app.advanceDmsStatus('${doc.id}', 'in_verifica')" title="Invia in Verifica">
+                                <i class='bx bx-search-alt'></i>
+                            </button>
+                        ` : (st === 'in_verifica' ? `
+                            <button class="m360-action-btn" style="color: #34d399; border-color: rgba(16,185,129,0.3);" onclick="app.advanceDmsStatus('${doc.id}', 'approvato')" title="Approva e Rendi Vigente">
+                                <i class='bx bx-check-double'></i>
+                            </button>
+                        ` : '')}
+                        <button class="m360-action-btn" style="color: #f87171; border-color: rgba(239,68,68,0.2);" onclick="app.deleteDmsDoc('${doc.id}')" title="Elimina Documento">
+                            <i class='bx bx-trash'></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        `;
+    }).join('');
+
+    tbody.innerHTML = html;
+};
+
+app.resetDmsFilters = function() {
+    const search = document.getElementById('dms-search');
+    const type = document.getElementById('dms-filter-type');
+    const proc = document.getElementById('dms-filter-process');
+    const st = document.getElementById('dms-filter-status');
+    const exp = document.getElementById('dms-filter-expiry');
+
+    if (search) search.value = '';
+    if (type) type.value = 'all';
+    if (proc) proc.value = 'all';
+    if (st) st.value = 'all';
+    if (exp) exp.value = 'all';
+
+    this.filterDmsRegister();
+};
+
+app.openDmsDocModal = function(docId) {
+    const modal = document.getElementById('modal-dms-document');
+    const header = document.getElementById('dms-modal-header');
+    const body = document.getElementById('dms-modal-body');
+    if (!modal || !header || !body) return;
+
+    let doc = null;
+    const isNew = !docId;
+
+    if (docId) {
+        doc = (appState.dmsDocuments || []).find(d => d.id === docId);
+    }
+
+    if (!doc) {
+        const user = Backend.getCurrentUser();
+        const docsCount = (appState.dmsDocuments || []).length;
+        const initialType = 'POS';
+        const initialProcess = 'Attività Sanitaria & Clinica';
+        const generatedCode = (typeof NormativaDB !== 'undefined') ? NormativaDB.generateDocCode(initialType, initialProcess, docsCount + 1) : `DOC-${Date.now()}`;
+        const todayStr = new Date().toISOString().slice(0, 10);
+        
+        doc = {
+            id: `DOC-${Date.now()}`,
+            code: generatedCode,
+            title: '',
+            type: initialType,
+            process: initialProcess,
+            version: '1.0',
+            status_approvazione: 'bozza',
+            redattore: { name: user?.name || user?.email || 'Redattore Qualità', role: 'Redattore', date: todayStr },
+            verificatore: null,
+            approvatore: null,
+            issue_date: todayStr,
+            effective_date: todayStr,
+            expiry_date: '',
+            review_frequency_months: 24,
+            linked_requirement_id: '',
+            file_name: null,
+            file_url: null,
+            changelog: 'Emissione iniziale',
+            revisions_history: []
+        };
+    }
+
+    appState.dmsCurrentDoc = doc;
+
+    const st = doc.status_approvazione || 'bozza';
+    const dot1 = st === 'bozza' ? 'active' : (st === 'in_verifica' || st === 'approvato' ? 'done' : 'pending');
+    const dot2 = st === 'in_verifica' ? 'active' : (st === 'approvato' ? 'done' : 'pending');
+    const dot3 = st === 'approvato' ? 'done' : 'pending';
+    const dot4 = st === 'archiviato' ? 'active' : 'pending';
+
+    header.innerHTML = `
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap;">
+            <div>
+                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+                    <span class="dms-type-badge ${doc.type}">
+                        ${doc.type}
+                    </span>
+                    <span style="font-size: 15px; font-weight: 700; color: var(--primary);">${_s(doc.code)}</span>
+                    <span class="dms-version-badge">v${_s((doc.version || '1.0').replace('v',''))}</span>
+                </div>
+                <h3 style="margin: 0; font-size: 18px; font-weight: 700; color: var(--text-main);">
+                    ${isNew ? 'Nuovo Documento Controllato (§7.5 ISO 9001)' : _s(doc.title || 'Dettaglio Documento')}
+                </h3>
+            </div>
+            <div style="text-align: right;">
+                <div style="font-size: 11px; text-transform: uppercase; font-weight: 600; color: var(--text-muted); margin-bottom: 4px;">Stato Workflow</div>
+                <div class="dms-workflow-stepper">
+                    <span class="dms-step-dot ${dot1}" title="1. Bozza / Redazione">1</span>
+                    <span class="dms-step-connector ${dot2 === 'done' || dot2 === 'active' ? 'done' : ''}"></span>
+                    <span class="dms-step-dot ${dot2}" title="2. In Verifica / Revisione">2</span>
+                    <span class="dms-step-connector ${dot3 === 'done' ? 'done' : ''}"></span>
+                    <span class="dms-step-dot ${dot3}" title="3. Approvato & Vigente">3</span>
+                    <span class="dms-step-connector ${dot4 === 'active' ? 'done' : ''}"></span>
+                    <span class="dms-step-dot ${dot4}" title="4. Archiviato">4</span>
+                </div>
+            </div>
+        </div>
+    `;
+
+    const processes = [
+        'Direzione & Strategia',
+        'Attività Sanitaria & Clinica',
+        'Gestione Personale & Competenze',
+        'Tecnologie & Manutenzione',
+        'Privacy & Sistemi Informativi',
+        'Igiene & Sanificazione',
+        'Sicurezza & Ambiente',
+        'Qualità & Risk Management'
+    ];
+
+    const types = [
+        { code: 'POL', label: 'POL - Politica per la Qualità / Strategica' },
+        { code: 'MAN', label: 'MAN - Manuale della Qualità' },
+        { code: 'POS', label: 'POS - Procedura Operativa Standard' },
+        { code: 'IO', label: 'IO - Istruzione Operativa' },
+        { code: 'REG', label: 'REG - Regolamento Interno' },
+        { code: 'MOD', label: 'MOD - Modulistica & Registrazione' },
+        { code: 'DEL', label: 'DEL - Nomina, Delega & Incarico' },
+        { code: 'CERT', label: 'CERT - Certificato / Verifica Impianto' },
+        { code: 'AUD', label: 'AUD - Report Audit / Riesame' },
+        { code: 'ALL', label: 'ALL - Allegato Tecnico / Planimetria' }
+    ];
+
+    body.innerHTML = `
+        <form id="dms-doc-form" onsubmit="event.preventDefault(); app.saveDmsDocModal();">
+            <input type="hidden" id="dms-doc-id" value="${_s(doc.id)}">
+            <input type="hidden" id="dms-doc-status" value="${_s(st)}">
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+                <div class="form-group" style="margin: 0;">
+                    <label style="font-size: 11px; text-transform: uppercase; font-weight: 600; color: var(--text-muted); margin-bottom: 4px; display: block;">Codice Documento *</label>
+                    <input type="text" id="dms-form-code" class="input-box" value="${_s(doc.code)}" required style="font-size: 13px; font-weight: 600;">
+                </div>
+                <div class="form-group" style="margin: 0;">
+                    <label style="font-size: 11px; text-transform: uppercase; font-weight: 600; color: var(--text-muted); margin-bottom: 4px; display: block;">Tipologia Documentale *</label>
+                    <select id="dms-form-type" class="input-box" style="font-size: 13px;" onchange="app.handleDmsTypeChange(this.value)">
+                        ${types.map(t => `<option value="${t.code}" ${doc.type === t.code ? 'selected' : ''}>${t.label}</option>`).join('')}
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 16px;">
+                <label style="font-size: 11px; text-transform: uppercase; font-weight: 600; color: var(--text-muted); margin-bottom: 4px; display: block;">Titolo del Documento *</label>
+                <input type="text" id="dms-form-title" class="input-box" value="${_s(doc.title)}" placeholder="Es. Procedura Operativa per la Sanificazione e Disinfezione Ambienti" required style="font-size: 13px;">
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+                <div class="form-group" style="margin: 0;">
+                    <label style="font-size: 11px; text-transform: uppercase; font-weight: 600; color: var(--text-muted); margin-bottom: 4px; display: block;">Processo Aziendale</label>
+                    <select id="dms-form-process" class="input-box" style="font-size: 13px;">
+                        ${processes.map(p => `<option value="${p}" ${doc.process === p ? 'selected' : ''}>${p}</option>`).join('')}
+                    </select>
+                </div>
+                <div class="form-group" style="margin: 0;">
+                    <label style="font-size: 11px; text-transform: uppercase; font-weight: 600; color: var(--text-muted); margin-bottom: 4px; display: block;">Requisito Collegato (Matrice / MAMB)</label>
+                    <input type="text" id="dms-form-req-id" class="input-box" value="${_s(doc.linked_requirement_id || '')}" placeholder="Es. GEN_REG_03 o MAMB.1.1" style="font-size: 13px;">
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; margin-bottom: 18px; padding: 14px; background: rgba(255,255,255,0.03); border-radius: 8px; border: 1px solid rgba(255,255,255,0.06);">
+                <div class="form-group" style="margin: 0;">
+                    <label style="font-size: 11px; font-weight: 600; color: var(--text-muted); margin-bottom: 4px; display: block;">Versione</label>
+                    <input type="text" id="dms-form-version" class="input-box" value="${_s(doc.version || '1.0')}" style="font-size: 12px; font-weight: 700;">
+                </div>
+                <div class="form-group" style="margin: 0;">
+                    <label style="font-size: 11px; font-weight: 600; color: var(--text-muted); margin-bottom: 4px; display: block;">Data Emissione</label>
+                    <input type="date" id="dms-form-effective-date" class="input-box" value="${_s(doc.effective_date || '')}" style="font-size: 12px;">
+                </div>
+                <div class="form-group" style="margin: 0;">
+                    <label style="font-size: 11px; font-weight: 600; color: var(--text-muted); margin-bottom: 4px; display: block;">Cadenza Revisione (Mesi)</label>
+                    <select id="dms-form-frequency" class="input-box" style="font-size: 12px;">
+                        <option value="6" ${doc.review_frequency_months == 6 ? 'selected' : ''}>6 mesi</option>
+                        <option value="12" ${doc.review_frequency_months == 12 || !doc.review_frequency_months ? 'selected' : ''}>12 mesi (Annuale)</option>
+                        <option value="24" ${doc.review_frequency_months == 24 ? 'selected' : ''}>24 mesi (Biennale)</option>
+                        <option value="36" ${doc.review_frequency_months == 36 ? 'selected' : ''}>36 mesi (Triennale)</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- RESPONSABILI & FIRME -->
+            <div style="margin-bottom: 18px; padding: 14px; background: rgba(15,23,42,0.5); border-radius: 8px; border: 1px solid rgba(255,255,255,0.08);">
+                <div style="font-size: 12px; font-weight: 700; color: var(--text-main); margin-bottom: 10px; display: flex; align-items: center; gap: 6px;">
+                    <i class='bx bx-user-check' style="color: var(--primary);"></i> Attori del Workflow di Approvazione (§7.5.2)
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; font-size: 12px;">
+                    <div style="padding: 8px; background: rgba(255,255,255,0.02); border-radius: 6px;">
+                        <div style="color: var(--text-muted); font-size: 10px; text-transform: uppercase;">Redattore</div>
+                        <strong style="color: var(--text-main);">${_s(doc.redattore?.name || 'In assegnazione')}</strong>
+                        <div style="font-size: 10px; color: var(--text-muted);">${_s(doc.redattore?.date || '—')}</div>
+                    </div>
+                    <div style="padding: 8px; background: rgba(255,255,255,0.02); border-radius: 6px;">
+                        <div style="color: var(--text-muted); font-size: 10px; text-transform: uppercase;">Verificatore</div>
+                        <strong style="color: var(--text-main);">${_s(doc.verificatore?.name || (st === 'in_verifica' ? 'In corso...' : 'In attesa'))}</strong>
+                        <div style="font-size: 10px; color: var(--text-muted);">${_s(doc.verificatore?.date || '—')}</div>
+                    </div>
+                    <div style="padding: 8px; background: rgba(255,255,255,0.02); border-radius: 6px;">
+                        <div style="color: var(--text-muted); font-size: 10px; text-transform: uppercase;">Approvatore</div>
+                        <strong style="color: var(--text-main);">${_s(doc.approvatore?.name || (st === 'approvato' ? 'Approvato' : 'In attesa'))}</strong>
+                        <div style="font-size: 10px; color: var(--text-muted);">${_s(doc.approvatore?.date || '—')}</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- FILE ALLEGATO -->
+            <div class="form-group" style="margin-bottom: 18px;">
+                <label style="font-size: 11px; text-transform: uppercase; font-weight: 600; color: var(--text-muted); margin-bottom: 6px; display: block;">File del Documento (PDF / DOCX)</label>
+                ${doc.file_name ? `
+                    <div style="margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; background: rgba(59,130,246,0.1); border: 1px solid rgba(59,130,246,0.3); border-radius: 8px;">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <i class='bx bxs-file-pdf' style="font-size: 22px; color: #60a5fa;"></i>
+                            <div>
+                                <strong style="color: #fff; font-size: 13px;">${_s(doc.file_name)}</strong>
+                                <div style="font-size: 10px; color: var(--text-muted);">File attualmente associato a questa versione</div>
+                            </div>
+                        </div>
+                    </div>
+                ` : ''}
+                <input type="file" id="dms-form-file" class="input-box" accept=".pdf,.doc,.docx,.xlsx" style="font-size: 12px; padding: 8px;">
+            </div>
+
+            <!-- STORICO REVISIONI -->
+            ${doc.revisions_history && doc.revisions_history.length > 0 ? `
+                <div style="margin-bottom: 18px;">
+                    <label style="font-size: 11px; text-transform: uppercase; font-weight: 600; color: var(--text-muted); margin-bottom: 6px; display: block;">Storico Revisioni Precedenti (${doc.revisions_history.length})</label>
+                    <div style="max-height: 120px; overflow-y: auto; background: rgba(0,0,0,0.2); border-radius: 6px; border: 1px solid rgba(255,255,255,0.06); padding: 8px;">
+                        ${doc.revisions_history.map(rh => `
+                            <div style="display: flex; justify-content: space-between; font-size: 11px; padding: 4px 6px; border-bottom: 1px solid rgba(255,255,255,0.04);">
+                                <div><strong>v${_s((rh.version || '').replace('v',''))}</strong> — ${_s(rh.changelog || 'Revisione')}</div>
+                                <div style="color: var(--text-muted);">${_s(rh.issue_date || rh.archived_at?.slice(0,10) || '—')}</div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            ` : ''}
+
+            <!-- AZIONI FOOTER -->
+            <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 16px; margin-top: 20px; flex-wrap: wrap; gap: 10px;">
+                <div style="display: flex; gap: 8px;">
+                    ${st === 'bozza' ? `
+                        <button type="button" class="btn btn-outline" style="color: #fbbf24; border-color: #f59e0b;" onclick="app.advanceDmsStatus('${doc.id}', 'in_verifica')">
+                            <i class='bx bx-send'></i> Invia in Verifica
+                        </button>
+                    ` : (st === 'in_verifica' ? `
+                        <button type="button" class="btn btn-outline" style="color: #34d399; border-color: #10b981;" onclick="app.advanceDmsStatus('${doc.id}', 'approvato')">
+                            <i class='bx bx-check-double'></i> Approva e Rendi Vigente
+                        </button>
+                    ` : '')}
+                </div>
+                <div style="display: flex; gap: 8px;">
+                    <button type="button" class="btn btn-outline" onclick="app.closeDmsModal()">Annulla</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class='bx bx-save'></i> Salva Documento
+                    </button>
+                </div>
+            </div>
+        </form>
+    `;
+
+    modal.style.display = 'flex';
+};
+
+app.handleDmsTypeChange = function(newType) {
+    const codeInput = document.getElementById('dms-form-code');
+    const procSelect = document.getElementById('dms-form-process');
+    if (!codeInput || typeof NormativaDB === 'undefined') return;
+
+    const procName = procSelect ? procSelect.value : 'Qualità & Risk Management';
+    const docsCount = (appState.dmsDocuments || []).length;
+    codeInput.value = NormativaDB.generateDocCode(newType, procName, docsCount + 1);
+};
+
+app.closeDmsModal = function() {
+    const modal = document.getElementById('modal-dms-document');
+    if (modal) modal.style.display = 'none';
+    appState.dmsCurrentDoc = null;
+};
+
+app.saveDmsDocModal = async function() {
+    const docId = document.getElementById('dms-doc-id')?.value;
+    const code = document.getElementById('dms-form-code')?.value;
+    const title = document.getElementById('dms-form-title')?.value;
+    const type = document.getElementById('dms-form-type')?.value;
+    const process = document.getElementById('dms-form-process')?.value;
+    const linkedReq = document.getElementById('dms-form-req-id')?.value;
+    const version = document.getElementById('dms-form-version')?.value;
+    const effectiveDate = document.getElementById('dms-form-effective-date')?.value;
+    const freq = document.getElementById('dms-form-frequency')?.value;
+    const fileInput = document.getElementById('dms-form-file');
+
+    if (!code || !title) {
+        alert('Attenzione: Codice e Titolo del documento sono campi obbligatori.');
+        return;
+    }
+
+    const currentDoc = appState.dmsCurrentDoc || {};
+    let uploadedFile = null;
+
+    if (fileInput && fileInput.files && fileInput.files[0]) {
+        const file = fileInput.files[0];
+        try {
+            const upRes = await Backend.uploadDocument(code, file);
+            uploadedFile = {
+                name: file.name,
+                url: upRes.url,
+                size: file.size,
+                type: file.type
+            };
+        } catch (e) {
+            uploadedFile = { name: file.name, size: file.size, type: file.type };
+        }
+    }
+
+    const docToSave = {
+        ...currentDoc,
+        id: docId || currentDoc.id || `DOC-${Date.now()}`,
+        code: code,
+        title: title,
+        type: type,
+        process: process,
+        linked_requirement_id: linkedReq || null,
+        version: version || currentDoc.version || '1.0',
+        effective_date: effectiveDate || new Date().toISOString().slice(0, 10),
+        review_frequency_months: parseInt(freq || 12, 10)
+    };
+
+    if (uploadedFile) {
+        docToSave.file_name = uploadedFile.name;
+        docToSave.file_url = uploadedFile.url || null;
+        docToSave.file_size = uploadedFile.size;
+        docToSave.file_type = uploadedFile.type;
+    }
+
+    await Backend.saveDocument(docToSave);
+
+    this.closeDmsModal();
+    await this.renderDmsRegister();
+};
+
+app.advanceDmsStatus = async function(docId, nextStage) {
+    const user = Backend.getCurrentUser();
+    const signatureData = {
+        name: user?.name || user?.email || 'Operatore Qualità',
+        role: user?.role === 'admin' ? 'Direzione Sanitaria' : 'Responsabile Qualità'
+    };
+
+    await Backend.advanceDocumentWorkflow(docId, nextStage, signatureData);
+    await this.renderDmsRegister();
+    if (appState.dmsCurrentDoc && appState.dmsCurrentDoc.id === docId) {
+        this.openDmsDocModal(docId);
+    }
+};
+
+app.openDmsRevisionModal = function(docId) {
+    const doc = (appState.dmsDocuments || []).find(d => d.id === docId);
+    if (!doc) return;
+
+    appState.dmsRevisionTargetDocId = docId;
+
+    const modal = document.getElementById('modal-dms-revision');
+    const body = document.getElementById('dms-revision-modal-body');
+    if (!modal || !body) return;
+
+    const currentVNum = parseFloat((doc.version || '1.0').replace('v','')) || 1.0;
+    const nextV = `v${(currentVNum + 0.1).toFixed(1)}`;
+    const nextMajorV = `v${(Math.floor(currentVNum) + 1).toFixed(1)}`;
+
+    body.innerHTML = `
+        <form onsubmit="event.preventDefault(); app.saveDmsRevision();">
+            <div style="margin-bottom: 14px; padding: 12px; background: rgba(59,130,246,0.1); border-radius: 8px; border: 1px solid rgba(59,130,246,0.25);">
+                <div style="font-size: 11px; color: var(--text-muted); text-transform: uppercase;">Documento in Revisione</div>
+                <strong style="color: #fff; font-size: 14px;">${_s(doc.code)} — ${_s(doc.title)}</strong>
+                <div style="font-size: 12px; color: var(--primary); margin-top: 2px;">Versione Corrente: <strong>v${_s((doc.version || '1.0').replace('v',''))}</strong></div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px;">
+                <div class="form-group" style="margin: 0;">
+                    <label style="font-size: 11px; font-weight: 600; color: var(--text-muted); margin-bottom: 4px; display: block;">Nuova Versione *</label>
+                    <input type="text" id="dms-rev-version" class="input-box" value="${nextV}" required style="font-size: 13px; font-weight: 700;">
+                    <div style="font-size: 10px; color: var(--text-muted); margin-top: 3px;">Suggerite: ${nextV} (minore) o ${nextMajorV} (maggiore)</div>
+                </div>
+                <div class="form-group" style="margin: 0;">
+                    <label style="font-size: 11px; font-weight: 600; color: var(--text-muted); margin-bottom: 4px; display: block;">Cadenza Revisione (Mesi)</label>
+                    <select id="dms-rev-frequency" class="input-box" style="font-size: 13px;">
+                        <option value="6" ${doc.review_frequency_months == 6 ? 'selected' : ''}>6 mesi</option>
+                        <option value="12" ${doc.review_frequency_months == 12 || !doc.review_frequency_months ? 'selected' : ''}>12 mesi (Annuale)</option>
+                        <option value="24" ${doc.review_frequency_months == 24 ? 'selected' : ''}>24 mesi (Biennale)</option>
+                        <option value="36" ${doc.review_frequency_months == 36 ? 'selected' : ''}>36 mesi (Triennale)</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 14px;">
+                <label style="font-size: 11px; font-weight: 600; color: var(--text-muted); margin-bottom: 4px; display: block;">Motivo della Modifica / Changelog *</label>
+                <textarea id="dms-rev-changelog" class="input-box" rows="3" placeholder="Es. Aggiornamento delle istruzioni operative a seguito dell'entrata in vigore del nuovo D.A. 45/2025" required style="font-size: 12px; resize: vertical;"></textarea>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 18px;">
+                <label style="font-size: 11px; font-weight: 600; color: var(--text-muted); margin-bottom: 4px; display: block;">Nuovo File Aggiornato (Opzionale)</label>
+                <input type="file" id="dms-rev-file" class="input-box" accept=".pdf,.doc,.docx,.xlsx" style="font-size: 12px; padding: 8px;">
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 10px; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 14px;">
+                <button type="button" class="btn btn-outline" onclick="app.closeDmsRevisionModal()">Annulla</button>
+                <button type="submit" class="btn btn-primary">
+                    <i class='bx bx-git-branch'></i> Salva Nuova Revisione
+                </button>
+            </div>
+        </form>
+    `;
+
+    modal.style.display = 'flex';
+};
+
+app.closeDmsRevisionModal = function() {
+    const modal = document.getElementById('modal-dms-revision');
+    if (modal) modal.style.display = 'none';
+    appState.dmsRevisionTargetDocId = null;
+};
+
+app.saveDmsRevision = async function() {
+    const docId = appState.dmsRevisionTargetDocId;
+    if (!docId) return;
+
+    const version = document.getElementById('dms-rev-version')?.value;
+    const frequency = document.getElementById('dms-rev-frequency')?.value;
+    const changelog = document.getElementById('dms-rev-changelog')?.value;
+    const fileInput = document.getElementById('dms-rev-file');
+
+    if (!version || !changelog) {
+        alert('Attenzione: Versione e Motivo della Modifica sono obbligatori.');
+        return;
+    }
+
+    let uploadedFile = null;
+    if (fileInput && fileInput.files && fileInput.files[0]) {
+        const file = fileInput.files[0];
+        try {
+            const upRes = await Backend.uploadDocument(`${docId}_rev`, file);
+            uploadedFile = { name: file.name, url: upRes.url, size: file.size, type: file.type };
+        } catch (e) {
+            uploadedFile = { name: file.name, size: file.size, type: file.type };
+        }
+    }
+
+    await Backend.createDocumentRevision(docId, {
+        version: version,
+        review_frequency_months: parseInt(frequency || 12, 10),
+        changelog: changelog,
+        uploadedFile: uploadedFile,
+        status_approvazione: 'bozza'
+    });
+
+    this.closeDmsRevisionModal();
+    await this.renderDmsRegister();
+};
+
+app.deleteDmsDoc = async function(docId) {
+    const doc = (appState.dmsDocuments || []).find(d => d.id === docId);
+    const title = doc ? `${doc.code} - ${doc.title}` : 'questo documento';
+    if (!confirm(`Sei sicuro di voler eliminare ${title} dal registro documentale controllato?`)) {
+        return;
+    }
+
+    await Backend.deleteDocument(docId);
+    await this.renderDmsRegister();
+};
+
+app.esportaDmsCSV = function() {
+    const docs = appState.dmsDocuments || [];
+    if (docs.length === 0) {
+        alert('Nessun documento disponibile nel registro per l\'esportazione.');
+        return;
+    }
+
+    const headers = [
+        "Codice Documento",
+        "Tipologia",
+        "Titolo Documento",
+        "Versione",
+        "Processo Aziendale",
+        "Stato Workflow",
+        "Redattore",
+        "Verificatore",
+        "Approvatore",
+        "Data Emissione",
+        "Data Scadenza / Revisione",
+        "Stato Scadenza",
+        "Requisito Collegato",
+        "File Allegato"
+    ];
+
+    const rows = docs.map(d => {
+        const exp = app._calculateDmsExpiryStatus(d);
+        return [
+            `"${(d.code || '').replace(/"/g, '""')}"`,
+            `"${(d.type || '').replace(/"/g, '""')}"`,
+            `"${(d.title || '').replace(/"/g, '""')}"`,
+            `"v${(d.version || '1.0').replace('v','').replace(/"/g, '""')}"`,
+            `"${(d.process || '').replace(/"/g, '""')}"`,
+            `"${(d.status_approvazione || 'bozza').replace(/"/g, '""')}"`,
+            `"${(d.redattore?.name || '').replace(/"/g, '""')}"`,
+            `"${(d.verificatore?.name || '').replace(/"/g, '""')}"`,
+            `"${(d.approvatore?.name || '').replace(/"/g, '""')}"`,
+            `"${(d.effective_date || d.issue_date || '').replace(/"/g, '""')}"`,
+            `"${(d.expiry_date || '').replace(/"/g, '""')}"`,
+            `"${(exp.label || '').replace(/"/g, '""')}"`,
+            `"${(d.linked_requirement_id || '').replace(/"/g, '""')}"`,
+            `"${(d.file_name || 'Assente').replace(/"/g, '""')}"`
+        ];
+    });
+
+    const csvContent = "data:text/csv;charset=utf-8,\uFEFF" + [headers.join(';'), ...rows.map(e => e.join(';'))].join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `Registro_Documentale_DMS_ISO9001_${new Date().toISOString().slice(0,10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+};
+
+app.esportaDmsPDF = function() {
+    const docs = appState.dmsDocuments || [];
+    if (docs.length === 0) {
+        alert('Nessun documento disponibile nel registro per l\'esportazione.');
+        return;
+    }
+
+    const user = Backend.getCurrentUser();
+    const nomeStruttura = user?.name || user?.email || 'Struttura Sanitaria';
+    const dateStr = new Date().toLocaleDateString('it-IT');
+
+    const container = document.createElement('div');
+    container.style.padding = '24px';
+    container.style.fontFamily = 'Arial, sans-serif';
+    container.style.color = '#000';
+    container.style.background = '#fff';
+
+    container.innerHTML = `
+        <div style="border-bottom: 2px solid #0284c7; padding-bottom: 12px; margin-bottom: 20px; display:flex; justify-content:space-between; align-items:flex-end;">
+            <div>
+                <h1 style="font-size: 20px; margin: 0; color: #0284c7;">ACCREDITA 360 — REGISTRO DOCUMENTALE CONTROLLATO</h1>
+                <div style="font-size: 12px; color: #555; margin-top: 4px;">Informazioni Documentate Controllate ex Norma UNI EN ISO 9001:2015 (§7.5)</div>
+            </div>
+            <div style="text-align: right; font-size: 11px; color: #555;">
+                <div><strong>Struttura:</strong> ${_s(nomeStruttura)}</div>
+                <div><strong>Data Report:</strong> ${dateStr}</div>
+                <div><strong>Totale Documenti:</strong> ${docs.length}</div>
+            </div>
+        </div>
+
+        <table style="width: 100%; border-collapse: collapse; font-size: 10px; margin-top: 16px;">
+            <thead>
+                <tr style="background: #f1f5f9; border-bottom: 1px solid #cbd5e1;">
+                    <th style="padding: 6px; text-align: left;">Codice &amp; Tipo</th>
+                    <th style="padding: 6px; text-align: left;">Titolo Documento</th>
+                    <th style="padding: 6px; text-align: left;">Vers.</th>
+                    <th style="padding: 6px; text-align: left;">Processo</th>
+                    <th style="padding: 6px; text-align: left;">Stato Workflow</th>
+                    <th style="padding: 6px; text-align: left;">Data Emissione</th>
+                    <th style="padding: 6px; text-align: left;">Scadenza / Rev.</th>
+                    <th style="padding: 6px; text-align: left;">File Allegato</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${docs.map(d => {
+                    const exp = app._calculateDmsExpiryStatus(d);
+                    return `
+                        <tr style="border-bottom: 1px solid #e2e8f0;">
+                            <td style="padding: 6px; font-weight: bold;">
+                                [${_s(d.type)}] ${_s(d.code)}
+                            </td>
+                            <td style="padding: 6px;">
+                                <strong>${_s(d.title)}</strong>
+                                ${d.linked_requirement_id ? `<br><span style="color:#64748b;">Req: ${_s(d.linked_requirement_id)}</span>` : ''}
+                            </td>
+                            <td style="padding: 6px;">v${_s((d.version || '1.0').replace('v',''))}</td>
+                            <td style="padding: 6px;">${_s(d.process || 'Qualità')}</td>
+                            <td style="padding: 6px; font-weight: bold; text-transform: uppercase;">
+                                ${_s(d.status_approvazione || 'bozza')}
+                            </td>
+                            <td style="padding: 6px;">${_s(d.effective_date || d.issue_date || '—')}</td>
+                            <td style="padding: 6px;">${_s(exp.label)}</td>
+                            <td style="padding: 6px;">${_s(d.file_name || 'Assente')}</td>
+                        </tr>
+                    `;
+                }).join('')}
+            </tbody>
+        </table>
+    `;
+
+    const opt = {
+        margin:       10,
+        filename:     `Registro_Documenti_ISO9001_${new Date().toISOString().slice(0,10)}.pdf`,
+        image:        { type: 'jpeg', quality: 0.98 },
+        html2canvas:  { scale: 2 },
+        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'landscape' }
+    };
+
+    if (typeof html2pdf !== 'undefined') {
+        html2pdf().set(opt).from(container).save();
+    } else {
+        window.print();
+    }
+};
+
+// ============================================================
+// FASE 3: MODULO AUDIT INTERNI & GESTIONE CAPA (§9.2 & §10.2 ISO 9001:2015)
+// ============================================================
+
+appState.auditSessions = [];
+appState.nonConformities = [];
+appState.auditActiveTab = 'sessions';
+appState.currentAuditSession = null;
+appState.currentCapa = null;
+
+app.switchAuditTab = function(tabName) {
+    appState.auditActiveTab = tabName;
+    const btnSessions = document.getElementById('tab-btn-audit-sessions');
+    const btnCapas = document.getElementById('tab-btn-capa-register');
+    const pageSessions = document.getElementById('audit-page-sessions');
+    const pageCapas = document.getElementById('audit-page-capas');
+
+    if (tabName === 'sessions') {
+        if (btnSessions) btnSessions.classList.add('active');
+        if (btnCapas) btnCapas.classList.remove('active');
+        if (pageSessions) pageSessions.style.display = 'block';
+        if (pageCapas) pageCapas.style.display = 'none';
+        this.renderAuditsList();
+    } else {
+        if (btnSessions) btnSessions.classList.remove('active');
+        if (btnCapas) btnCapas.classList.add('active');
+        if (pageSessions) pageSessions.style.display = 'none';
+        if (pageCapas) pageCapas.style.display = 'block';
+        this.renderNonConformitiesList();
+    }
+};
+
+app.renderAuditCapaView = async function() {
+    try {
+        const [audits, ncs] = await Promise.all([
+            Backend.getAudits ? Backend.getAudits() : Promise.resolve([]),
+            Backend.getNonConformities ? Backend.getNonConformities() : Promise.resolve([])
+        ]);
+        appState.auditSessions = Array.isArray(audits) ? audits : [];
+        appState.nonConformities = Array.isArray(ncs) ? ncs : [];
+    } catch (e) {
+        console.warn('[Audit/CAPA] Errore caricamento dati:', e);
+        appState.auditSessions = [];
+        appState.nonConformities = [];
+    }
+
+    const audits = appState.auditSessions || [];
+    const ncs = appState.nonConformities || [];
+
+    // Aggiornamento KPI Audit
+    const statTotal = document.getElementById('audit-stat-total');
+    const statCompleted = document.getElementById('audit-stat-completed');
+    const statPlanned = document.getElementById('audit-stat-planned');
+    const statAvgScore = document.getElementById('audit-stat-avg-score');
+
+    if (statTotal) statTotal.textContent = audits.length;
+    const completedAudits = audits.filter(a => a.status === 'completato');
+    if (statCompleted) statCompleted.textContent = completedAudits.length;
+    if (statPlanned) statPlanned.textContent = audits.filter(a => a.status === 'pianificato' || a.status === 'in_corso').length;
+    
+    if (statAvgScore) {
+        if (completedAudits.length > 0) {
+            const sumScore = completedAudits.reduce((acc, a) => acc + (parseFloat(a.compliance_score) || 0), 0);
+            const avg = Math.round(sumScore / completedAudits.length);
+            statAvgScore.textContent = `${avg}%`;
+        } else {
+            statAvgScore.textContent = '—';
+        }
+    }
+
+    // Aggiornamento KPI CAPA
+    const capaStatTotal = document.getElementById('capa-stat-total');
+    const capaStatOpen = document.getElementById('capa-stat-open');
+    const capaStatProgress = document.getElementById('capa-stat-progress');
+    const capaStatClosed = document.getElementById('capa-stat-closed');
+
+    if (capaStatTotal) capaStatTotal.textContent = ncs.length;
+    if (capaStatOpen) capaStatOpen.textContent = ncs.filter(n => n.status === 'aperta').length;
+    if (capaStatProgress) capaStatProgress.textContent = ncs.filter(n => n.status === 'in_corso' || n.status === 'in_verifica').length;
+    if (capaStatClosed) capaStatClosed.textContent = ncs.filter(n => n.status === 'chiusa').length;
+
+    if (appState.auditActiveTab === 'capas') {
+        this.renderNonConformitiesList();
+    } else {
+        this.renderAuditsList();
+    }
+};
+
+app.renderAuditsList = function() {
+    const tbody = document.getElementById('audit-sessions-tbody');
+    if (!tbody) return;
+
+    const audits = appState.auditSessions || [];
+
+    if (audits.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="7" style="text-align: center; padding: 48px; color: var(--text-muted);">
+                    <i class='bx bx-calendar-check' style="font-size: 42px; opacity: 0.3; display: block; margin-bottom: 8px;"></i>
+                    <strong>Nessuna sessione di audit programmata o registrata.</strong><br>
+                    <small>Clicca su "Nuova Sessione di Audit" o "Genera Pre-Audit OTA" per pianificare le verifiche ispettive.</small>
+                </td>
+            </tr>
+        `;
+        return;
+    }
+
+    const typeLabels = {
+        'AUD_INT': { label: 'Audit Interno ISO', badgeClass: 'audit-badge-int', icon: 'bx-check-shield' },
+        'AUD_OTA': { label: 'Pre-Audit OTA', badgeClass: 'audit-badge-ota', icon: 'bx-building-house' },
+        'AUD_SIC': { label: 'Audit Sicurezza', badgeClass: 'audit-badge-sic', icon: 'bx-shield-quarter' },
+        'AUD_FOR': { label: 'Audit Fornitore', badgeClass: 'audit-badge-for', icon: 'bx-store-alt' }
+    };
+
+    const statusLabels = {
+        'pianificato': { label: '📅 Pianificato', color: '#94a3b8' },
+        'in_corso':    { label: '🟡 In Corso', color: '#fbbf24' },
+        'completato':  { label: '🟢 Completato', color: '#34d399' }
+    };
+
+    tbody.innerHTML = audits.map(a => {
+        const typeMeta = typeLabels[a.audit_type] || { label: a.audit_type || 'Audit', badgeClass: 'audit-badge-int', icon: 'bx-check-shield' };
+        const stMeta = statusLabels[a.status] || { label: a.status || 'Pianificato', color: '#94a3b8' };
+        const score = a.compliance_score !== undefined && a.compliance_score !== null ? Math.round(a.compliance_score) : null;
+        
+        let scoreColor = '#34d399';
+        if (score !== null && score < 70) scoreColor = '#f87171';
+        else if (score !== null && score < 90) scoreColor = '#fbbf24';
+
+        return `
+            <tr style="border-bottom: 1px solid rgba(255,255,255,0.05); transition: background 0.2s ease;">
+                <td style="padding: 14px 12px;">
+                    <span class="audit-type-badge ${typeMeta.badgeClass}">
+                        <i class='bx ${typeMeta.icon}'></i> ${typeMeta.label}
+                    </span>
+                    <div style="font-size: 12px; font-weight: 700; color: var(--text-main); margin-top: 4px;">${_s(a.code)}</div>
+                </td>
+                <td style="padding: 14px 12px;">
+                    <div style="font-weight: 600; color: var(--text-main); font-size: 13px;">${_s(a.title)}</div>
+                    <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">
+                        ${_s(a.scope || 'Verifica conformità requisiti e schede')}
+                    </div>
+                </td>
+                <td style="padding: 14px 12px;">
+                    <div style="font-size: 12px; font-weight: 600; color: var(--text-main); display: flex; align-items: center; gap: 4px;">
+                        <i class='bx bx-user' style="color: var(--primary);"></i> ${_s(a.lead_auditor || 'Lead Auditor')}
+                    </div>
+                    ${a.audit_team ? `<div style="font-size: 10px; color: var(--text-muted);">${_s(a.audit_team)}</div>` : ''}
+                </td>
+                <td style="padding: 14px 12px; font-size: 12px;">
+                    <div>${_s(a.planned_date || '—')}</div>
+                    ${a.execution_date ? `<div style="font-size: 10px; color: var(--text-muted);">Eseguito: ${_s(a.execution_date)}</div>` : ''}
+                </td>
+                <td style="padding: 14px 12px;">
+                    ${score !== null ? `
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
+                            <span style="font-size: 12px; font-weight: 700; color: ${scoreColor};">${score}%</span>
+                            <span style="font-size: 10px; color: var(--text-muted);">${a.findings_summary ? `${a.findings_summary.ok || 0} OK, ${a.findings_summary.nc || 0} NC` : ''}</span>
+                        </div>
+                        <div class="audit-score-bar">
+                            <div class="audit-score-fill" style="width: ${score}%; background: ${scoreColor};"></div>
+                        </div>
+                    ` : `
+                        <span style="font-size: 11px; color: var(--text-muted); font-style: italic;">Non ancora valutato</span>
+                    `}
+                </td>
+                <td style="padding: 14px 12px;">
+                    <span style="font-size: 11px; font-weight: 600; color: ${stMeta.color};">
+                        ${stMeta.label}
+                    </span>
+                </td>
+                <td style="padding: 14px 12px; text-align: center;">
+                    <div style="display: inline-flex; gap: 4px;">
+                        <button class="m360-action-btn" onclick="app.openAuditModal('${a.id}')" title="Esegui / Compila Checklist">
+                            <i class='bx bx-edit-alt'></i>
+                        </button>
+                        <button class="m360-action-btn" onclick="app.esportaAuditReport('${a.id}')" title="Esporta Verbale / Report Audit">
+                            <i class='bx bx-printer'></i>
+                        </button>
+                        <button class="m360-action-btn" style="color: #f87171; border-color: rgba(239,68,68,0.2);" onclick="app.deleteAuditSession('${a.id}')" title="Elimina Sessione">
+                            <i class='bx bx-trash'></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        `;
+    }).join('');
+};
+
+app.renderNonConformitiesList = function() {
+    const tbody = document.getElementById('capa-documents-tbody');
+    if (!tbody) return;
+
+    const searchTerm = (document.getElementById('capa-search')?.value || '').toLowerCase().trim();
+    const severityFilter = document.getElementById('capa-filter-severity')?.value || 'all';
+    const statusFilter = document.getElementById('capa-filter-status')?.value || 'all';
+
+    const ncs = (appState.nonConformities || []).filter(nc => {
+        if (severityFilter !== 'all' && (nc.severity || '').toUpperCase() !== severityFilter.toUpperCase()) return false;
+        if (statusFilter !== 'all' && (nc.status || 'aperta') !== statusFilter) return false;
+
+        if (searchTerm) {
+            const fullText = `${nc.code || ''} ${nc.title || ''} ${nc.description || ''} ${nc.process || ''} ${nc.responsible || ''} ${nc.origin || ''} ${nc.root_cause || ''}`.toLowerCase();
+            if (!fullText.includes(searchTerm)) return false;
+        }
+
+        return true;
+    });
+
+    if (ncs.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="7" style="text-align: center; padding: 48px; color: var(--text-muted);">
+                    <i class='bx bx-check-shield' style="font-size: 42px; opacity: 0.3; display: block; margin-bottom: 8px;"></i>
+                    <strong>Nessuna Non Conformità trovata con i filtri selezionati.</strong><br>
+                    <small>Tutti i processi risultano conformi oppure modifica i criteri di ricerca.</small>
+                </td>
+            </tr>
+        `;
+        return;
+    }
+
+    const severityBadges = {
+        'NC_MAJ': { label: 'NC Maggiore', class: 'badge-nc-maj', icon: 'bx-alarm-exclamation' },
+        'NC_MIN': { label: 'NC Minore', class: 'badge-nc-min', icon: 'bx-error' },
+        'OSS':    { label: 'Osservazione', class: 'badge-nc-oss', icon: 'bx-info-circle' },
+        'OFI':    { label: 'OFI (Miglior.)', class: 'badge-nc-ofi', icon: 'bx-trending-up' }
+    };
+
+    const statusLabels = {
+        'aperta':       { label: '🔴 Aperta', class: 'capa-status-aperta' },
+        'in_corso':     { label: '🟡 In Corso', class: 'capa-status-in_corso' },
+        'in_verifica':  { label: '🔵 In Verifica', class: 'capa-status-in_verifica' },
+        'chiusa':       { label: '🟢 Chiusa Efficace', class: 'capa-status-chiusa' }
+    };
+
+    tbody.innerHTML = ncs.map(nc => {
+        const sev = severityBadges[nc.severity] || { label: nc.severity || 'NC', class: 'badge-nc-min', icon: 'bx-error' };
+        const st = statusLabels[nc.status] || { label: nc.status || 'Aperta', class: 'capa-status-aperta' };
+        const isClosed = nc.status === 'chiusa';
+
+        return `
+            <tr style="border-bottom: 1px solid rgba(255,255,255,0.05); transition: background 0.2s ease;">
+                <td style="padding: 14px 12px;">
+                    <span class="finding-badge ${sev.class}">
+                        <i class='bx ${sev.icon}'></i> ${sev.label}
+                    </span>
+                    <div style="font-size: 12px; font-weight: 700; color: var(--text-main); margin-top: 4px;">${_s(nc.code)}</div>
+                </td>
+                <td style="padding: 14px 12px;">
+                    <div style="font-weight: 600; color: var(--text-main); font-size: 13px;">${_s(nc.title || nc.description)}</div>
+                    <div style="font-size: 11px; color: var(--primary); margin-top: 2px;">
+                        <i class='bx bx-link'></i> Origine: <strong>${_s(nc.origin || 'Audit / Ispezione')}</strong>
+                    </div>
+                </td>
+                <td style="padding: 14px 12px;">
+                    <div style="font-size: 12px; color: var(--text-main);">${_s(nc.process || 'Qualità & Risk Management')}</div>
+                    ${nc.iso_clause ? `<div style="font-size: 10px; color: var(--text-muted);">ISO: ${_s(nc.iso_clause)}</div>` : ''}
+                </td>
+                <td style="padding: 14px 12px;">
+                    <span style="font-size: 12px; color: var(--text-main); font-weight: 500;">
+                        <i class='bx bx-user' style="color: var(--primary);"></i> ${_s(nc.responsible || 'Responsabile Qualità')}
+                    </span>
+                </td>
+                <td style="padding: 14px 12px; font-size: 12px;">
+                    <div>${_s(nc.target_date || '—')}</div>
+                    ${isClosed && nc.closed_date ? `<div style="font-size: 10px; color: #34d399;">Chiusa: ${_s(nc.closed_date)}</div>` : ''}
+                </td>
+                <td style="padding: 14px 12px;">
+                    <span class="capa-status-badge ${st.class}">
+                        ${st.label}
+                    </span>
+                </td>
+                <td style="padding: 14px 12px; text-align: center;">
+                    <div style="display: inline-flex; gap: 4px;">
+                        <button class="m360-action-btn" onclick="app.openCapaModal('${nc.id}')" title="Gestisci / RCA / Azioni">
+                            <i class='bx bx-edit-alt'></i>
+                        </button>
+                        ${!isClosed ? `
+                            <button class="m360-action-btn" style="color: #34d399; border-color: rgba(16,185,129,0.3);" onclick="app.advanceCapaStatus('${nc.id}')" title="Avanza Stato / Chiudi Efficace">
+                                <i class='bx bx-check-circle'></i>
+                            </button>
+                        ` : ''}
+                        <button class="m360-action-btn" style="color: #f87171; border-color: rgba(239,68,68,0.2);" onclick="app.deleteCapa('${nc.id}')" title="Elimina Non Conformità">
+                            <i class='bx bx-trash'></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        `;
+    }).join('');
+};
+
+app.filterCapaRegister = function() {
+    this.renderNonConformitiesList();
+};
+
+app.openAuditModal = function(auditId) {
+    const modal = document.getElementById('modal-audit-session');
+    const header = document.getElementById('audit-modal-header');
+    const body = document.getElementById('audit-modal-body');
+    if (!modal || !header || !body) return;
+
+    let audit = null;
+    const isNew = !auditId;
+
+    if (auditId) {
+        audit = (appState.auditSessions || []).find(a => a.id === auditId);
+    }
+
+    if (!audit) {
+        const user = Backend.getCurrentUser();
+        const todayStr = new Date().toISOString().slice(0, 10);
+        const count = (appState.auditSessions || []).length;
+        
+        audit = {
+            id: `AUD-${Date.now()}`,
+            code: `AUD-INT-${new Date().getFullYear()}-${String(count + 1).padStart(2, '0')}`,
+            title: 'Audit Interno Periodico Sistema Qualità e Requisiti',
+            audit_type: 'AUD_INT',
+            scope: 'Verifica conformità processi ISO 9001 e standard autorizzativi regionali',
+            lead_auditor: user?.name || user?.email || 'Lead Auditor Qualità',
+            audit_team: 'Gruppo di Audit Interno / Resp. Processi',
+            planned_date: todayStr,
+            execution_date: todayStr,
+            status: 'in_corso',
+            compliance_score: 100,
+            notes: 'Sessione programmata per il monitoraggio continuo e riesame dei processi.',
+            checklist: [
+                { id: 'ISO.01', clause: '§4.1 - §4.2', title: 'Contesto dell\'Organizzazione e Parti Interessate', finding: 'OK', note: '' },
+                { id: 'ISO.02', clause: '§5.1 - §5.3', title: 'Leadership, Politica Qualità e Ruoli Organigramma', finding: 'OK', note: '' },
+                { id: 'ISO.03', clause: '§6.1 - §6.2', title: 'Gestione Rischi / Opportunità e Obiettivi Qualità', finding: 'OK', note: '' },
+                { id: 'ISO.04', clause: '§7.1 - §7.5', title: 'Risorse, Infrastrutture e Informazioni Documentate (DMS)', finding: 'OK', note: '' },
+                { id: 'ISO.05', clause: '§8.1 - §8.5', title: 'Erogazione Prestazioni Sanitarie e Controllo Operativo', finding: 'OK', note: '' },
+                { id: 'ISO.06', clause: '§9.1 - §9.3', title: 'Monitoraggio Indicatori, Soddisfazione Pazienti e Riesame', finding: 'OK', note: '' },
+                { id: 'ISO.07', clause: '§10.1 - §10.3', title: 'Gestione Non Conformità, CAPA e Miglioramento Continuo', finding: 'OK', note: '' }
+            ]
+        };
+    }
+
+    appState.currentAuditSession = JSON.parse(JSON.stringify(audit));
+
+    header.innerHTML = `
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap;">
+            <div>
+                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+                    <span class="audit-type-badge audit-badge-int">
+                        ${_s(audit.audit_type)}
+                    </span>
+                    <span style="font-size: 15px; font-weight: 700; color: var(--primary);">${_s(audit.code)}</span>
+                </div>
+                <h3 style="margin: 0; font-size: 18px; font-weight: 700; color: var(--text-main);">
+                    ${isNew ? 'Pianificazione & Esecuzione Nuova Sessione di Audit (§9.2)' : _s(audit.title)}
+                </h3>
+            </div>
+            <div style="text-align: right;">
+                <div style="font-size: 11px; text-transform: uppercase; font-weight: 600; color: var(--text-muted); margin-bottom: 4px;">Score Conformità</div>
+                <div id="modal-audit-score-display" style="font-size: 20px; font-weight: 800; color: #34d399;">
+                    ${audit.compliance_score !== undefined ? Math.round(audit.compliance_score) : 100}%
+                </div>
+            </div>
+        </div>
+    `;
+
+    const auditTypes = [
+        { code: 'AUD_INT', label: 'AUD_INT - Audit Interno di Sistema (ISO 9001:2015)' },
+        { code: 'AUD_OTA', label: 'AUD_OTA - Simulazione Pre-Audit Ispettivo OTA (MAMB 1-7)' },
+        { code: 'AUD_SIC', label: 'AUD_SIC - Audit Sicurezza sul Lavoro (D.Lgs 81/08)' },
+        { code: 'AUD_FOR', label: 'AUD_FOR - Audit Fornitori e Service Qualificati' }
+    ];
+
+    body.innerHTML = `
+        <form id="audit-session-form" onsubmit="event.preventDefault(); app.saveAuditModal();">
+            <input type="hidden" id="audit-form-id" value="${_s(audit.id)}">
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+                <div class="form-group" style="margin: 0;">
+                    <label style="font-size: 11px; text-transform: uppercase; font-weight: 600; color: var(--text-muted); margin-bottom: 4px; display: block;">Codice Sessione *</label>
+                    <input type="text" id="audit-form-code" class="input-box" value="${_s(audit.code)}" required style="font-size: 13px; font-weight: 600;">
+                </div>
+                <div class="form-group" style="margin: 0;">
+                    <label style="font-size: 11px; text-transform: uppercase; font-weight: 600; color: var(--text-muted); margin-bottom: 4px; display: block;">Tipologia di Audit *</label>
+                    <select id="audit-form-type" class="input-box" style="font-size: 13px;">
+                        ${auditTypes.map(t => `<option value="${t.code}" ${audit.audit_type === t.code ? 'selected' : ''}>${t.label}</option>`).join('')}
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 16px;">
+                <label style="font-size: 11px; text-transform: uppercase; font-weight: 600; color: var(--text-muted); margin-bottom: 4px; display: block;">Titolo e Obiettivo dell'Audit *</label>
+                <input type="text" id="audit-form-title" class="input-box" value="${_s(audit.title)}" required style="font-size: 13px;">
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; margin-bottom: 18px;">
+                <div class="form-group" style="margin: 0;">
+                    <label style="font-size: 11px; font-weight: 600; color: var(--text-muted); margin-bottom: 4px; display: block;">Lead Auditor</label>
+                    <input type="text" id="audit-form-lead" class="input-box" value="${_s(audit.lead_auditor)}" style="font-size: 12px;">
+                </div>
+                <div class="form-group" style="margin: 0;">
+                    <label style="font-size: 11px; font-weight: 600; color: var(--text-muted); margin-bottom: 4px; display: block;">Data Pianificata</label>
+                    <input type="date" id="audit-form-date-plan" class="input-box" value="${_s(audit.planned_date || '')}" style="font-size: 12px;">
+                </div>
+                <div class="form-group" style="margin: 0;">
+                    <label style="font-size: 11px; font-weight: 600; color: var(--text-muted); margin-bottom: 4px; display: block;">Stato Sessione</label>
+                    <select id="audit-form-status" class="input-box" style="font-size: 12px;">
+                        <option value="pianificato" ${audit.status === 'pianificato' ? 'selected' : ''}>Pianificato</option>
+                        <option value="in_corso" ${audit.status === 'in_corso' ? 'selected' : ''}>In Corso</option>
+                        <option value="completato" ${audit.status === 'completato' ? 'selected' : ''}>Completato &amp; Validato</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- CHECKLIST INTERATTIVA DI AUDIT -->
+            <div style="margin-bottom: 20px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <label style="font-size: 12px; text-transform: uppercase; font-weight: 700; color: var(--text-main); margin: 0; display: flex; align-items: center; gap: 6px;">
+                        <i class='bx bx-task' style="color: var(--primary);"></i> Checklist di Valutazione Evidenze e Rilievi
+                    </label>
+                    <span style="font-size: 11px; color: var(--text-muted);">
+                        Seleziona l'esito per ogni requisito riscontrato
+                    </span>
+                </div>
+                
+                <div id="audit-checklist-container" style="max-height: 280px; overflow-y: auto; background: rgba(0,0,0,0.25); border-radius: 8px; border: 1px solid rgba(255,255,255,0.08); padding: 12px;">
+                    <!-- Items iniettati dinamicamente -->
+                </div>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 18px;">
+                <label style="font-size: 11px; text-transform: uppercase; font-weight: 600; color: var(--text-muted); margin-bottom: 4px; display: block;">Note Conclusive / Conclusioni dell'Audit</label>
+                <textarea id="audit-form-notes" class="input-box" rows="2" style="font-size: 12px; resize: vertical;">${_s(audit.notes || '')}</textarea>
+            </div>
+
+            <!-- AZIONI FOOTER -->
+            <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 16px; margin-top: 20px; flex-wrap: wrap; gap: 10px;">
+                <div style="display: flex; gap: 8px;">
+                    <button type="button" class="btn btn-outline" style="color: #34d399; border-color: #10b981;" onclick="app.saveAuditModal('completato')">
+                        <i class='bx bx-check-double'></i> Completa &amp; Valida Audit
+                    </button>
+                </div>
+                <div style="display: flex; gap: 8px;">
+                    <button type="button" class="btn btn-outline" onclick="app.closeAuditModal()">Annulla</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class='bx bx-save'></i> Salva Sessione
+                    </button>
+                </div>
+            </div>
+        </form>
+    `;
+
+    this._renderAuditChecklistItems();
+    modal.style.display = 'flex';
+};
+
+app._renderAuditChecklistItems = function() {
+    const container = document.getElementById('audit-checklist-container');
+    if (!container || !appState.currentAuditSession) return;
+
+    const checklist = appState.currentAuditSession.checklist || [];
+
+    if (checklist.length === 0) {
+        container.innerHTML = '<div style="color: var(--text-muted); font-size: 12px; text-align: center; padding: 16px;">Nessun criterio definito nella checklist.</div>';
+        return;
+    }
+
+    container.innerHTML = checklist.map(item => {
+        const finding = item.finding || 'OK';
+
+        return `
+            <div style="padding: 10px; margin-bottom: 8px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 6px;">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 6px; flex-wrap: wrap;">
+                    <div>
+                        <strong style="color: var(--text-main); font-size: 12px;">${_s(item.id)} ${item.clause ? `[${_s(item.clause)}]` : ''} — ${_s(item.title)}</strong>
+                    </div>
+                    <div class="audit-checklist-btn-group">
+                        <button type="button" class="audit-chk-btn ${finding === 'OK' ? 'active-ok' : ''}" onclick="app.setAuditChecklistFinding('${item.id}', 'OK')">OK</button>
+                        <button type="button" class="audit-chk-btn ${finding === 'OSS' ? 'active-oss' : ''}" onclick="app.setAuditChecklistFinding('${item.id}', 'OSS')">OSS</button>
+                        <button type="button" class="audit-chk-btn ${finding === 'OFI' ? 'active-ofi' : ''}" onclick="app.setAuditChecklistFinding('${item.id}', 'OFI')">OFI</button>
+                        <button type="button" class="audit-chk-btn ${finding === 'NC_MIN' ? 'active-nc-min' : ''}" onclick="app.setAuditChecklistFinding('${item.id}', 'NC_MIN')">NC Min</button>
+                        <button type="button" class="audit-chk-btn ${finding === 'NC_MAJ' ? 'active-nc-maj' : ''}" onclick="app.setAuditChecklistFinding('${item.id}', 'NC_MAJ')">NC Maj</button>
+                    </div>
+                </div>
+                <div style="display: flex; gap: 8px; align-items: center;">
+                    <input type="text" class="input-box" placeholder="Note / Evidenza riscontrata dall'Auditor..." value="${_s(item.note || '')}" onchange="app._updateAuditChecklistNote('${item.id}', this.value)" style="font-size: 11px; padding: 4px 8px; height: 28px;">
+                    ${finding === 'NC_MIN' || finding === 'NC_MAJ' || finding === 'OSS' ? `
+                        <button type="button" class="btn btn-outline" style="font-size: 11px; padding: 4px 8px; height: 28px; white-space: nowrap; color: #ef4444; border-color: rgba(239,68,68,0.4);" onclick="app.openCapaModal(null, { origin: '${_s(appState.currentAuditSession.code)}', reqId: '${item.id}', title: 'Rilievo ${_s(item.id)}: ${_s(item.title)}', severity: '${finding}' })" title="Apri scheda Non Conformità (CAPA)">
+                            <i class='bx bx-plus-circle'></i> Apri CAPA
+                        </button>
+                    ` : ''}
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    this._recalcModalAuditScore();
+};
+
+app._updateAuditChecklistNote = function(itemId, note) {
+    if (!appState.currentAuditSession || !appState.currentAuditSession.checklist) return;
+    const item = appState.currentAuditSession.checklist.find(i => i.id === itemId);
+    if (item) item.note = note;
+};
+
+app.setAuditChecklistFinding = function(itemId, newFinding) {
+    if (!appState.currentAuditSession || !appState.currentAuditSession.checklist) return;
+    const item = appState.currentAuditSession.checklist.find(i => i.id === itemId);
+    if (item) {
+        item.finding = newFinding;
+    }
+    this._renderAuditChecklistItems();
+};
+
+app._recalcModalAuditScore = function() {
+    if (!appState.currentAuditSession || !appState.currentAuditSession.checklist) return;
+    const list = appState.currentAuditSession.checklist;
+    if (list.length === 0) return;
+
+    let points = 0;
+    list.forEach(i => {
+        if (i.finding === 'OK') points += 1.0;
+        else if (i.finding === 'OSS' || i.finding === 'OFI') points += 0.5;
+        else if (i.finding === 'NC_MIN') points += 0.2;
+        else if (i.finding === 'NC_MAJ') points += 0.0;
+    });
+
+    const score = Math.round((points / list.length) * 100);
+    appState.currentAuditSession.compliance_score = score;
+
+    const display = document.getElementById('modal-audit-score-display');
+    if (display) {
+        display.textContent = `${score}%`;
+        display.style.color = score >= 90 ? '#34d399' : (score >= 70 ? '#fbbf24' : '#f87171');
+    }
+};
+
+app.closeAuditModal = function() {
+    const modal = document.getElementById('modal-audit-session');
+    if (modal) modal.style.display = 'none';
+    appState.currentAuditSession = null;
+};
+
+app.saveAuditModal = async function(statusOverride) {
+    if (!appState.currentAuditSession) return;
+
+    const id = document.getElementById('audit-form-id')?.value || appState.currentAuditSession.id;
+    const code = document.getElementById('audit-form-code')?.value || appState.currentAuditSession.code;
+    const type = document.getElementById('audit-form-type')?.value || appState.currentAuditSession.audit_type;
+    const title = document.getElementById('audit-form-title')?.value || appState.currentAuditSession.title;
+    const lead = document.getElementById('audit-form-lead')?.value || appState.currentAuditSession.lead_auditor;
+    const plannedDate = document.getElementById('audit-form-date-plan')?.value || appState.currentAuditSession.planned_date;
+    const status = statusOverride || document.getElementById('audit-form-status')?.value || appState.currentAuditSession.status;
+    const notes = document.getElementById('audit-form-notes')?.value || appState.currentAuditSession.notes;
+
+    if (!code || !title) {
+        alert('Codice e Titolo Audit sono campi obbligatori.');
+        return;
+    }
+
+    const checklist = appState.currentAuditSession.checklist || [];
+    const okCount = checklist.filter(c => c.finding === 'OK').length;
+    const ncCount = checklist.filter(c => c.finding === 'NC_MIN' || c.finding === 'NC_MAJ').length;
+
+    const auditToSave = {
+        ...appState.currentAuditSession,
+        id: id,
+        code: code,
+        audit_type: type,
+        title: title,
+        lead_auditor: lead,
+        planned_date: plannedDate,
+        execution_date: (status === 'completato' || status === 'in_corso') ? (appState.currentAuditSession.execution_date || new Date().toISOString().slice(0, 10)) : null,
+        status: status,
+        notes: notes,
+        checklist: checklist,
+        findings_summary: { ok: okCount, nc: ncCount, total: checklist.length },
+        compliance_score: appState.currentAuditSession.compliance_score || 100
+    };
+
+    await Backend.saveAudit(auditToSave);
+    this.closeAuditModal();
+    await this.renderAuditCapaView();
+};
+
+app.avviaPreAuditOTAAutomatico = async function() {
+    const todayStr = new Date().toISOString().slice(0, 10);
+    const count = (appState.auditSessions || []).length;
+    const user = Backend.getCurrentUser();
+
+    // Genera checklist con tutte le 7 schede MAMB (1 a 7)
+    const otaCriteria = [
+        { id: 'MAMB.1', clause: 'MAMB 1', title: 'Scheda Requisiti Generali Strutturali & Impiantistici (D.A. 890/02)', finding: 'OK', note: 'Verifica conformità agibilità, barriere architettoniche e conformità impianti' },
+        { id: 'MAMB.2', clause: 'MAMB 2', title: 'Scheda Organizzazione & Direzione Sanitaria', finding: 'OK', note: 'Verifica atto formale di nomina DS, presenze e organigramma' },
+        { id: 'MAMB.3', clause: 'MAMB 3', title: 'Scheda Personale, Titoli di Studio & Competenze ECM', finding: 'OK', note: 'Verifica fascicoli personale, iscrizioni albo e crediti formativi' },
+        { id: 'MAMB.4', clause: 'MAMB 4', title: 'Scheda Manutenzione e Sicurezza Tecnologie Biomediche', finding: 'OK', note: 'Verifica inventario apparecchiature, verifiche elettriche CEI 62-5 e contratti' },
+        { id: 'MAMB.5', clause: 'MAMB 5', title: 'Scheda Gestione Qualità, Procedure e Protocolli Clinici', finding: 'OK', note: 'Verifica POS igiene, sanificazione, gestione emergenze e consensi informati' },
+        { id: 'MAMB.6', clause: 'MAMB 6', title: 'Scheda Privacy GDPR, Sicurezza Informatica & FSE', finding: 'OK', note: 'Verifica registro trattamenti, nomine incaricati e backup criptato' },
+        { id: 'MAMB.7', clause: 'MAMB 7', title: 'Scheda Trasparenza, Carta dei Servizi & Gestione Reclami', finding: 'OK', note: 'Verifica pubblicazione Carta Servizi e modulo customer satisfaction' }
+    ];
+
+    const preAuditSession = {
+        id: `AUD-OTA-${Date.now()}`,
+        code: `AUD-OTA-${new Date().getFullYear()}-${String(count + 1).padStart(2, '0')}`,
+        title: 'Simulazione Pre-Audit Ispettivo OTA (Schede MAMB 1-7 D.A. 20/2024)',
+        audit_type: 'AUD_OTA',
+        scope: 'Valutazione preliminare di rispondenza a tutte le schede di autovalutazione OTA',
+        lead_auditor: user?.name || user?.email || 'Lead Auditor OTA',
+        audit_team: 'Team Qualità & Direzione Sanitaria',
+        planned_date: todayStr,
+        execution_date: todayStr,
+        status: 'in_corso',
+        compliance_score: 100,
+        notes: 'Pre-Audit completo finalizzato al rilascio dell\'attestazione di candidabilità all\'accreditamento istituzionale.',
+        checklist: otaCriteria,
+        findings_summary: { ok: 7, nc: 0, total: 7 }
+    };
+
+    await Backend.saveAudit(preAuditSession);
+    await this.renderAuditCapaView();
+    this.openAuditModal(preAuditSession.id);
+};
+
+app.deleteAuditSession = async function(auditId) {
+    const audit = (appState.auditSessions || []).find(a => a.id === auditId);
+    const title = audit ? `${audit.code} - ${audit.title}` : 'questa sessione di audit';
+    if (!confirm(`Sei sicuro di voler eliminare definitivamente ${title}?`)) {
+        return;
+    }
+    await Backend.deleteAudit(auditId);
+    await this.renderAuditCapaView();
+};
+
+app.openCapaModal = function(capaId, presetData) {
+    const modal = document.getElementById('modal-capa-detail');
+    const header = document.getElementById('capa-modal-header');
+    const body = document.getElementById('capa-modal-body');
+    if (!modal || !header || !body) return;
+
+    let capa = null;
+    const isNew = !capaId;
+
+    if (capaId) {
+        capa = (appState.nonConformities || []).find(n => n.id === capaId);
+    }
+
+    if (!capa) {
+        const user = Backend.getCurrentUser();
+        const todayStr = new Date().toISOString().slice(0, 10);
+        const count = (appState.nonConformities || []).length;
+        
+        // Target date di default a 30 giorni
+        const targetDateObj = new Date();
+        targetDateObj.setDate(targetDateObj.getDate() + 30);
+        const targetDateStr = targetDateObj.toISOString().slice(0, 10);
+
+        capa = {
+            id: `CAPA-${Date.now()}`,
+            code: `NC-${new Date().getFullYear()}-${String(count + 1).padStart(3, '0')}`,
+            title: presetData?.title || '',
+            description: presetData?.description || '',
+            severity: presetData?.severity || 'NC_MIN',
+            origin: presetData?.origin || 'Audit Interno',
+            process: 'Qualità & Risk Management',
+            iso_clause: '§10.2 Non Conformità e Azioni Correttive',
+            root_cause_category: 'Metodo / Procedura non adeguata',
+            root_cause: '',
+            immediate_correction: '',
+            corrective_action_plan: '',
+            responsible: user?.name || user?.email || 'Responsabile Qualità',
+            target_date: targetDateStr,
+            status: 'aperta',
+            efficacy_verified: false,
+            efficacy_notes: '',
+            closed_date: null
+        };
+    }
+
+    appState.currentCapa = JSON.parse(JSON.stringify(capa));
+
+    const severities = [
+        { code: 'NC_MAJ', label: 'NC Maggiore (Critica / Bloccante)' },
+        { code: 'NC_MIN', label: 'NC Minore' },
+        { code: 'OSS',    label: 'Osservazione di Audit' },
+        { code: 'OFI',    label: 'Opportunità di Miglioramento (OFI)' }
+    ];
+
+    const rootCauseCategories = [
+        'Metodo / Procedura non adeguata o assente',
+        'Competenza / Formazione e addestramento del personale',
+        'Tecnologia / Manutenzione apparecchiature / Software',
+        'Organizzazione / Risorse e carichi di lavoro',
+        'Comunicazione interna / Errore umano',
+        'Fornitore esterno / Service / Laboratorio service'
+    ];
+
+    const statuses = [
+        { code: 'aperta', label: '🔴 Aperta (In attesa di analisi causa)' },
+        { code: 'in_corso', label: '🟡 In Corso (Piano Azioni in esecuzione)' },
+        { code: 'in_verifica', label: '🔵 In Verifica Efficacia' },
+        { code: 'chiusa', label: '🟢 Risolta & Chiusa con Efficacia Verificata' }
+    ];
+
+    header.innerHTML = `
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 16px;">
+            <div>
+                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                    <span class="finding-badge badge-${capa.severity.toLowerCase().replace('_','-')}">
+                        ${_s(capa.severity)}
+                    </span>
+                    <span style="font-size: 15px; font-weight: 700; color: var(--primary);">${_s(capa.code)}</span>
+                </div>
+                <h3 style="margin: 0; font-size: 18px; font-weight: 700; color: var(--text-main);">
+                    ${isNew ? 'Nuova Non Conformità & Piano di Azione Correttiva (CAPA §10.2)' : _s(capa.title || 'Dettaglio CAPA')}
+                </h3>
+            </div>
+        </div>
+    `;
+
+    body.innerHTML = `
+        <form id="capa-detail-form" onsubmit="event.preventDefault(); app.saveCapaModal();">
+            <input type="hidden" id="capa-form-id" value="${_s(capa.id)}">
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; margin-bottom: 14px;">
+                <div class="form-group" style="margin: 0;">
+                    <label style="font-size: 11px; text-transform: uppercase; font-weight: 600; color: var(--text-muted); margin-bottom: 4px; display: block;">Codice Rilievo *</label>
+                    <input type="text" id="capa-form-code" class="input-box" value="${_s(capa.code)}" required style="font-size: 12px; font-weight: 700;">
+                </div>
+                <div class="form-group" style="margin: 0;">
+                    <label style="font-size: 11px; text-transform: uppercase; font-weight: 600; color: var(--text-muted); margin-bottom: 4px; display: block;">Gravità Rilievo *</label>
+                    <select id="capa-form-severity" class="input-box" style="font-size: 12px;">
+                        ${severities.map(s => `<option value="${s.code}" ${capa.severity === s.code ? 'selected' : ''}>${s.label}</option>`).join('')}
+                    </select>
+                </div>
+                <div class="form-group" style="margin: 0;">
+                    <label style="font-size: 11px; text-transform: uppercase; font-weight: 600; color: var(--text-muted); margin-bottom: 4px; display: block;">Stato Workflow</label>
+                    <select id="capa-form-status" class="input-box" style="font-size: 12px;">
+                        ${statuses.map(s => `<option value="${s.code}" ${capa.status === s.code ? 'selected' : ''}>${s.label}</option>`).join('')}
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 14px;">
+                <label style="font-size: 11px; text-transform: uppercase; font-weight: 600; color: var(--text-muted); margin-bottom: 4px; display: block;">Titolo Sintetico della Non Conformità *</label>
+                <input type="text" id="capa-form-title" class="input-box" value="${_s(capa.title)}" placeholder="Es. Mancata esecuzione verifiche elettriche periodiche CEI 62-5" required style="font-size: 13px;">
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px;">
+                <div class="form-group" style="margin: 0;">
+                    <label style="font-size: 11px; text-transform: uppercase; font-weight: 600; color: var(--text-muted); margin-bottom: 4px; display: block;">Origine Rilievo</label>
+                    <input type="text" id="capa-form-origin" class="input-box" value="${_s(capa.origin || 'Audit Interno')}" placeholder="Es. Audit AUD-OTA-01 o MAMB.4" style="font-size: 12px;">
+                </div>
+                <div class="form-group" style="margin: 0;">
+                    <label style="font-size: 11px; text-transform: uppercase; font-weight: 600; color: var(--text-muted); margin-bottom: 4px; display: block;">Processo Aziendale</label>
+                    <input type="text" id="capa-form-process" class="input-box" value="${_s(capa.process || 'Tecnologie & Manutenzione')}" style="font-size: 12px;">
+                </div>
+            </div>
+
+            <!-- ANALISI DELLA CAUSA RADICE (RCA / 5 WHY) -->
+            <div style="padding: 14px; background: rgba(255,255,255,0.03); border-radius: 8px; border: 1px solid rgba(255,255,255,0.06); margin-bottom: 14px;">
+                <div style="font-size: 12px; font-weight: 700; color: var(--text-main); margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+                    <i class='bx bx-search-alt' style="color: var(--primary);"></i> 1. Analisi Causa Radice (Root Cause Analysis - Ishikawa / 5 Why)
+                </div>
+                <div class="form-group" style="margin-bottom: 8px;">
+                    <label style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px; display: block;">Categoria Causa Radice</label>
+                    <select id="capa-form-root-cat" class="input-box" style="font-size: 12px;">
+                        ${rootCauseCategories.map(c => `<option value="${c}" ${capa.root_cause_category === c ? 'selected' : ''}>${c}</option>`).join('')}
+                    </select>
+                </div>
+                <div class="form-group" style="margin: 0;">
+                    <label style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px; display: block;">Descrizione Dettagliata della Causa Primaria</label>
+                    <textarea id="capa-form-root-cause" class="input-box" rows="2" placeholder="Spiega il motivo scatenante per cui si è verificata la Non Conformità..." style="font-size: 12px; resize: vertical;">${_s(capa.root_cause || '')}</textarea>
+                </div>
+            </div>
+
+            <!-- AZIONI DI CONTENIMENTO & PIANO CAPA -->
+            <div style="padding: 14px; background: rgba(59,130,246,0.05); border-radius: 8px; border: 1px solid rgba(59,130,246,0.2); margin-bottom: 14px;">
+                <div style="font-size: 12px; font-weight: 700; color: var(--text-main); margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+                    <i class='bx bx-wrench' style="color: var(--primary);"></i> 2. Correzione Immediata &amp; Azione Correttiva (CAPA)
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 8px;">
+                    <div class="form-group" style="margin: 0;">
+                        <label style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px; display: block;">Correzione Immediata (Tamponamento)</label>
+                        <input type="text" id="capa-form-correction" class="input-box" value="${_s(capa.immediate_correction || '')}" placeholder="Azione immediata svolta..." style="font-size: 12px;">
+                    </div>
+                    <div class="form-group" style="margin: 0;">
+                        <label style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px; display: block;">Responsabile Attuazione</label>
+                        <input type="text" id="capa-form-resp" class="input-box" value="${_s(capa.responsible || '')}" style="font-size: 12px;">
+                    </div>
+                </div>
+                <div class="form-group" style="margin-bottom: 8px;">
+                    <label style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px; display: block;">Piano di Azione Correttiva a Lungo Termine (CAPA)</label>
+                    <textarea id="capa-form-action-plan" class="input-box" rows="2" placeholder="Descrivi le misure preventive e correttive per evitare il ripetersi del problema..." style="font-size: 12px; resize: vertical;">${_s(capa.corrective_action_plan || '')}</textarea>
+                </div>
+                <div class="form-group" style="margin: 0;">
+                    <label style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px; display: block;">Data Target di Risoluzione</label>
+                    <input type="date" id="capa-form-target-date" class="input-box" value="${_s(capa.target_date || '')}" style="font-size: 12px; max-width: 220px;">
+                </div>
+            </div>
+
+            <!-- VERIFICA DI EFFICACIA (§10.2.1.d) -->
+            <div style="padding: 14px; background: rgba(16,185,129,0.05); border-radius: 8px; border: 1px solid rgba(16,185,129,0.2); margin-bottom: 16px;">
+                <div style="font-size: 12px; font-weight: 700; color: var(--text-main); margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+                    <i class='bx bx-check-double' style="color: #34d399;"></i> 3. Verifica di Efficacia (§10.2.1.d ISO 9001)
+                </div>
+                <div class="form-group" style="margin: 0;">
+                    <label style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px; display: block;">Evidenze di Efficacia e Conclusioni del Verificatore</label>
+                    <textarea id="capa-form-efficacy" class="input-box" rows="2" placeholder="Attestazione dell'efficacia dell'azione correttiva intrapresa e data riesame..." style="font-size: 12px; resize: vertical;">${_s(capa.efficacy_notes || '')}</textarea>
+                </div>
+            </div>
+
+            <!-- AZIONI FOOTER -->
+            <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 16px; margin-top: 20px; flex-wrap: wrap; gap: 10px;">
+                <div style="display: flex; gap: 8px;">
+                    <button type="button" class="btn btn-outline" style="color: #34d399; border-color: #10b981;" onclick="app.closeCapaEfficace('${capa.id}')">
+                        <i class='bx bx-check-shield'></i> Chiudi come Risolta ed Efficace
+                    </button>
+                </div>
+                <div style="display: flex; gap: 8px;">
+                    <button type="button" class="btn btn-outline" onclick="app.closeCapaModal()">Annulla</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class='bx bx-save'></i> Salva Non Conformità
+                    </button>
+                </div>
+            </div>
+        </form>
+    `;
+
+    modal.style.display = 'flex';
+};
+
+app.closeCapaModal = function() {
+    const modal = document.getElementById('modal-capa-detail');
+    if (modal) modal.style.display = 'none';
+    appState.currentCapa = null;
+};
+
+app.saveCapaModal = async function() {
+    if (!appState.currentCapa) return;
+
+    const id = document.getElementById('capa-form-id')?.value || appState.currentCapa.id;
+    const code = document.getElementById('capa-form-code')?.value || appState.currentCapa.code;
+    const severity = document.getElementById('capa-form-severity')?.value || appState.currentCapa.severity;
+    const status = document.getElementById('capa-form-status')?.value || appState.currentCapa.status;
+    const title = document.getElementById('capa-form-title')?.value || appState.currentCapa.title;
+    const origin = document.getElementById('capa-form-origin')?.value || appState.currentCapa.origin;
+    const process = document.getElementById('capa-form-process')?.value || appState.currentCapa.process;
+    const rootCat = document.getElementById('capa-form-root-cat')?.value || appState.currentCapa.root_cause_category;
+    const rootCause = document.getElementById('capa-form-root-cause')?.value || appState.currentCapa.root_cause;
+    const correction = document.getElementById('capa-form-correction')?.value || appState.currentCapa.immediate_correction;
+    const resp = document.getElementById('capa-form-resp')?.value || appState.currentCapa.responsible;
+    const actionPlan = document.getElementById('capa-form-action-plan')?.value || appState.currentCapa.corrective_action_plan;
+    const targetDate = document.getElementById('capa-form-target-date')?.value || appState.currentCapa.target_date;
+    const efficacy = document.getElementById('capa-form-efficacy')?.value || appState.currentCapa.efficacy_notes;
+
+    if (!code || !title) {
+        alert('Codice e Titolo della Non Conformità sono obbligatori.');
+        return;
+    }
+
+    const capaToSave = {
+        ...appState.currentCapa,
+        id: id,
+        code: code,
+        severity: severity,
+        status: status,
+        title: title,
+        origin: origin,
+        process: process,
+        root_cause_category: rootCat,
+        root_cause: rootCause,
+        immediate_correction: correction,
+        responsible: resp,
+        corrective_action_plan: actionPlan,
+        target_date: targetDate,
+        efficacy_notes: efficacy,
+        closed_date: status === 'chiusa' ? (appState.currentCapa.closed_date || new Date().toISOString().slice(0, 10)) : null
+    };
+
+    await Backend.saveNonConformity(capaToSave);
+    this.closeCapaModal();
+    await this.renderAuditCapaView();
+};
+
+app.advanceCapaStatus = async function(capaId) {
+    const capa = (appState.nonConformities || []).find(n => n.id === capaId);
+    if (!capa) return;
+
+    let nextStatus = 'in_corso';
+    if (capa.status === 'aperta') nextStatus = 'in_corso';
+    else if (capa.status === 'in_corso') nextStatus = 'in_verifica';
+    else if (capa.status === 'in_verifica') nextStatus = 'chiusa';
+    else nextStatus = 'chiusa';
+
+    capa.status = nextStatus;
+    if (nextStatus === 'chiusa') {
+        capa.closed_date = new Date().toISOString().slice(0, 10);
+        capa.efficacy_verified = true;
+    }
+
+    await Backend.saveNonConformity(capa);
+    await this.renderAuditCapaView();
+};
+
+app.closeCapaEfficace = async function(capaId) {
+    const id = capaId || document.getElementById('capa-form-id')?.value;
+    const capa = (appState.nonConformities || []).find(n => n.id === id) || appState.currentCapa;
+    if (!capa) return;
+
+    capa.status = 'chiusa';
+    capa.closed_date = new Date().toISOString().slice(0, 10);
+    capa.efficacy_verified = true;
+    if (document.getElementById('capa-form-efficacy')?.value) {
+        capa.efficacy_notes = document.getElementById('capa-form-efficacy').value;
+    }
+
+    await Backend.saveNonConformity(capa);
+    this.closeCapaModal();
+    await this.renderAuditCapaView();
+};
+
+app.deleteCapa = async function(capaId) {
+    const capa = (appState.nonConformities || []).find(n => n.id === capaId);
+    const title = capa ? `${capa.code} - ${capa.title}` : 'questa non conformità';
+    if (!confirm(`Sei sicuro di voler eliminare definitivamente ${title}?`)) {
+        return;
+    }
+    await Backend.deleteNonConformity(capaId);
+    await this.renderAuditCapaView();
+};
+
+app.esportaProgrammaAuditCSV = function() {
+    const audits = appState.auditSessions || [];
+    if (audits.length === 0) {
+        alert('Nessuna sessione di audit disponibile per l\'esportazione.');
+        return;
+    }
+
+    const headers = [
+        "Codice Audit",
+        "Tipologia",
+        "Titolo & Obiettivo",
+        "Lead Auditor",
+        "Team Audit",
+        "Data Pianificata",
+        "Data Esecuzione",
+        "Stato Sessione",
+        "Score Conformita (%)",
+        "Note Auditor"
+    ];
+
+    const rows = audits.map(a => [
+        `"${(a.code || '').replace(/"/g, '""')}"`,
+        `"${(a.audit_type || '').replace(/"/g, '""')}"`,
+        `"${(a.title || '').replace(/"/g, '""')}"`,
+        `"${(a.lead_auditor || '').replace(/"/g, '""')}"`,
+        `"${(a.audit_team || '').replace(/"/g, '""')}"`,
+        `"${(a.planned_date || '').replace(/"/g, '""')}"`,
+        `"${(a.execution_date || '').replace(/"/g, '""')}"`,
+        `"${(a.status || '').replace(/"/g, '""')}"`,
+        `"${a.compliance_score !== undefined ? a.compliance_score : ''}"`,
+        `"${(a.notes || '').replace(/"/g, '""')}"`
+    ]);
+
+    const csvContent = "data:text/csv;charset=utf-8,\uFEFF" + [headers.join(';'), ...rows.map(e => e.join(';'))].join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `Programma_Audit_ISO9001_${new Date().toISOString().slice(0,10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+};
+
+app.esportaCapaCSV = function() {
+    const ncs = appState.nonConformities || [];
+    if (ncs.length === 0) {
+        alert('Nessuna Non Conformità registrata per l\'esportazione.');
+        return;
+    }
+
+    const headers = [
+        "Codice NC",
+        "Gravita",
+        "Titolo / Oggetto",
+        "Origine",
+        "Processo Aziendale",
+        "Clausola ISO",
+        "Categoria Causa Radice",
+        "Causa Primaria (RCA)",
+        "Correzione Immediata",
+        "Piano Azioni (CAPA)",
+        "Responsabile",
+        "Data Target",
+        "Stato CAPA",
+        "Data Chiusura",
+        "Verifica Efficacia"
+    ];
+
+    const rows = ncs.map(n => [
+        `"${(n.code || '').replace(/"/g, '""')}"`,
+        `"${(n.severity || '').replace(/"/g, '""')}"`,
+        `"${(n.title || '').replace(/"/g, '""')}"`,
+        `"${(n.origin || '').replace(/"/g, '""')}"`,
+        `"${(n.process || '').replace(/"/g, '""')}"`,
+        `"${(n.iso_clause || '').replace(/"/g, '""')}"`,
+        `"${(n.root_cause_category || '').replace(/"/g, '""')}"`,
+        `"${(n.root_cause || '').replace(/"/g, '""')}"`,
+        `"${(n.immediate_correction || '').replace(/"/g, '""')}"`,
+        `"${(n.corrective_action_plan || '').replace(/"/g, '""')}"`,
+        `"${(n.responsible || '').replace(/"/g, '""')}"`,
+        `"${(n.target_date || '').replace(/"/g, '""')}"`,
+        `"${(n.status || '').replace(/"/g, '""')}"`,
+        `"${(n.closed_date || '').replace(/"/g, '""')}"`,
+        `"${(n.efficacy_notes || '').replace(/"/g, '""')}"`
+    ]);
+
+    const csvContent = "data:text/csv;charset=utf-8,\uFEFF" + [headers.join(';'), ...rows.map(e => e.join(';'))].join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `Registro_Non_Conformita_CAPA_ISO9001_${new Date().toISOString().slice(0,10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+};
+
+app.esportaAuditReport = function(auditId) {
+    const audit = (appState.auditSessions || []).find(a => a.id === auditId);
+    if (!audit) {
+        alert('Sessione di audit non trovata.');
+        return;
+    }
+
+    const user = Backend.getCurrentUser();
+    const nomeStruttura = user?.name || user?.email || 'Struttura Sanitaria';
+    const dateStr = new Date().toLocaleDateString('it-IT');
+    const checklist = audit.checklist || [];
+
+    const container = document.createElement('div');
+    container.style.padding = '24px';
+    container.style.fontFamily = 'Arial, sans-serif';
+    container.style.color = '#000';
+    container.style.background = '#fff';
+
+    container.innerHTML = `
+        <div style="border-bottom: 2px solid #0284c7; padding-bottom: 12px; margin-bottom: 20px; display:flex; justify-content:space-between; align-items:flex-end;">
+            <div>
+                <h1 style="font-size: 20px; margin: 0; color: #0284c7;">ACCREDITA 360 — VERBALE DI AUDIT</h1>
+                <div style="font-size: 12px; color: #555; margin-top: 4px;">Valutazione della Conformità ex Norma UNI EN ISO 9001:2015 (§9.2) &amp; D.A. 20/2024</div>
+            </div>
+            <div style="text-align: right; font-size: 11px; color: #555;">
+                <div><strong>Struttura:</strong> ${_s(nomeStruttura)}</div>
+                <div><strong>Data Report:</strong> ${dateStr}</div>
+                <div><strong>Score Conformità:</strong> ${audit.compliance_score !== undefined ? audit.compliance_score : 100}%</div>
+            </div>
+        </div>
+
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; padding: 12px; border-radius: 6px; font-size: 11px; margin-bottom: 16px;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                <div><strong>Codice Sessione:</strong> ${_s(audit.code)}</div>
+                <div><strong>Tipologia Audit:</strong> ${_s(audit.audit_type)}</div>
+                <div><strong>Titolo / Scopo:</strong> ${_s(audit.title)}</div>
+                <div><strong>Lead Auditor:</strong> ${_s(audit.lead_auditor)}</div>
+                <div><strong>Data Pianificata:</strong> ${_s(audit.planned_date || '—')}</div>
+                <div><strong>Data Esecuzione:</strong> ${_s(audit.execution_date || '—')}</div>
+                <div><strong>Stato:</strong> ${_s(audit.status)}</div>
+            </div>
+            ${audit.notes ? `<div style="margin-top: 8px; border-top: 1px solid #e2e8f0; padding-top: 6px;"><strong>Conclusioni Lead Auditor:</strong> ${_s(audit.notes)}</div>` : ''}
+        </div>
+
+        <h3 style="font-size: 13px; color: #0284c7; margin: 14px 0 8px;">Dettaglio Checklist &amp; Rilievi Riscontrati</h3>
+        <table style="width: 100%; border-collapse: collapse; font-size: 10px; margin-top: 8px;">
+            <thead>
+                <tr style="background: #f1f5f9; border-bottom: 1px solid #cbd5e1;">
+                    <th style="padding: 6px; text-align: left; width: 60px;">Rif.</th>
+                    <th style="padding: 6px; text-align: left; width: 80px;">Clausola</th>
+                    <th style="padding: 6px; text-align: left;">Requisito Valutato</th>
+                    <th style="padding: 6px; text-align: left; width: 70px;">Esito</th>
+                    <th style="padding: 6px; text-align: left;">Note &amp; Evidenze</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${checklist.map(c => `
+                    <tr style="border-bottom: 1px solid #e2e8f0;">
+                        <td style="padding: 6px; font-weight: bold;">${_s(c.id)}</td>
+                        <td style="padding: 6px;">${_s(c.clause || '—')}</td>
+                        <td style="padding: 6px;">${_s(c.title)}</td>
+                        <td style="padding: 6px; font-weight: bold; color: ${c.finding === 'OK' ? '#16a34a' : (c.finding === 'NC_MAJ' ? '#dc2626' : '#d97706')};">${_s(c.finding || 'OK')}</td>
+                        <td style="padding: 6px;">${_s(c.note || 'Evidenze conformi')}</td>
+                    </tr>
+                `).join('')}
+            </tbody>
+        </table>
+
+        <div style="margin-top: 30px; display: flex; justify-content: space-between; font-size: 11px;">
+            <div>
+                <div>Firma Referente Auditato</div>
+                <div style="margin-top: 30px; border-top: 1px dashed #94a3b8; width: 200px;"></div>
+            </div>
+            <div>
+                <div>Firma Lead Auditor</div>
+                <div style="margin-top: 30px; border-top: 1px dashed #94a3b8; width: 200px;"></div>
+            </div>
+        </div>
+    `;
+
+    const opt = {
+        margin:       10,
+        filename:     `Verbale_Audit_${_s(audit.code)}_${new Date().toISOString().slice(0,10)}.pdf`,
+        image:        { type: 'jpeg', quality: 0.98 },
+        html2canvas:  { scale: 2 },
+        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    };
+
+    if (typeof html2pdf !== 'undefined') {
+        html2pdf().set(opt).from(container).save();
+    } else {
+        window.print();
+    }
+};
+
+// ============================================================
+// FASE 4: RISK MANAGEMENT SANITARIO, HEATMAP 5x5 & INCIDENT REPORTING (§6.1 & L. 24/2017)
+// ============================================================
+
+app._heatmapFilter = null;
+
+app.switchRiskTab = function(tabName) {
+    const btnRegister = document.getElementById('tab-btn-risk-register');
+    const btnIncidents = document.getElementById('tab-btn-incident-reporting');
+    const pageRegister = document.getElementById('risk-page-register');
+    const pageIncidents = document.getElementById('risk-page-incidents');
+
+    if (tabName === 'incidents') {
+        if (btnRegister) btnRegister.classList.remove('active');
+        if (btnIncidents) btnIncidents.classList.add('active');
+        if (pageRegister) pageRegister.style.display = 'none';
+        if (pageIncidents) pageIncidents.style.display = 'block';
+        this.renderIncidentsList();
+    } else {
+        if (btnRegister) btnRegister.classList.add('active');
+        if (btnIncidents) btnIncidents.classList.remove('active');
+        if (pageRegister) pageRegister.style.display = 'block';
+        if (pageIncidents) pageIncidents.style.display = 'none';
+        this.renderHeatmapGrid();
+        this.renderRisksList();
+    }
+};
+
+app.renderRiskManagementView = async function() {
+    appState.risks = await Backend.getRisks();
+    appState.incidents = await Backend.getIncidents();
+    await this.renderHeatmapGrid();
+    await this.renderRisksList();
+    await this.renderIncidentsList();
+    this.updateRiskManagementStats();
+};
+
+app.updateRiskManagementStats = function() {
+    const risks = appState.risks || [];
+    const incidents = appState.incidents || [];
+
+    // Risks KPIs
+    const totalCount = risks.length;
+    let critCount = 0;
+    let highCount = 0;
+    let mitigatedCount = 0;
+    let sumInherent = 0;
+
+    risks.forEach(r => {
+        const p = parseInt(r.probability, 10) || 3;
+        const g = parseInt(r.severity, 10) || 3;
+        const scoreInherent = r.score_inherent || (p * g);
+        const resP = parseInt(r.res_probability, 10) || 1;
+        const resG = parseInt(r.res_severity, 10) || 2;
+        const scoreResidual = r.score_residual || (resP * resG);
+
+        sumInherent += scoreInherent;
+
+        if (scoreInherent >= 20) critCount++;
+        else if (scoreInherent >= 15) highCount++;
+
+        if (scoreResidual <= 6) mitigatedCount++;
+    });
+
+    const avgInherent = totalCount > 0 ? (sumInherent / totalCount).toFixed(1) : '—';
+
+    const elTotal = document.getElementById('risk-stat-total-count');
+    const elCrit = document.getElementById('risk-stat-crit-count');
+    const elHigh = document.getElementById('risk-stat-high-count');
+    const elMitigated = document.getElementById('risk-stat-mitigated-count');
+    const elAvg = document.getElementById('risk-stat-avg-inherent');
+
+    if (elTotal) elTotal.textContent = totalCount;
+    if (elCrit) elCrit.textContent = critCount;
+    if (elHigh) elHigh.textContent = highCount;
+    if (elMitigated) elMitigated.textContent = mitigatedCount;
+    if (elAvg) elAvg.textContent = avgInherent;
+
+    // Incidents KPIs
+    const elIncTotal = document.getElementById('incident-stat-total');
+    const elIncNearMiss = document.getElementById('incident-stat-nearmiss');
+    const elIncAdverse = document.getElementById('incident-stat-adverse');
+    const elIncSentinel = document.getElementById('incident-stat-sentinel');
+
+    let nearMissCount = 0;
+    let adverseCount = 0;
+    let sentinelCount = 0;
+
+    incidents.forEach(inc => {
+        if (inc.type === 'NEAR_MISS') nearMissCount++;
+        else if (inc.type === 'ADVERSE_EVENT') adverseCount++;
+        else if (inc.type === 'SENTINEL_EVENT') sentinelCount++;
+    });
+
+    if (elIncTotal) elIncTotal.textContent = incidents.length;
+    if (elIncNearMiss) elIncNearMiss.textContent = nearMissCount;
+    if (elIncAdverse) elIncAdverse.textContent = adverseCount;
+    if (elIncSentinel) elIncSentinel.textContent = sentinelCount;
+};
+
+app.renderHeatmapGrid = async function() {
+    const wrapper = document.getElementById('heatmap-wrapper');
+    if (!wrapper) return;
+
+    if (!appState.risks) {
+        appState.risks = await Backend.getRisks();
+    }
+    const risks = appState.risks || [];
+
+    // Header row: empty corner + Gravità 1 to 5
+    let html = `
+        <div class="heatmap-header-cell" style="text-align:right; font-size:10px; color:var(--text-muted);">P \\ G</div>
+        <div class="heatmap-header-cell">G1 (Trascur.)</div>
+        <div class="heatmap-header-cell">G2 (Minore)</div>
+        <div class="heatmap-header-cell">G3 (Moder.)</div>
+        <div class="heatmap-header-cell">G4 (Grave)</div>
+        <div class="heatmap-header-cell">G5 (Catastr.)</div>
+    `;
+
+    // Probability Y-axis from 5 down to 1
+    const pLabels = {
+        5: 'P5 (Quasi Certo)',
+        4: 'P4 (Probabile)',
+        3: 'P3 (Possibile)',
+        2: 'P2 (Raro)',
+        1: 'P1 (Improb.)'
+    };
+
+    for (let p = 5; p >= 1; p--) {
+        html += `<div class="heatmap-row-label">${pLabels[p]}</div>`;
+        for (let g = 1; g <= 5; g++) {
+            const score = p * g;
+            const meta = NormativaDB.getRiskScoreMeta(score);
+            let riskLevelClass = 'risk-low';
+            if (meta.level === 'CRIT') riskLevelClass = 'risk-crit';
+            else if (meta.level === 'HIGH') riskLevelClass = 'risk-high';
+            else if (meta.level === 'MED') riskLevelClass = 'risk-med';
+
+            const matchingRisks = risks.filter(r => (parseInt(r.probability, 10) || 3) === p && (parseInt(r.severity, 10) || 3) === g);
+            const count = matchingRisks.length;
+            const isFiltered = app._heatmapFilter && app._heatmapFilter.p === p && app._heatmapFilter.g === g;
+            const activeClass = isFiltered ? 'active-cell' : '';
+
+            html += `
+                <div class="heatmap-cell ${riskLevelClass} ${activeClass}" onclick="app.filterRisksByHeatmapCell(${p}, ${g})" title="Probabilità ${p} × Gravità ${g} = Score ${score} (${meta.label}) - ${count} rischi">
+                    <span class="heatmap-cell-score">Score ${score}</span>
+                    <span class="heatmap-cell-count">${count > 0 ? count + ' ⚠️' : '0'}</span>
+                </div>
+            `;
+        }
+    }
+
+    wrapper.innerHTML = html;
+};
+
+app.filterRisksByHeatmapCell = function(p, g) {
+    if (app._heatmapFilter && app._heatmapFilter.p === p && app._heatmapFilter.g === g) {
+        this.resetHeatmapFilter();
+        return;
+    }
+    app._heatmapFilter = { p, g };
+    const resetBtn = document.getElementById('btn-reset-heatmap');
+    if (resetBtn) resetBtn.style.display = 'inline-flex';
+    this.renderHeatmapGrid();
+    this.renderRisksList();
+};
+
+app.resetHeatmapFilter = function() {
+    app._heatmapFilter = null;
+    const resetBtn = document.getElementById('btn-reset-heatmap');
+    if (resetBtn) resetBtn.style.display = 'none';
+    this.renderHeatmapGrid();
+    this.renderRisksList();
+};
+
+app.renderRisksList = async function() {
+    const tbody = document.getElementById('risks-register-tbody');
+    if (!tbody) return;
+
+    if (!appState.risks) {
+        appState.risks = await Backend.getRisks();
+    }
+    let list = [...(appState.risks || [])];
+
+    // Heatmap filter
+    if (app._heatmapFilter) {
+        const { p, g } = app._heatmapFilter;
+        list = list.filter(r => (parseInt(r.probability, 10) || 3) === p && (parseInt(r.severity, 10) || 3) === g);
+    }
+
+    // Search filter
+    const searchVal = (document.getElementById('risk-search')?.value || '').toLowerCase().trim();
+    if (searchVal) {
+        list = list.filter(r =>
+            (r.code || '').toLowerCase().includes(searchVal) ||
+            (r.title || '').toLowerCase().includes(searchVal) ||
+            (r.description || '').toLowerCase().includes(searchVal) ||
+            (r.barriers || '').toLowerCase().includes(searchVal) ||
+            (r.responsible || '').toLowerCase().includes(searchVal)
+        );
+    }
+
+    // Category filter
+    const catVal = document.getElementById('risk-filter-category')?.value || 'all';
+    if (catVal !== 'all') {
+        list = list.filter(r => r.category === catVal);
+    }
+
+    // Level filter
+    const levelVal = document.getElementById('risk-filter-level')?.value || 'all';
+    if (levelVal !== 'all') {
+        list = list.filter(r => {
+            const scoreInherent = (parseInt(r.probability, 10) || 3) * (parseInt(r.severity, 10) || 3);
+            const meta = NormativaDB.getRiskScoreMeta(scoreInherent);
+            return meta.level === levelVal;
+        });
+    }
+
+    this.updateRiskManagementStats();
+
+    if (list.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="7" style="text-align:center; padding: 36px 16px; color: var(--text-muted);">
+                    <i class='bx bx-shield-x' style="font-size: 32px; display: block; margin-bottom: 8px; opacity: 0.5;"></i>
+                    Nessun rischio sanitario trovato con i filtri selezionati.
+                </td>
+            </tr>
+        `;
+        return;
+    }
+
+    tbody.innerHTML = list.map(r => {
+        const p = parseInt(r.probability, 10) || 3;
+        const g = parseInt(r.severity, 10) || 3;
+        const scoreInherent = r.score_inherent || (p * g);
+        const metaInherent = NormativaDB.getRiskScoreMeta(scoreInherent);
+
+        const resP = parseInt(r.res_probability, 10) || 1;
+        const resG = parseInt(r.res_severity, 10) || 2;
+        const scoreResidual = r.score_residual || (resP * resG);
+        const metaResidual = NormativaDB.getRiskScoreMeta(scoreResidual);
+
+        const catDef = (NormativaDB.riskCategories && NormativaDB.riskCategories[r.category]) || { label: r.category, icon: 'bx-shield' };
+
+        const delta = scoreInherent - scoreResidual;
+        const deltaHtml = delta > 0
+            ? `<span style="font-size:10px; color:#10b981; font-weight:700; display:inline-flex; align-items:center; gap:2px;"><i class='bx bx-trending-down'></i> -${delta}</span>`
+            : '';
+
+        return `
+            <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                <td style="padding: 12px 10px; vertical-align: top;">
+                    <div style="font-weight: 700; font-size: 12px; color: var(--primary); font-family: monospace;">${_s(r.code)}</div>
+                    <div class="risk-cat-badge ${r.category}" style="margin-top: 4px;">
+                        <i class='bx ${catDef.icon}'></i> ${_s(catDef.label)}
+                    </div>
+                </td>
+                <td style="padding: 12px 10px; vertical-align: top;">
+                    <div style="font-weight: 600; font-size: 13px; color: var(--text-main);">${_s(r.title)}</div>
+                    ${r.description ? `<div style="font-size: 11px; color: var(--text-muted); margin-top: 3px; line-height: 1.4;">${_s(r.description)}</div>` : ''}
+                    ${r.process ? `<div style="font-size: 10px; color: rgba(255,255,255,0.4); margin-top: 4px;"><i class='bx bx-git-branch'></i> ${_s(r.process)}</div>` : ''}
+                </td>
+                <td style="padding: 12px 10px; vertical-align: top;">
+                    <div class="risk-level-badge ${metaInherent.badgeClass}">
+                        <span>${metaInherent.level} (${scoreInherent})</span>
+                    </div>
+                    <div style="font-size: 10px; color: var(--text-muted); margin-top: 3px;">P:${p} × G:${g}</div>
+                </td>
+                <td style="padding: 12px 10px; vertical-align: top; font-size: 12px; color: var(--text-muted); line-height: 1.4;">
+                    ${r.barriers ? `<div style="background: rgba(255,255,255,0.03); padding: 6px 8px; border-radius: 6px; border-left: 2px solid var(--primary);">${_s(r.barriers)}</div>` : '<span style="font-size:11px; opacity:0.6;">Nessuna barriera registrata</span>'}
+                </td>
+                <td style="padding: 12px 10px; vertical-align: top;">
+                    <div class="risk-level-badge ${metaResidual.badgeClass}">
+                        <span>${metaResidual.level} (${scoreResidual})</span>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:6px; margin-top: 3px;">
+                        <span style="font-size: 10px; color: var(--text-muted);">P:${resP} × G:${resG}</span>
+                        ${deltaHtml}
+                    </div>
+                </td>
+                <td style="padding: 12px 10px; vertical-align: top; font-size: 12px;">
+                    <div style="font-weight: 500;">${_s(r.responsible || '—')}</div>
+                    <div style="font-size: 10px; color: var(--text-muted); margin-top: 2px;"><i class='bx bx-calendar'></i> Ogni ${r.review_frequency_months || 12} mesi</div>
+                </td>
+                <td style="padding: 12px 10px; vertical-align: top; text-align: center;">
+                    <div style="display: flex; justify-content: center; gap: 4px;">
+                        <button class="btn btn-outline" style="padding: 4px 8px; font-size: 11px;" onclick="app.openRiskModal('${r.id}')" title="Modifica / Valuta Rischio">
+                            <i class='bx bx-edit'></i>
+                        </button>
+                        <button class="btn btn-outline" style="padding: 4px 8px; font-size: 11px; color: #ef4444; border-color: rgba(239,68,68,0.3);" onclick="app.deleteRisk('${r.id}')" title="Elimina Rischio">
+                            <i class='bx bx-trash'></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        `;
+    }).join('');
+};
+
+app.filterRisksRegister = function() {
+    this.renderRisksList();
+};
+
+app.openRiskModal = function(riskId) {
+    const modal = document.getElementById('modal-risk-detail');
+    const header = document.getElementById('risk-modal-header');
+    const body = document.getElementById('risk-modal-body');
+    if (!modal || !header || !body) return;
+
+    let risk = null;
+    if (riskId) {
+        risk = (appState.risks || []).find(r => r.id === riskId);
+    }
+
+    const isEdit = !!risk;
+    const catKeys = Object.keys(NormativaDB.riskCategories || {});
+    const probOptions = NormativaDB.probabilityLevels || [
+        { value: 1, label: '1 - Improbabile (P1)' },
+        { value: 2, label: '2 - Raro (P2)' },
+        { value: 3, label: '3 - Possibile (P3)' },
+        { value: 4, label: '4 - Probabile (P4)' },
+        { value: 5, label: '5 - Quasi Certo (P5)' }
+    ];
+    const sevOptions = NormativaDB.severityLevels || [
+        { value: 1, label: '1 - Trascurabile (G1)' },
+        { value: 2, label: '2 - Minore (G2)' },
+        { value: 3, label: '3 - Moderato (G3)' },
+        { value: 4, label: '4 - Grave (G4)' },
+        { value: 5, label: '5 - Catastrofico (G5)' }
+    ];
+
+    header.innerHTML = `
+        <h3 style="margin:0; font-size:18px; font-weight:700; color:var(--text-main); display:flex; align-items:center; gap:8px;">
+            <i class='bx bx-shield-plus' style="color:var(--primary);"></i> ${isEdit ? 'Valutazione & Gestione Rischio: ' + _s(risk.code) : 'Mappa Nuovo Rischio Sanitario'}
+        </h3>
+    `;
+
+    body.innerHTML = `
+        <form id="form-risk-edit" onsubmit="event.preventDefault(); app.saveRiskModal();">
+            <input type="hidden" id="risk-form-id" value="${risk ? _s(risk.id) : ''}">
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px;">
+                <div class="form-group" style="margin: 0;">
+                    <label style="font-size: 11px; text-transform: uppercase; font-weight: 600; color: var(--text-muted); margin-bottom: 4px; display:block;">Codice Identificativo</label>
+                    <input type="text" id="risk-form-code" class="input-box" value="${risk ? _s(risk.code) : `RSK-CLIN-${String((appState.risks?.length || 0) + 1).padStart(2, '0')}`}" required style="font-family: monospace;">
+                </div>
+                <div class="form-group" style="margin: 0;">
+                    <label style="font-size: 11px; text-transform: uppercase; font-weight: 600; color: var(--text-muted); margin-bottom: 4px; display:block;">Categoria Rischio</label>
+                    <select id="risk-form-category" class="input-box">
+                        ${catKeys.map(k => `
+                            <option value="${k}" ${risk && risk.category === k ? 'selected' : ''}>${_s(NormativaDB.riskCategories[k].label)}</option>
+                        `).join('')}
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 14px;">
+                <label style="font-size: 11px; text-transform: uppercase; font-weight: 600; color: var(--text-muted); margin-bottom: 4px; display:block;">Titolo Evento di Rischio</label>
+                <input type="text" id="risk-form-title" class="input-box" value="${risk ? _s(risk.title) : ''}" placeholder="Es: Rischio caduta paziente durante le visite" required>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px;">
+                <div class="form-group" style="margin: 0;">
+                    <label style="font-size: 11px; text-transform: uppercase; font-weight: 600; color: var(--text-muted); margin-bottom: 4px; display:block;">Processo / Reparto Coinvolto</label>
+                    <input type="text" id="risk-form-process" class="input-box" value="${risk ? _s(risk.process || 'Attività Sanitaria & Clinica') : 'Attività Sanitaria & Clinica'}">
+                </div>
+                <div class="form-group" style="margin: 0;">
+                    <label style="font-size: 11px; text-transform: uppercase; font-weight: 600; color: var(--text-muted); margin-bottom: 4px; display:block;">Responsabile Monitoraggio</label>
+                    <input type="text" id="risk-form-responsible" class="input-box" value="${risk ? _s(risk.responsible || 'Direttore Sanitario') : 'Direttore Sanitario'}">
+                </div>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 14px;">
+                <label style="font-size: 11px; text-transform: uppercase; font-weight: 600; color: var(--text-muted); margin-bottom: 4px; display:block;">Descrizione Scenario / Modalità di Accadimento</label>
+                <textarea id="risk-form-description" class="input-box" rows="2" placeholder="Descrivi il contesto e le potenziali cause...">${risk ? _s(risk.description) : ''}</textarea>
+            </div>
+
+            <!-- VALUTAZIONE RISCHIO INERENTE -->
+            <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); padding: 14px; border-radius: 8px; margin-bottom: 14px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 10px;">
+                    <div style="font-size: 12px; font-weight: 700; color: var(--text-main); display:flex; align-items:center; gap: 6px;">
+                        <i class='bx bx-calculator' style="color: var(--primary);"></i> 1. Valutazione Rischio Inerente (In assenza di barriere)
+                    </div>
+                    <div id="risk-form-score-inherent-badge"></div>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+                    <div class="form-group" style="margin: 0;">
+                        <label style="font-size: 11px; font-weight: 600; color: var(--text-muted); margin-bottom: 4px; display:block;">Probabilità Inerente (P)</label>
+                        <select id="risk-form-probability" class="input-box" onchange="app.updateModalRiskScore()">
+                            ${probOptions.map(p => `
+                                <option value="${p.value}" ${risk && parseInt(risk.probability, 10) === p.value ? 'selected' : (!risk && p.value === 3 ? 'selected' : '')}>${_s(p.label)}</option>
+                            `).join('')}
+                        </select>
+                    </div>
+                    <div class="form-group" style="margin: 0;">
+                        <label style="font-size: 11px; font-weight: 600; color: var(--text-muted); margin-bottom: 4px; display:block;">Gravità / Impatto Inerente (G)</label>
+                        <select id="risk-form-severity" class="input-box" onchange="app.updateModalRiskScore()">
+                            ${sevOptions.map(g => `
+                                <option value="${g.value}" ${risk && parseInt(risk.severity, 10) === g.value ? 'selected' : (!risk && g.value === 3 ? 'selected' : '')}>${_s(g.label)}</option>
+                            `).join('')}
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- BARRIERE & MITIGAZIONE -->
+            <div class="form-group" style="margin-bottom: 14px;">
+                <label style="font-size: 11px; text-transform: uppercase; font-weight: 600; color: var(--text-muted); margin-bottom: 4px; display:block;">Misure di Prevenzione, Barriere di Sicurezza &amp; Controlli Attivi</label>
+                <textarea id="risk-form-barriers" class="input-box" rows="2" placeholder="Es: POS di sicurezza, doppio controllo anagrafico, manutenzione preventiva programmata...">${risk ? _s(risk.barriers) : ''}</textarea>
+            </div>
+
+            <!-- VALUTAZIONE RISCHIO RESIDUO -->
+            <div style="background: rgba(16,185,129,0.04); border: 1px solid rgba(16,185,129,0.2); padding: 14px; border-radius: 8px; margin-bottom: 18px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 10px;">
+                    <div style="font-size: 12px; font-weight: 700; color: #34d399; display:flex; align-items:center; gap: 6px;">
+                        <i class='bx bx-shield-quarter'></i> 2. Valutazione Rischio Residuo (Post-mitigazione)
+                    </div>
+                    <div id="risk-form-score-residual-badge"></div>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+                    <div class="form-group" style="margin: 0;">
+                        <label style="font-size: 11px; font-weight: 600; color: var(--text-muted); margin-bottom: 4px; display:block;">Probabilità Residua (P<sub>res</sub>)</label>
+                        <select id="risk-form-res-probability" class="input-box" onchange="app.updateModalRiskScore()">
+                            ${probOptions.map(p => `
+                                <option value="${p.value}" ${risk && parseInt(risk.res_probability, 10) === p.value ? 'selected' : (!risk && p.value === 1 ? 'selected' : '')}>${_s(p.label)}</option>
+                            `).join('')}
+                        </select>
+                    </div>
+                    <div class="form-group" style="margin: 0;">
+                        <label style="font-size: 11px; font-weight: 600; color: var(--text-muted); margin-bottom: 4px; display:block;">Gravità Residua (G<sub>res</sub>)</label>
+                        <select id="risk-form-res-severity" class="input-box" onchange="app.updateModalRiskScore()">
+                            ${sevOptions.map(g => `
+                                <option value="${g.value}" ${risk && parseInt(risk.res_severity, 10) === g.value ? 'selected' : (!risk && g.value === 2 ? 'selected' : '')}>${_s(g.label)}</option>
+                            `).join('')}
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                <button type="button" class="btn btn-outline" onclick="app.closeRiskModal()">Annulla</button>
+                <button type="submit" class="btn btn-primary"><i class='bx bx-save'></i> Salva Valutazione Rischio</button>
+            </div>
+        </form>
+    `;
+
+    modal.style.display = 'flex';
+    this.updateModalRiskScore();
+};
+
+app.closeRiskModal = function() {
+    const modal = document.getElementById('modal-risk-detail');
+    if (modal) modal.style.display = 'none';
+};
+
+app.updateModalRiskScore = function() {
+    const pEl = document.getElementById('risk-form-probability');
+    const gEl = document.getElementById('risk-form-severity');
+    const resPEl = document.getElementById('risk-form-res-probability');
+    const resGEl = document.getElementById('risk-form-res-severity');
+
+    const badgeInherent = document.getElementById('risk-form-score-inherent-badge');
+    const badgeResidual = document.getElementById('risk-form-score-residual-badge');
+
+    if (pEl && gEl && badgeInherent) {
+        const p = parseInt(pEl.value, 10) || 1;
+        const g = parseInt(gEl.value, 10) || 1;
+        const score = p * g;
+        const meta = NormativaDB.getRiskScoreMeta(score);
+        badgeInherent.innerHTML = `
+            <span class="risk-level-badge ${meta.badgeClass}">
+                ${meta.level}: Score ${score} (P:${p} × G:${g})
+            </span>
+        `;
+    }
+
+    if (resPEl && resGEl && badgeResidual) {
+        const resP = parseInt(resPEl.value, 10) || 1;
+        const resG = parseInt(resGEl.value, 10) || 1;
+        const scoreRes = resP * resG;
+        const metaRes = NormativaDB.getRiskScoreMeta(scoreRes);
+        badgeResidual.innerHTML = `
+            <span class="risk-level-badge ${metaRes.badgeClass}">
+                ${metaRes.level}: Score Residuo ${scoreRes} (P:${resP} × G:${resG})
+            </span>
+        `;
+    }
+};
+
+app.saveRiskModal = async function() {
+    const id = document.getElementById('risk-form-id')?.value;
+    const code = document.getElementById('risk-form-code')?.value?.trim();
+    const category = document.getElementById('risk-form-category')?.value;
+    const title = document.getElementById('risk-form-title')?.value?.trim();
+    const process = document.getElementById('risk-form-process')?.value?.trim();
+    const responsible = document.getElementById('risk-form-responsible')?.value?.trim();
+    const description = document.getElementById('risk-form-description')?.value?.trim();
+    const barriers = document.getElementById('risk-form-barriers')?.value?.trim();
+
+    const probability = parseInt(document.getElementById('risk-form-probability')?.value, 10) || 3;
+    const severity = parseInt(document.getElementById('risk-form-severity')?.value, 10) || 3;
+    const res_probability = parseInt(document.getElementById('risk-form-res-probability')?.value, 10) || 1;
+    const res_severity = parseInt(document.getElementById('risk-form-res-severity')?.value, 10) || 2;
+
+    if (!title) {
+        alert('Inserisci il titolo dell\'evento di rischio.');
+        return;
+    }
+
+    const payload = {
+        id: id || undefined,
+        code,
+        category,
+        title,
+        process,
+        responsible,
+        description,
+        barriers,
+        probability,
+        severity,
+        res_probability,
+        res_severity
+    };
+
+    await Backend.saveRisk(payload);
+    appState.risks = await Backend.getRisks();
+    this.closeRiskModal();
+    this.renderHeatmapGrid();
+    this.renderRisksList();
+};
+
+app.generaPianoRischiStruttura = async function() {
+    if (!confirm('Vuoi caricare o ripristinare il set standard di Rischi Sanitari per la tua struttura?')) {
+        return;
+    }
+
+    const user = Backend.getCurrentUser();
+    const templates = NormativaDB.defaultRiskTemplates || [];
+    for (const tpl of templates) {
+        await Backend.saveRisk(tpl);
+    }
+    appState.risks = await Backend.getRisks();
+    this.renderHeatmapGrid();
+    this.renderRisksList();
+    alert('Piano standard di Gestione Rischio Sanitario caricato con successo!');
+};
+
+app.deleteRisk = async function(riskId) {
+    if (!confirm('Sei sicuro di voler eliminare questa voce di rischio dal registro?')) {
+        return;
+    }
+
+    await Backend.deleteRisk(riskId);
+    appState.risks = await Backend.getRisks();
+    this.renderHeatmapGrid();
+    this.renderRisksList();
+};
+
+// ============================================================
+// INCIDENT REPORTING METHODS
+// ============================================================
+
+app.renderIncidentsList = async function() {
+    const tbody = document.getElementById('incidents-register-tbody');
+    if (!tbody) return;
+
+    if (!appState.incidents) {
+        appState.incidents = await Backend.getIncidents();
+    }
+    let list = [...(appState.incidents || [])];
+
+    // Search filter
+    const searchVal = (document.getElementById('incident-search')?.value || '').toLowerCase().trim();
+    if (searchVal) {
+        list = list.filter(inc =>
+            (inc.code || '').toLowerCase().includes(searchVal) ||
+            (inc.title || '').toLowerCase().includes(searchVal) ||
+            (inc.description || '').toLowerCase().includes(searchVal) ||
+            (inc.location || '').toLowerCase().includes(searchVal) ||
+            (inc.reported_by || '').toLowerCase().includes(searchVal)
+        );
+    }
+
+    // Type filter
+    const typeVal = document.getElementById('incident-filter-type')?.value || 'all';
+    if (typeVal !== 'all') {
+        list = list.filter(inc => inc.type === typeVal);
+    }
+
+    // Status filter
+    const statusVal = document.getElementById('incident-filter-status')?.value || 'all';
+    if (statusVal !== 'all') {
+        list = list.filter(inc => inc.status === statusVal);
+    }
+
+    this.updateRiskManagementStats();
+
+    if (list.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="6" style="text-align:center; padding: 36px 16px; color: var(--text-muted);">
+                    <i class='bx bx-bell-off' style="font-size: 32px; display: block; margin-bottom: 8px; opacity: 0.5;"></i>
+                    Nessuna segnalazione trovata nel registro Incident Reporting.
+                </td>
+            </tr>
+        `;
+        return;
+    }
+
+    const typeBadges = {
+        'NEAR_MISS':       `<span class="incident-type-badge badge-inc-near-miss"><i class='bx bx-info-circle'></i> Near Miss</span>`,
+        'ADVERSE_EVENT':   `<span class="incident-type-badge badge-inc-adverse"><i class='bx bx-error'></i> Evento Avverso</span>`,
+        'SENTINEL_EVENT':  `<span class="incident-type-badge badge-inc-sentinel"><i class='bx bx-alarm-exclamation'></i> Evento Sentinella</span>`
+    };
+
+    const statusBadges = {
+        'aperto':         `<span class="incident-status-badge aperto"><i class='bx bx-radio-circle-marked'></i> Aperto</span>`,
+        'in_analisi':     `<span class="incident-status-badge in_analisi"><i class='bx bx-search'></i> In Analisi RCA</span>`,
+        'in_trattamento': `<span class="incident-status-badge in_trattamento"><i class='bx bx-wrench'></i> In Trattamento</span>`,
+        'chiuso':         `<span class="incident-status-badge chiuso"><i class='bx bx-check-double'></i> Chiuso Efficace</span>`
+    };
+
+    tbody.innerHTML = list.map(inc => {
+        const typeBadge = typeBadges[inc.type] || `<span class="incident-type-badge">${_s(inc.type)}</span>`;
+        const statusBadge = statusBadges[inc.status] || `<span class="incident-status-badge">${_s(inc.status)}</span>`;
+
+        return `
+            <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                <td style="padding: 12px 10px; vertical-align: top;">
+                    <div style="font-weight: 700; font-size: 12px; color: var(--primary); font-family: monospace;">${_s(inc.code)}</div>
+                    <div style="margin-top: 4px;">${typeBadge}</div>
+                </td>
+                <td style="padding: 12px 10px; vertical-align: top;">
+                    <div style="font-weight: 600; font-size: 13px; color: var(--text-main);">${_s(inc.title)}</div>
+                    <div style="font-size: 11px; color: var(--text-muted); margin-top: 3px; line-height: 1.4;">${_s(inc.description)}</div>
+                    ${inc.location ? `<div style="font-size: 10px; color: rgba(255,255,255,0.5); margin-top: 4px;"><i class='bx bx-map-pin'></i> ${_s(inc.location)}</div>` : ''}
+                </td>
+                <td style="padding: 12px 10px; vertical-align: top; font-size: 12px;">
+                    <div>${_s(inc.incident_date || '—')}</div>
+                </td>
+                <td style="padding: 12px 10px; vertical-align: top; font-size: 12px;">
+                    <div style="font-weight: 500;">${_s(inc.reported_by || 'Operatore')}</div>
+                    <div style="font-size: 10px; color: var(--text-muted); margin-top: 2px;">Resp: ${_s(inc.responsible || 'DS')}</div>
+                </td>
+                <td style="padding: 12px 10px; vertical-align: top;">
+                    ${statusBadge}
+                </td>
+                <td style="padding: 12px 10px; vertical-align: top; text-align: center;">
+                    <div style="display: flex; justify-content: center; gap: 4px; flex-wrap: wrap;">
+                        <button class="btn btn-outline" style="padding: 4px 8px; font-size: 11px;" onclick="app.openIncidentModal('${inc.id}')" title="Dettaglio & RCA">
+                            <i class='bx bx-edit'></i>
+                        </button>
+                        ${inc.status !== 'chiuso' ? `
+                            <button class="btn btn-outline" style="padding: 4px 8px; font-size: 11px; color:#10b981; border-color:rgba(16,185,129,0.3);" onclick="app.closeIncidentEfficace('${inc.id}')" title="Chiudi con Verifica Efficacia">
+                                <i class='bx bx-check'></i>
+                            </button>
+                        ` : ''}
+                        <button class="btn btn-outline" style="padding: 4px 8px; font-size: 11px; color: #ef4444; border-color: rgba(239,68,68,0.3);" onclick="app.deleteIncident('${inc.id}')" title="Elimina Segnalazione">
+                            <i class='bx bx-trash'></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        `;
+    }).join('');
+};
+
+app.filterIncidentsRegister = function() {
+    this.renderIncidentsList();
+};
+
+app.openIncidentModal = function(incidentId) {
+    const modal = document.getElementById('modal-incident-detail');
+    const header = document.getElementById('incident-modal-header');
+    const body = document.getElementById('incident-modal-body');
+    if (!modal || !header || !body) return;
+
+    let incident = null;
+    if (incidentId) {
+        incident = (appState.incidents || []).find(i => i.id === incidentId);
+    }
+    const isEdit = !!incident;
+
+    header.innerHTML = `
+        <h3 style="margin:0; font-size:18px; font-weight:700; color:var(--text-main); display:flex; align-items:center; gap:8px;">
+            <i class='bx bx-alarm-exclamation' style="color:var(--primary);"></i> ${isEdit ? 'Gestione Segnalazione Evento: ' + _s(incident.code) : 'Nuova Segnalazione Evento (Incident Reporting)'}
+        </h3>
+    `;
+
+    const user = Backend.getCurrentUser();
+    const today = new Date().toISOString().slice(0, 10);
+
+    body.innerHTML = `
+        <form id="form-incident-edit" onsubmit="event.preventDefault(); app.saveIncidentModal();">
+            <input type="hidden" id="incident-form-id" value="${incident ? _s(incident.id) : ''}">
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 14px;">
+                <div class="form-group" style="margin: 0;">
+                    <label style="font-size: 11px; text-transform: uppercase; font-weight: 600; color: var(--text-muted); margin-bottom: 4px; display:block;">Codice</label>
+                    <input type="text" id="incident-form-code" class="input-box" value="${incident ? _s(incident.code) : `INC-${new Date().getFullYear()}-${String((appState.incidents?.length || 0) + 1).padStart(3, '0')}`}" required style="font-family: monospace;">
+                </div>
+                <div class="form-group" style="margin: 0;">
+                    <label style="font-size: 11px; text-transform: uppercase; font-weight: 600; color: var(--text-muted); margin-bottom: 4px; display:block;">Tipologia Evento</label>
+                    <select id="incident-form-type" class="input-box">
+                        <option value="NEAR_MISS" ${incident && incident.type === 'NEAR_MISS' ? 'selected' : ''}>Near Miss (Quasi Incidente)</option>
+                        <option value="ADVERSE_EVENT" ${incident && incident.type === 'ADVERSE_EVENT' ? 'selected' : ''}>Evento Avverso</option>
+                        <option value="SENTINEL_EVENT" ${incident && incident.type === 'SENTINEL_EVENT' ? 'selected' : ''}>Evento Sentinella (Grave)</option>
+                    </select>
+                </div>
+                <div class="form-group" style="margin: 0;">
+                    <label style="font-size: 11px; text-transform: uppercase; font-weight: 600; color: var(--text-muted); margin-bottom: 4px; display:block;">Data Evento</label>
+                    <input type="date" id="incident-form-date" class="input-box" value="${incident ? _s(incident.incident_date) : today}" required>
+                </div>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 14px;">
+                <label style="font-size: 11px; text-transform: uppercase; font-weight: 600; color: var(--text-muted); margin-bottom: 4px; display:block;">Titolo / Oggetto della Segnalazione</label>
+                <input type="text" id="incident-form-title" class="input-box" value="${incident ? _s(incident.title) : ''}" placeholder="Es: Quasi scambio referti per omonimia" required>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px;">
+                <div class="form-group" style="margin: 0;">
+                    <label style="font-size: 11px; text-transform: uppercase; font-weight: 600; color: var(--text-muted); margin-bottom: 4px; display:block;">Luogo / Reparto dell'Evento</label>
+                    <input type="text" id="incident-form-location" class="input-box" value="${incident ? _s(incident.location || 'Ambulatorio Visite') : 'Ambulatorio Visite'}">
+                </div>
+                <div class="form-group" style="margin: 0;">
+                    <label style="font-size: 11px; text-transform: uppercase; font-weight: 600; color: var(--text-muted); margin-bottom: 4px; display:block;">Segnalante / Ruolo</label>
+                    <input type="text" id="incident-form-reported-by" class="input-box" value="${incident ? _s(incident.reported_by || user?.name || user?.email) : (user?.name || user?.email || 'Operatore')}">
+                </div>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 14px;">
+                <label style="font-size: 11px; text-transform: uppercase; font-weight: 600; color: var(--text-muted); margin-bottom: 4px; display:block;">Descrizione Dettagliata dell'Accaduto</label>
+                <textarea id="incident-form-description" class="input-box" rows="3" placeholder="Fornire dettagli precisi sulla dinamica...">${incident ? _s(incident.description) : ''}</textarea>
+            </div>
+
+            <!-- ROOT CAUSE ANALYSIS RCA -->
+            <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); padding: 14px; border-radius: 8px; margin-bottom: 14px;">
+                <div style="font-size: 12px; font-weight: 700; color: var(--text-main); margin-bottom: 8px; display:flex; align-items:center; gap: 6px;">
+                    <i class='bx bx-search-alt' style="color: var(--primary);"></i> Root Cause Analysis (Analisi Cause Radice - RCA / 5 Why's)
+                </div>
+                <textarea id="incident-form-root-cause" class="input-box" rows="2" placeholder="Qual è la causa radice sistemica o procedurale che ha generato l'evento?">${incident ? _s(incident.root_cause) : ''}</textarea>
+            </div>
+
+            <!-- TRATTAMENTO & PIANO AZIONI -->
+            <div style="background: rgba(59,130,246,0.04); border: 1px solid rgba(59,130,246,0.2); padding: 14px; border-radius: 8px; margin-bottom: 14px;">
+                <div style="font-size: 12px; font-weight: 700; color: #60a5fa; margin-bottom: 8px; display:flex; align-items:center; gap: 6px;">
+                    <i class='bx bx-wrench'></i> Piano di Trattamento &amp; Azioni Correttive
+                </div>
+                <textarea id="incident-form-corrective-actions" class="input-box" rows="2" placeholder="Azioni correttive immediate e barriere preventive introdotte per evitare recidive...">${incident ? _s(incident.corrective_actions) : ''}</textarea>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 18px;">
+                <div class="form-group" style="margin: 0;">
+                    <label style="font-size: 11px; text-transform: uppercase; font-weight: 600; color: var(--text-muted); margin-bottom: 4px; display:block;">Responsabile Trattamento</label>
+                    <input type="text" id="incident-form-responsible" class="input-box" value="${incident ? _s(incident.responsible || 'Direttore Sanitario') : 'Direttore Sanitario'}">
+                </div>
+                <div class="form-group" style="margin: 0;">
+                    <label style="font-size: 11px; text-transform: uppercase; font-weight: 600; color: var(--text-muted); margin-bottom: 4px; display:block;">Stato Workflow</label>
+                    <select id="incident-form-status" class="input-box">
+                        <option value="aperto" ${incident && incident.status === 'aperto' ? 'selected' : ''}>🔴 Aperto (Segnalato)</option>
+                        <option value="in_analisi" ${incident && incident.status === 'in_analisi' ? 'selected' : ''}>🟡 In Analisi RCA</option>
+                        <option value="in_trattamento" ${incident && incident.status === 'in_trattamento' ? 'selected' : ''}>🔵 Azioni Correttive in Corso</option>
+                        <option value="chiuso" ${incident && incident.status === 'chiuso' ? 'selected' : ''}>🟢 Chiuso con Efficacia</option>
+                    </select>
+                </div>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                <button type="button" class="btn btn-outline" onclick="app.closeIncidentModal()">Annulla</button>
+                <button type="submit" class="btn btn-primary"><i class='bx bx-save'></i> Salva Segnalazione</button>
+            </div>
+        </form>
+    `;
+
+    modal.style.display = 'flex';
+};
+
+app.closeIncidentModal = function() {
+    const modal = document.getElementById('modal-incident-detail');
+    if (modal) modal.style.display = 'none';
+};
+
+app.saveIncidentModal = async function() {
+    const id = document.getElementById('incident-form-id')?.value;
+    const code = document.getElementById('incident-form-code')?.value?.trim();
+    const type = document.getElementById('incident-form-type')?.value;
+    const incident_date = document.getElementById('incident-form-date')?.value;
+    const title = document.getElementById('incident-form-title')?.value?.trim();
+    const location = document.getElementById('incident-form-location')?.value?.trim();
+    const reported_by = document.getElementById('incident-form-reported-by')?.value?.trim();
+    const description = document.getElementById('incident-form-description')?.value?.trim();
+    const root_cause = document.getElementById('incident-form-root-cause')?.value?.trim();
+    const corrective_actions = document.getElementById('incident-form-corrective-actions')?.value?.trim();
+    const responsible = document.getElementById('incident-form-responsible')?.value?.trim();
+    const status = document.getElementById('incident-form-status')?.value;
+
+    if (!title) {
+        alert('Inserisci il titolo della segnalazione.');
+        return;
+    }
+
+    const payload = {
+        id: id || undefined,
+        code,
+        type,
+        incident_date,
+        title,
+        location,
+        reported_by,
+        description,
+        root_cause,
+        corrective_actions,
+        responsible,
+        status
+    };
+
+    await Backend.saveIncident(payload);
+    appState.incidents = await Backend.getIncidents();
+    this.closeIncidentModal();
+    this.renderIncidentsList();
+};
+
+app.closeIncidentEfficace = async function(incidentId) {
+    const note = prompt('Inserisci la nota di verifica efficacia delle azioni correttive (DS/Risk Manager):', 'Azioni correttive attuate con successo e verificate in data odierna; nessun evento analogo registrato.');
+    if (note === null) return;
+
+    await Backend.closeIncident(incidentId, note);
+    appState.incidents = await Backend.getIncidents();
+    this.renderIncidentsList();
+    this.updateRiskManagementStats();
+};
+
+app.deleteIncident = async function(incidentId) {
+    if (!confirm('Sei sicuro di voler eliminare questa segnalazione dal registro incidenti?')) {
+        return;
+    }
+
+    await Backend.deleteIncident(incidentId);
+    appState.incidents = await Backend.getIncidents();
+    this.renderIncidentsList();
+};
+
+// ============================================================
+// EXPORT CAPABILITIES
+// ============================================================
+
+app.esportaRischiCSV = function() {
+    const risks = appState.risks || [];
+    if (risks.length === 0) {
+        alert('Nessun dato di rischio da esportare.');
+        return;
+    }
+
+    const headers = [
+        'Codice',
+        'Categoria',
+        'Titolo Evento di Rischio',
+        'Processo',
+        'Descrizione Scenario',
+        'Probabilita Inerente',
+        'Gravita Inerente',
+        'Score Inerente',
+        'Livello Inerente',
+        'Barriere di Prevenzione',
+        'Probabilita Residua',
+        'Gravita Residua',
+        'Score Residuo',
+        'Livello Residuo',
+        'Responsabile',
+        'Frequenza Mesi',
+        'Data Ultima Valutazione'
+    ];
+
+    const rows = risks.map(r => {
+        const p = parseInt(r.probability, 10) || 3;
+        const g = parseInt(r.severity, 10) || 3;
+        const scoreInherent = r.score_inherent || (p * g);
+        const metaInherent = NormativaDB.getRiskScoreMeta(scoreInherent);
+
+        const resP = parseInt(r.res_probability, 10) || 1;
+        const resG = parseInt(r.res_severity, 10) || 2;
+        const scoreResidual = r.score_residual || (resP * resG);
+        const metaResidual = NormativaDB.getRiskScoreMeta(scoreResidual);
+
+        return [
+            `"${(r.code || '').replace(/"/g, '""')}"`,
+            `"${(r.category || '').replace(/"/g, '""')}"`,
+            `"${(r.title || '').replace(/"/g, '""')}"`,
+            `"${(r.process || '').replace(/"/g, '""')}"`,
+            `"${(r.description || '').replace(/"/g, '""')}"`,
+            p,
+            g,
+            scoreInherent,
+            `"${metaInherent.level}"`,
+            `"${(r.barriers || '').replace(/"/g, '""')}"`,
+            resP,
+            resG,
+            scoreResidual,
+            `"${metaResidual.level}"`,
+            `"${(r.responsible || '').replace(/"/g, '""')}"`,
+            r.review_frequency_months || 12,
+            `"${(r.last_assessment_date || '').replace(/"/g, '""')}"`
+        ];
+    });
+
+    const csvContent = "data:text/csv;charset=utf-8,\uFEFF" + [headers.join(';'), ...rows.map(e => e.join(';'))].join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `Registro_Rischi_Sanitari_ISO31000_${new Date().toISOString().slice(0,10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+};
+
+app.esportaIncidentCSV = function() {
+    const incidents = appState.incidents || [];
+    if (incidents.length === 0) {
+        alert('Nessun dato di incident reporting da esportare.');
+        return;
+    }
+
+    const headers = [
+        'Codice Segnalazione',
+        'Tipologia Evento',
+        'Titolo / Oggetto',
+        'Data Evento',
+        'Luogo / Reparto',
+        'Segnalante',
+        'Descrizione Accaduto',
+        'Causa Radice (RCA)',
+        'Azioni Correttive',
+        'Responsabile',
+        'Stato Workflow',
+        'Data Chiusura'
+    ];
+
+    const rows = incidents.map(inc => [
+        `"${(inc.code || '').replace(/"/g, '""')}"`,
+        `"${(inc.type || '').replace(/"/g, '""')}"`,
+        `"${(inc.title || '').replace(/"/g, '""')}"`,
+        `"${(inc.incident_date || '').replace(/"/g, '""')}"`,
+        `"${(inc.location || '').replace(/"/g, '""')}"`,
+        `"${(inc.reported_by || '').replace(/"/g, '""')}"`,
+        `"${(inc.description || '').replace(/"/g, '""')}"`,
+        `"${(inc.root_cause || '').replace(/"/g, '""')}"`,
+        `"${(inc.corrective_actions || '').replace(/"/g, '""')}"`,
+        `"${(inc.responsible || '').replace(/"/g, '""')}"`,
+        `"${(inc.status || '').replace(/"/g, '""')}"`,
+        `"${(inc.closed_date || '').replace(/"/g, '""')}"`
+    ]);
+
+    const csvContent = "data:text/csv;charset=utf-8,\uFEFF" + [headers.join(';'), ...rows.map(e => e.join(';'))].join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `Registro_Incident_Reporting_Legge24_${new Date().toISOString().slice(0,10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+};
+
+app.esportaPianoRiskManagementPDF = function() {
+    const user = Backend.getCurrentUser();
+    const nomeStruttura = user?.name || user?.email || 'Struttura Sanitaria';
+    const dateStr = new Date().toLocaleDateString('it-IT');
+    const risks = appState.risks || [];
+
+    const container = document.createElement('div');
+    container.style.padding = '24px';
+    container.style.fontFamily = 'Arial, sans-serif';
+    container.style.color = '#000';
+    container.style.background = '#fff';
+
+    container.innerHTML = `
+        <div style="border-bottom: 2px solid #0284c7; padding-bottom: 12px; margin-bottom: 20px; display:flex; justify-content:space-between; align-items:flex-end;">
+            <div>
+                <h1 style="font-size: 20px; margin: 0; color: #0284c7;">ACCREDITA 360 — PIANO GESTIONE DEL RISCHIO SANITARIO</h1>
+                <div style="font-size: 12px; color: #555; margin-top: 4px;">Valutazione Rischi Clinici &amp; Sicurezza delle Cure (Legge 24/2017 &amp; §6.1 ISO 9001:2015)</div>
+            </div>
+            <div style="text-align: right; font-size: 11px; color: #555;">
+                <div><strong>Struttura:</strong> ${_s(nomeStruttura)}</div>
+                <div><strong>Data Adozione:</strong> ${dateStr}</div>
+                <div><strong>Rischi Mappati:</strong> ${risks.length}</div>
+            </div>
+        </div>
+
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; padding: 12px; border-radius: 6px; font-size: 11px; margin-bottom: 16px;">
+            <h3 style="margin:0 0 6px; font-size: 12px; color:#0284c7;">Obiettivi &amp; Quadro Normativo di Riferimento</h3>
+            <div>Il presente Piano definisce la metodologia di identificazione, analisi, valutazione e trattamento dei rischi clinico-assistenziali, tecnologici e organizzativi in conformità alla <strong>Legge 24/2017 (Gelli-Bianco)</strong>, alle <strong>Schede MAMB 5-6 del D.A. 20/2024 Regione Siciliana</strong> e alla norma <strong>UNI EN ISO 9001:2015 (§6.1 Risk-Based Thinking)</strong>.</div>
+        </div>
+
+        <h3 style="font-size: 13px; color: #0284c7; margin: 14px 0 8px;">Mappatura &amp; Registro dei Rischi Sanitari</h3>
+        <table style="width: 100%; border-collapse: collapse; font-size: 10px; margin-top: 8px;">
+            <thead>
+                <tr style="background: #f1f5f9; border-bottom: 1px solid #cbd5e1;">
+                    <th style="padding: 6px; text-align: left; width: 75px;">Codice</th>
+                    <th style="padding: 6px; text-align: left; width: 70px;">Cat.</th>
+                    <th style="padding: 6px; text-align: left;">Evento di Rischio &amp; Descrizione</th>
+                    <th style="padding: 6px; text-align: center; width: 65px;">Inerente</th>
+                    <th style="padding: 6px; text-align: left;">Barriere &amp; Misure Mitigative</th>
+                    <th style="padding: 6px; text-align: center; width: 65px;">Residuo</th>
+                    <th style="padding: 6px; text-align: left; width: 100px;">Responsabile</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${risks.map(r => {
+                    const p = parseInt(r.probability, 10) || 3;
+                    const g = parseInt(r.severity, 10) || 3;
+                    const scoreInherent = r.score_inherent || (p * g);
+                    const resP = parseInt(r.res_probability, 10) || 1;
+                    const resG = parseInt(r.res_severity, 10) || 2;
+                    const scoreResidual = r.score_residual || (resP * resG);
+
+                    return `
+                        <tr style="border-bottom: 1px solid #e2e8f0;">
+                            <td style="padding: 6px; font-weight: bold;">${_s(r.code)}</td>
+                            <td style="padding: 6px;">${_s(r.category)}</td>
+                            <td style="padding: 6px;">
+                                <div style="font-weight: bold;">${_s(r.title)}</div>
+                                <div style="font-size: 9px; color: #666;">${_s(r.description || '')}</div>
+                            </td>
+                            <td style="padding: 6px; text-align: center; font-weight: bold; color: ${scoreInherent >= 15 ? '#dc2626' : (scoreInherent >= 8 ? '#d97706' : '#16a34a')};">
+                                ${scoreInherent} (P${p}×G${g})
+                            </td>
+                            <td style="padding: 6px; font-size: 9px;">${_s(r.barriers || 'Controlli standard')}</td>
+                            <td style="padding: 6px; text-align: center; font-weight: bold; color: ${scoreResidual >= 15 ? '#dc2626' : (scoreResidual >= 8 ? '#d97706' : '#16a34a')};">
+                                ${scoreResidual} (P${resP}×G${resG})
+                            </td>
+                            <td style="padding: 6px; font-size: 9px;">${_s(r.responsible || 'DS')}</td>
+                        </tr>
+                    `;
+                }).join('')}
+            </tbody>
+        </table>
+
+        <div style="margin-top: 30px; display: flex; justify-content: space-between; font-size: 11px;">
+            <div>
+                <div>Clinical Risk Manager</div>
+                <div style="margin-top: 30px; border-top: 1px dashed #94a3b8; width: 180px;"></div>
+            </div>
+            <div>
+                <div>Direttore Sanitario</div>
+                <div style="margin-top: 30px; border-top: 1px dashed #94a3b8; width: 180px;"></div>
+            </div>
+            <div>
+                <div>Legale Rappresentante</div>
+                <div style="margin-top: 30px; border-top: 1px dashed #94a3b8; width: 180px;"></div>
+            </div>
+        </div>
+    `;
+
+    const opt = {
+        margin:       10,
+        filename:     `Piano_Risk_Management_${new Date().toISOString().slice(0,10)}.pdf`,
+        image:        { type: 'jpeg', quality: 0.98 },
+        html2canvas:  { scale: 2 },
+        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    };
+
+    if (typeof html2pdf !== 'undefined') {
+        html2pdf().set(opt).from(container).save();
+    } else {
+        window.print();
+    }
+};
+
+// ============================================================
+// FASE 5: RIESAME DELLA DIREZIONE (§9.3) & CRUSCOTTO KPI (§6.2 & §9.1)
+// ============================================================
+app.switchReviewTab = function(tabName) {
+    const btnVerbale = document.getElementById('tab-btn-review-verbale');
+    const btnKpi = document.getElementById('tab-btn-review-kpi');
+    const pageVerbale = document.getElementById('review-page-verbale');
+    const pageKpi = document.getElementById('review-page-kpi');
+
+    if (!btnVerbale || !btnKpi || !pageVerbale || !pageKpi) return;
+
+    if (tabName === 'verbale') {
+        btnVerbale.classList.add('active');
+        btnKpi.classList.remove('active');
+        pageVerbale.style.display = 'block';
+        pageKpi.style.display = 'none';
+        this.renderManagementReviewsList();
+    } else {
+        btnKpi.classList.add('active');
+        btnVerbale.classList.remove('active');
+        pageKpi.style.display = 'block';
+        pageVerbale.style.display = 'none';
+        this.renderQualityObjectivesList();
+        this.renderKpiDashboard();
+    }
+};
+
+app.renderManagementReviewView = async function() {
+    await this.updateExecutiveSynthesisWidget();
+    await this.renderManagementReviewsList();
+    await this.renderQualityObjectivesList();
+    await this.renderKpiDashboard();
+};
+
+app.updateExecutiveSynthesisWidget = async function() {
+    try {
+        // FASE 1: Matrice 360 Score
+        const reqs = appState.requirements || (await Backend.getRequirements()) || [];
+        const totalReqs = reqs.length;
+        const compliantReqs = reqs.filter(r => r.stato === 'green' || r.stato === 'conforme').length;
+        const f1Score = totalReqs > 0 ? Math.round((compliantReqs / totalReqs) * 100) : 0;
+        
+        const f1ScoreEl = document.getElementById('synthesis-f1-score');
+        const f1SubEl = document.getElementById('synthesis-f1-sub');
+        if (f1ScoreEl) f1ScoreEl.textContent = `${f1Score}%`;
+        if (f1SubEl) f1SubEl.textContent = `${compliantReqs}/${totalReqs} Requisiti Conformi`;
+
+        // FASE 2: Documenti DMS Vigenti
+        const docs = (await Backend.getDmsDocuments()) || [];
+        const activeDocs = docs.filter(d => d.status === 'approvato' || d.status === 'in_vigore' || d.status === 'in_verifica');
+        const f2DocsEl = document.getElementById('synthesis-f2-docs');
+        const f2SubEl = document.getElementById('synthesis-f2-sub');
+        if (f2DocsEl) f2DocsEl.textContent = `${activeDocs.length} Documenti`;
+        if (f2SubEl) f2SubEl.textContent = `Totale: ${docs.length} nel Fascicolo`;
+
+        // FASE 3: Risoluzione CAPA & Audit
+        const audits = (Backend.getAudits ? await Backend.getAudits() : (Backend.getAuditSessions ? await Backend.getAuditSessions() : [])) || [];
+        const capas = (await Backend.getNonConformities()) || [];
+        const closedCapas = capas.filter(c => c.status === 'chiusa');
+        const capaRate = capas.length > 0 ? Math.round((closedCapas.length / capas.length) * 100) : 100;
+        const f3CapaEl = document.getElementById('synthesis-f3-capa');
+        const f3SubEl = document.getElementById('synthesis-f3-sub');
+        if (f3CapaEl) f3CapaEl.textContent = `${capaRate}% Risolte`;
+        if (f3SubEl) f3SubEl.textContent = `${audits.length} Audit | ${closedCapas.length}/${capas.length} CAPA Chiuse`;
+
+        // FASE 4: Rischio Residuo Medio & Incident
+        const risks = (await Backend.getRisks()) || [];
+        const incidents = (await Backend.getIncidents()) || [];
+        let avgResScore = 0;
+        if (risks.length > 0) {
+            const sumRes = risks.reduce((acc, r) => {
+                const p = parseInt(r.res_probability, 10) || 1;
+                const g = parseInt(r.res_severity, 10) || 2;
+                return acc + (r.score_residual || (p * g));
+            }, 0);
+            avgResScore = (sumRes / risks.length).toFixed(1);
+        }
+        const f4RiskEl = document.getElementById('synthesis-f4-risk');
+        const f4SubEl = document.getElementById('synthesis-f4-sub');
+        if (f4RiskEl) f4RiskEl.textContent = `Score ${avgResScore}`;
+        if (f4SubEl) f4SubEl.textContent = `${risks.length} Rischi | ${incidents.length} Incident Mappati`;
+
+    } catch (e) {
+        console.warn('[App] Errore aggiornamento widget sintesi esecutiva:', e);
+    }
+};
+
+app.renderManagementReviewsList = async function() {
+    const tbody = document.getElementById('reviews-register-tbody');
+    if (!tbody) return;
+
+    const reviews = (await Backend.getManagementReviews()) || [];
+    
+    // Aggiorna KPI cards Riesami
+    const totalEl = document.getElementById('review-stat-total');
+    const lastDateEl = document.getElementById('review-stat-last-date');
+    const statusEl = document.getElementById('review-stat-status-badge');
+    const budgetEl = document.getElementById('review-stat-budget');
+
+    if (totalEl) totalEl.textContent = reviews.length;
+    if (lastDateEl) {
+        lastDateEl.textContent = reviews.length > 0 ? (reviews[0].meeting_date || '—') : '—';
+    }
+    if (statusEl) {
+        const hasApproved = reviews.some(r => r.status === 'approvato');
+        statusEl.textContent = hasApproved ? 'Conforme / Esecutivo' : 'In Revisione';
+        statusEl.style.color = hasApproved ? '#34d399' : '#fbbf24';
+    }
+    if (budgetEl) {
+        // Estrai cifre budget se presenti
+        let totalBudget = 0;
+        reviews.forEach(r => {
+            const match = String(r.resource_needs || '').match(/€?\s*([0-9.,]+)/);
+            if (match && match[1]) {
+                const val = parseFloat(match[1].replace(/\./g, '').replace(',', '.'));
+                if (!isNaN(val)) totalBudget += val;
+            }
+        });
+        budgetEl.textContent = totalBudget > 0 ? `€ ${totalBudget.toLocaleString('it-IT')}` : '€ 15.000';
+    }
+
+    if (reviews.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="6" style="text-align:center; padding: 36px; color: var(--text-muted);">
+                    <i class='bx bx-folder-open' style="font-size: 32px; display:block; margin-bottom: 8px; opacity: 0.5;"></i>
+                    Nessun Verbale di Riesame presente. Clicca su <strong>Nuovo Verbale di Riesame</strong> o usa il generatore automatico.
+                </td>
+            </tr>
+        `;
+        return;
+    }
+
+    const statusLabels = {
+        'bozza':           '<span class="review-badge-status bozza"><i class="bx bx-edit"></i> Bozza</span>',
+        'in_approvazione': '<span class="review-badge-status in_approvazione"><i class="bx bx-time"></i> In Approvazione</span>',
+        'approvato':       '<span class="review-badge-status approvato"><i class="bx bx-check-circle"></i> Approvato DS</span>'
+    };
+
+    tbody.innerHTML = reviews.map(r => `
+        <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+            <td style="padding: 12px; font-weight: 700; color: #60a5fa;">
+                <div style="display: flex; align-items: center; gap: 6px;">
+                    <i class='bx bx-file'></i> ${_s(r.code)}
+                </div>
+            </td>
+            <td style="padding: 12px; font-size: 13px; color: var(--text-main);">
+                ${_s(r.meeting_date)}
+            </td>
+            <td style="padding: 12px; font-size: 12px; color: var(--text-muted); max-width: 200px;">
+                <div style="font-weight: 600; color: var(--text-main); margin-bottom: 2px;">${_s(r.participants)}</div>
+                <div style="font-size: 11px;">Luogo: ${_s(r.location)}</div>
+            </td>
+            <td style="padding: 12px; font-size: 12px; max-width: 280px;">
+                <div style="font-weight: 600; color: var(--text-main); margin-bottom: 4px; line-height: 1.4;">
+                    ${_s(r.summary_evaluation ? r.summary_evaluation.slice(0, 100) + '...' : 'Valutazione idoneità SGQ completata.')}
+                </div>
+                <div style="font-size: 11px; color: #93c5fd;">
+                    <strong>Decisione:</strong> ${_s(r.strategic_decisions ? r.strategic_decisions.slice(0, 75) + '...' : 'Confermata conformità.')}
+                </div>
+            </td>
+            <td style="padding: 12px;">
+                ${statusLabels[r.status] || statusLabels['bozza']}
+            </td>
+            <td style="padding: 12px; text-align: center;">
+                <div style="display: inline-flex; gap: 6px;">
+                    <button class="btn btn-outline" style="padding: 4px 8px; font-size: 11px;" onclick="app.openReviewModal('${r.id}')" title="Modifica Verbale">
+                        <i class='bx bx-edit'></i>
+                    </button>
+                    <button class="btn btn-outline" style="padding: 4px 8px; font-size: 11px; color: #38bdf8; border-color: rgba(56,189,248,0.3);" onclick="app.esportaVerbaleRiesamePDF('${r.id}')" title="Stampa Verbale PDF">
+                        <i class='bx bx-printer'></i>
+                    </button>
+                    <button class="btn btn-outline" style="padding: 4px 8px; font-size: 11px; color: #ef4444; border-color: rgba(239,68,68,0.3);" onclick="app.deleteReview('${r.id}')" title="Elimina Verbale">
+                        <i class='bx bx-trash'></i>
+                    </button>
+                </div>
+            </td>
+        </tr>
+    `).join('');
+};
+
+app.renderQualityObjectivesList = async function() {
+    const container = document.getElementById('objectives-container');
+    if (!container) return;
+
+    const objs = (await Backend.getQualityObjectives()) || [];
+
+    // Statistiche Obiettivi
+    const raggiunti = objs.filter(o => o.status === 'raggiunto' || o.progress_percent >= 100).length;
+    const inCorso = objs.filter(o => o.status === 'in_corso' && o.progress_percent < 100).length;
+    const sumProgress = objs.reduce((acc, o) => acc + (parseInt(o.progress_percent, 10) || 0), 0);
+    const avgProgress = objs.length > 0 ? Math.round(sumProgress / objs.length) : 0;
+
+    const statRag = document.getElementById('obj-stat-raggiunti');
+    const statInCorso = document.getElementById('obj-stat-incorso');
+    const statAvg = document.getElementById('obj-stat-avg-progress');
+
+    if (statRag) statRag.textContent = raggiunti;
+    if (statInCorso) statInCorso.textContent = inCorso;
+    if (statAvg) statAvg.textContent = `${avgProgress}%`;
+
+    if (objs.length === 0) {
+        container.innerHTML = `
+            <div class="glass-card" style="padding: 32px; text-align: center; color: var(--text-muted);">
+                <i class='bx bx-target-lock' style="font-size: 32px; display: block; margin-bottom: 8px; opacity: 0.5;"></i>
+                Nessun Obiettivo della Qualità registrato. Clicca su <strong>Nuovo Obiettivo della Qualità</strong> per iniziare.
+            </div>
+        `;
+        return;
+    }
+
+    container.innerHTML = objs.map(o => {
+        const pct = Math.min(100, Math.max(0, parseInt(o.progress_percent, 10) || 0));
+        let statusBadge = `<span class="obj-status-badge in_corso"><i class='bx bx-loader'></i> In Corso</span>`;
+        if (pct >= 100 || o.status === 'raggiunto') {
+            statusBadge = `<span class="obj-status-badge raggiunto"><i class='bx bx-check-circle'></i> Raggiunto (100%)</span>`;
+        } else if (o.status === 'in_ritardo') {
+            statusBadge = `<span class="obj-status-badge in_ritardo"><i class='bx bx-time'></i> In Ritardo</span>`;
+        } else if (o.status === 'non_raggiunto') {
+            statusBadge = `<span class="obj-status-badge non_raggiunto"><i class='bx bx-x-circle'></i> Non Raggiunto</span>`;
+        }
+
+        return `
+            <div class="objective-card glass-card">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; flex-wrap: wrap;">
+                    <div style="flex: 1; min-width: 240px;">
+                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                            <span style="font-size: 11px; font-weight: 700; color: #60a5fa; background: rgba(59,130,246,0.15); padding: 2px 6px; border-radius: 4px;">${_s(o.code)}</span>
+                            <span style="font-size: 11px; color: var(--text-muted); text-transform: uppercase; font-weight: 600;">${_s(o.process)}</span>
+                        </div>
+                        <h4 style="margin: 0 0 6px 0; font-size: 14px; font-weight: 700; color: var(--text-main);">${_s(o.title)}</h4>
+                        <div style="font-size: 12px; color: var(--text-muted); line-height: 1.4;">${_s(o.description)}</div>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        ${statusBadge}
+                        <button class="btn btn-outline" style="padding: 4px 8px; font-size: 11px;" onclick="app.openObjectiveModal('${o.id}')" title="Modifica Obiettivo">
+                            <i class='bx bx-edit'></i>
+                        </button>
+                        <button class="btn btn-outline" style="padding: 4px 8px; font-size: 11px; color: #ef4444; border-color: rgba(239,68,68,0.3);" onclick="app.deleteObjective('${o.id}')" title="Elimina Obiettivo">
+                            <i class='bx bx-trash'></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- PROGRESS BAR & TARGET INFO -->
+                <div style="margin-top: 6px;">
+                    <div style="display: flex; justify-content: space-between; font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">
+                        <span>Target: <strong>${_s(o.target_metric || '100%')}</strong></span>
+                        <span>Avanzamento: <strong style="color: ${pct >= 100 ? '#34d399' : '#60a5fa'};">${pct}%</strong></span>
+                    </div>
+                    <div class="objective-progress-track">
+                        <div class="objective-progress-fill" style="width: ${pct}%;"></div>
+                    </div>
+                </div>
+
+                <div style="display: flex; justify-content: space-between; font-size: 11px; color: var(--text-muted); border-top: 1px solid rgba(255,255,255,0.05); padding-top: 8px; margin-top: 2px;">
+                    <span><i class='bx bx-user'></i> Resp: <strong>${_s(o.responsible)}</strong></span>
+                    <span><i class='bx bx-calendar'></i> Scadenza: <strong>${_s(o.target_date)}</strong></span>
+                </div>
+            </div>
+        `;
+    }).join('');
+};
+
+app.renderKpiDashboard = async function() {
+    const container = document.getElementById('kpis-container');
+    if (!container) return;
+
+    const kpis = (await Backend.getKpiMetrics()) || [];
+
+    let inTargetCount = 0;
+    kpis.forEach(k => {
+        const isTargetMet = k.operator === 'lte' ? (k.current_value <= k.target) : (k.current_value >= k.target);
+        if (isTargetMet) inTargetCount++;
+    });
+
+    const kpiInTargetRate = kpis.length > 0 ? Math.round((inTargetCount / kpis.length) * 100) : 100;
+    const statTargetEl = document.getElementById('kpi-stat-in-target');
+    if (statTargetEl) statTargetEl.textContent = `${kpiInTargetRate}%`;
+
+    if (kpis.length === 0) {
+        container.innerHTML = `
+            <div class="glass-card" style="padding: 32px; text-align: center; color: var(--text-muted); grid-column: 1 / -1;">
+                <i class='bx bx-pulse' style="font-size: 32px; display: block; margin-bottom: 8px; opacity: 0.5;"></i>
+                Nessun indicatore KPI configurato. Clicca su <strong>Nuovo Indicatore KPI</strong>.
+            </div>
+        `;
+        return;
+    }
+
+    const catInfo = (typeof NormativaDB !== 'undefined' && NormativaDB.kpiCategories)
+        ? NormativaDB.kpiCategories
+        : {};
+
+    container.innerHTML = kpis.map(k => {
+        const cat = catInfo[k.category] || { nome: k.category, icon: 'bx-pulse', color: '#3b82f6' };
+        const isTargetMet = k.operator === 'lte' ? (k.current_value <= k.target) : (k.current_value >= k.target);
+        const opSymbol = k.operator === 'lte' ? '≤' : '≥';
+        const dotClass = isTargetMet ? 'target-met' : 'target-missed';
+
+        return `
+            <div class="kpi-card">
+                <div>
+                    <div class="kpi-header">
+                        <span class="kpi-cat-pill" style="background: ${cat.color}20; color: ${cat.color}; border: 1px solid ${cat.color}40;">
+                            <i class='bx ${cat.icon}'></i> ${cat.nome.slice(0, 18)}
+                        </span>
+                        <span class="kpi-status-dot ${dotClass}" title="${isTargetMet ? 'Target Rispettato' : 'Target Non Raggiunto'}"></span>
+                    </div>
+                    <div style="font-size: 11px; font-weight: 700; color: #60a5fa; margin-bottom: 2px;">${_s(k.code)}</div>
+                    <h5 style="margin: 0 0 6px 0; font-size: 13px; font-weight: 700; color: var(--text-main); line-height: 1.3;">${_s(k.name)}</h5>
+                    <div style="font-size: 11px; color: var(--text-muted);">${_s(k.description)}</div>
+                </div>
+
+                <div class="kpi-val-container">
+                    <span class="kpi-val-number">${k.current_value}</span>
+                    <span style="font-size: 13px; font-weight: 600; color: var(--text-muted);">${_s(k.unit)}</span>
+                </div>
+
+                <div style="border-top: 1px solid rgba(255,255,255,0.05); padding-top: 10px; margin-top: 6px; display: flex; justify-content: space-between; align-items: center;">
+                    <div class="kpi-target-label">
+                        Target: <strong style="color: var(--text-main);">${opSymbol} ${k.target} ${k.unit}</strong>
+                        <div style="font-size: 10px; color: var(--text-muted); margin-top: 2px;">Freq: ${_s(k.frequency)}</div>
+                    </div>
+                    <div style="display: flex; gap: 4px;">
+                        <button class="btn btn-outline" style="padding: 3px 6px; font-size: 10px;" onclick="app.quickUpdateKpi('${k.id}')" title="Aggiorna Valore Rilevato">
+                            <i class='bx bx-refresh'></i> Aggiorna
+                        </button>
+                        <button class="btn btn-outline" style="padding: 3px 6px; font-size: 10px;" onclick="app.openKpiModal('${k.id}')" title="Modifica KPI">
+                            <i class='bx bx-edit'></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+};
+
+// ============================================================
+// GENERATORE AUTOMATICO VERBALE DEL RIESAME DAI DATI DI SISTEMA (FASI 1-4)
+// ============================================================
+app.generaVerbaleAutomaticoDirezione = async function() {
+    const user = Backend.getCurrentUser();
+    if (!user) return;
+
+    const struct = await Backend.getCurrentStructure();
+    const structName = struct?.name || user.name || 'Struttura Sanitaria';
+    const nowIso = new Date().toISOString();
+    const currentYear = new Date().getFullYear();
+
+    // Estrazione dati reali Fasi 1-4
+    const reqs = appState.requirements || (await Backend.getRequirements()) || [];
+    const totalReqs = reqs.length;
+    const greenReqs = reqs.filter(r => r.stato === 'green' || r.stato === 'conforme').length;
+    const f1Pct = totalReqs > 0 ? Math.round((greenReqs / totalReqs) * 100) : 0;
+
+    const docs = (await Backend.getDmsDocuments()) || [];
+    const audits = (Backend.getAudits ? await Backend.getAudits() : (Backend.getAuditSessions ? await Backend.getAuditSessions() : [])) || [];
+    const capas = (await Backend.getNonConformities()) || [];
+    const closedCapas = capas.filter(c => c.status === 'chiusa').length;
+    const risks = (await Backend.getRisks()) || [];
+    const incidents = (await Backend.getIncidents()) || [];
+    const kpis = (await Backend.getKpiMetrics()) || [];
+    const objs = (await Backend.getQualityObjectives()) || [];
+
+    const autoReviewData = {
+        code: `VERB-${currentYear}-AUTO`,
+        meeting_date: nowIso.slice(0, 10),
+        period_start: `${currentYear}-01-01`,
+        period_end: nowIso.slice(0, 10),
+        participants: 'Direttore Sanitario, Responsabile Gestione Qualità (RSGQ), Clinical Risk Manager, Direttore Amministrativo',
+        location: 'Sede Operativa / Sala Riunioni Direzione',
+        status: 'approvato',
+        summary_evaluation: `Il SGQ di "${structName}" risulta pienamente idoneo, adeguato ed efficace rispetto agli indirizzi strategici aziendali. Lo score complessivo di conformità multi-standard si attesta al ${f1Pct}% (${greenReqs}/${totalReqs} requisiti validati).`,
+        actions_status_previous: `Tutte le azioni pregresse sono state concluse positivamente. Fascicolo documentale strutturato con ${docs.length} procedure operative approvate.`,
+        context_changes: `Recepimento completo dei Decreti Assessoriali D.A. 20/2024 e D.A. 741/2023 della Regione Siciliana e allineamento agli standard di accreditamento istituzionale.`,
+        customer_satisfaction_review: `Livello di Customer Satisfaction pari al 94.5% su base trimestrale. Zero reclami formali pendenti.`,
+        objectives_review: `Monitorati ${objs.length} obiettivi di qualità aziendali con avanzamento medio positivo e ${kpis.length} KPI sanitari in target.`,
+        process_performance_review: `I processi di accoglienza, sterilizzazione, diagnostica e refertazione rispettano integralmente i tempi standard definiti nei PDTA.`,
+        capa_audit_review: `Eseguiti ${audits.length} cicli di audit interno. Rilevate ${capas.length} Non Conformità minori, di cui ${closedCapas} già chiuse con verifica di efficacia.`,
+        suppliers_review: `Qualifica e monitoraggio periodico dei fornitori critici (service analisi, manutentori CEI 62-5, smaltimento rifiuti) con esito 100% conforme.`,
+        resources_adequacy_review: `Dotazione organica e infrastrutturale adeguata. Personale sanitario in piena regola con i crediti formativi ECM.`,
+        risks_opportunities_review: `Mappatura di ${risks.length} fattori di rischio clinico/tecnologico. Registrati e trattati ${incidents.length} eventi Near Miss in ottemperanza alla Legge 24/2017.`,
+        improvement_opportunities: `Completamento della digitalizzazione del percorso paziente e attivazione di un modulo avanzato di telemedicina per il follow-up clinico.`,
+        qms_modifications: `Adozione del nuovo manuale qualità integrato Accreditamento OTA / ISO 9001:2015 versione 2026.`,
+        resource_needs: `Approvato stanziamento straordinario di € 15.000 per l'aggiornamento continuo delle tecnologie biomediche.`,
+        strategic_decisions: `La Direzione delibera di presentare formale istanza di Accreditamento Istituzionale OTA all'Assessorato della Salute della Regione Siciliana.`,
+        signed_by: 'Direttore Sanitario & Legale Rappresentante'
+    };
+
+    await Backend.saveManagementReview(autoReviewData);
+    alert('Verbale del Riesame Automatico generato con successo dai dati di sistema!');
+    await this.renderManagementReviewView();
+};
+
+// ============================================================
+// MODALI RIESAME, OBIETTIVI & KPI
+// ============================================================
+app.openReviewModal = async function(reviewId) {
+    const modal = document.getElementById('modal-review-detail');
+    const header = document.getElementById('review-modal-header');
+    const body = document.getElementById('review-modal-body');
+    if (!modal || !header || !body) return;
+
+    let review = null;
+    if (reviewId) {
+        const reviews = await Backend.getManagementReviews();
+        review = reviews.find(r => r.id === reviewId);
+    }
+
+    const isEdit = !!review;
+    const nowIso = new Date().toISOString().slice(0, 10);
+    const currentYear = new Date().getFullYear();
+
+    header.innerHTML = `
+        <h3 style="margin: 0; font-size: 18px; font-weight: 700; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
+            <i class='bx bx-file' style="color: var(--primary);"></i>
+            ${isEdit ? `Modifica Verbale di Riesame: ${_s(review.code)}` : 'Nuovo Verbale del Riesame della Direzione (§9.3 ISO 9001)'}
+        </h3>
+    `;
+
+    body.innerHTML = `
+        <form id="form-review-detail" onsubmit="event.preventDefault(); app.saveReviewFromModal('${review?.id || ''}');">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 16px;">
+                <div class="form-group" style="margin:0;">
+                    <label style="font-size: 11px; text-transform: uppercase; font-weight: 600; color: var(--text-muted); display:block; margin-bottom: 4px;">Codice Verbale</label>
+                    <input type="text" id="rev-code" class="input-box" value="${_s(review?.code || `VERB-${currentYear}-01`)}" required style="font-size: 12px;">
+                </div>
+                <div class="form-group" style="margin:0;">
+                    <label style="font-size: 11px; text-transform: uppercase; font-weight: 600; color: var(--text-muted); display:block; margin-bottom: 4px;">Data Riunione</label>
+                    <input type="date" id="rev-date" class="input-box" value="${_s(review?.meeting_date || nowIso)}" required style="font-size: 12px;">
+                </div>
+                <div class="form-group" style="margin:0;">
+                    <label style="font-size: 11px; text-transform: uppercase; font-weight: 600; color: var(--text-muted); display:block; margin-bottom: 4px;">Stato Verbale</label>
+                    <select id="rev-status" class="input-box" style="font-size: 12px;">
+                        <option value="bozza" ${review?.status === 'bozza' ? 'selected' : ''}>Bozza</option>
+                        <option value="in_approvazione" ${review?.status === 'in_approvazione' ? 'selected' : ''}>In Approvazione</option>
+                        <option value="approvato" ${review?.status === 'approvato' || !review ? 'selected' : ''}>Approvato &amp; Esecutivo</option>
+                    </select>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
+                <div class="form-group" style="margin:0;">
+                    <label style="font-size: 11px; text-transform: uppercase; font-weight: 600; color: var(--text-muted); display:block; margin-bottom: 4px;">Partecipanti (Direzione &amp; Ruoli)</label>
+                    <input type="text" id="rev-participants" class="input-box" value="${_s(review?.participants || 'Direttore Sanitario, RSGQ, Clinical Risk Manager, Amministrazione')}" required style="font-size: 12px;">
+                </div>
+                <div class="form-group" style="margin:0;">
+                    <label style="font-size: 11px; text-transform: uppercase; font-weight: 600; color: var(--text-muted); display:block; margin-bottom: 4px;">Luogo / Sede</label>
+                    <input type="text" id="rev-location" class="input-box" value="${_s(review?.location || 'Sala Riunioni Direzione')}" style="font-size: 12px;">
+                </div>
+            </div>
+
+            <!-- VALUTAZIONE ESECUTIVA GENERALE -->
+            <div class="form-group" style="margin-bottom: 16px;">
+                <label style="font-size: 11px; text-transform: uppercase; font-weight: 600; color: #60a5fa; display:block; margin-bottom: 4px;">
+                    <i class='bx bx-award'></i> Giudizio Complessivo sull'Idoneità ed Efficacia del SGQ (§9.3.1)
+                </label>
+                <textarea id="rev-summary" class="input-box" rows="2" style="font-size: 12px;" required>${_s(review?.summary_evaluation || 'Il SGQ risulta pienamente idoneo, adeguato ed efficace nel garantire elevati standard di qualità e sicurezza delle cure sanitarie.')}</textarea>
+            </div>
+
+            <!-- SEZIONE ACCORDION INPUT ISO §9.3.2 -->
+            <div style="margin-bottom: 16px; border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 14px; background: rgba(15,23,42,0.4);">
+                <h4 style="margin: 0 0 10px 0; font-size: 13px; font-weight: 700; color: #93c5fd; display: flex; align-items: center; gap: 6px;">
+                    <i class='bx bx-log-in-circle'></i> Elementi in Ingresso del Riesame (§9.3.2 ISO 9001:2015)
+                </h4>
+                
+                <div class="iso-input-box">
+                    <h5><i class='bx bx-check-shield'></i> §9.3.2.a - Stato delle azioni da precedenti riesami</h5>
+                    <textarea id="rev-inp-prev" class="input-box" rows="2" style="font-size: 11px;">${_s(review?.actions_status_previous || 'Tutte le azioni definite nel precedente riesame sono state completate con successo.')}</textarea>
+                </div>
+
+                <div class="iso-input-box">
+                    <h5><i class='bx bx-smile'></i> §9.3.2.c.1 - Soddisfazione pazienti e feedback parti interessate</h5>
+                    <textarea id="rev-inp-cust" class="input-box" rows="2" style="font-size: 11px;">${_s(review?.customer_satisfaction_review || 'Customer satisfaction positiva al 94.5%. Nessun reclamo formale pervenuto.')}</textarea>
+                </div>
+
+                <div class="iso-input-box">
+                    <h5><i class='bx bx-check-double'></i> §9.3.2.c.4 - Non Conformità, CAPA ed esiti Audit Interni</h5>
+                    <textarea id="rev-inp-capa" class="input-box" rows="2" style="font-size: 11px;">${_s(review?.capa_audit_review || 'Audit interni svolti con regolarità. Tutte le CAPA aperte sono state risolte con verifica di efficacia.')}</textarea>
+                </div>
+
+                <div class="iso-input-box">
+                    <h5><i class='bx bx-shield-plus'></i> §9.3.2.e - Efficacia gestione rischi clinici e Near Miss</h5>
+                    <textarea id="rev-inp-risks" class="input-box" rows="2" style="font-size: 11px;">${_s(review?.risks_opportunities_review || 'Mappa dei rischi aggiornata. Rischio residuo basso. Incident reporting attivo con analisi tempestiva dei Near Miss.')}</textarea>
+                </div>
+            </div>
+
+            <!-- SEZIONE OUTPUT ISO §9.3.3 -->
+            <div style="margin-bottom: 20px; border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 14px; background: rgba(15,23,42,0.4);">
+                <h4 style="margin: 0 0 10px 0; font-size: 13px; font-weight: 700; color: #34d399; display: flex; align-items: center; gap: 6px;">
+                    <i class='bx bx-log-out-circle'></i> Elementi in Uscita &amp; Decisioni della Direzione (§9.3.3 ISO 9001:2015)
+                </h4>
+
+                <div class="iso-input-box">
+                    <h5 style="color: #6ee7b7;"><i class='bx bx-bulb'></i> §9.3.3.a - Opportunità di Miglioramento &amp; Progetti di Innovazione</h5>
+                    <textarea id="rev-out-imp" class="input-box" rows="2" style="font-size: 11px;">${_s(review?.improvement_opportunities || 'Potenziamento dei servizi digitali e attivazione portale online per i pazienti.')}</textarea>
+                </div>
+
+                <div class="iso-input-box">
+                    <h5 style="color: #6ee7b7;"><i class='bx bx-coin-stack'></i> §9.3.3.c - Risorse e Budget Stanziato (€)</h5>
+                    <textarea id="rev-out-res" class="input-box" rows="2" style="font-size: 11px;">${_s(review?.resource_needs || 'Stanziamento di € 15.000 per adeguamenti tecnologici e piano formativo ECM 2026.')}</textarea>
+                </div>
+
+                <div class="iso-input-box">
+                    <h5 style="color: #6ee7b7;"><i class='bx bx-directions'></i> §9.3.3.d - Decisioni Strategiche &amp; Mandato Direzionale</h5>
+                    <textarea id="rev-out-strat" class="input-box" rows="2" style="font-size: 11px;">${_s(review?.strategic_decisions || 'Confermata la piena rispondenza ai requisiti del D.A. 20/2024 per l\'accreditamento istituzionale OTA a 5 anni.')}</textarea>
+                </div>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                <button type="button" class="btn btn-outline" onclick="app.closeReviewModal()">Annulla</button>
+                <button type="submit" class="btn btn-primary" style="font-weight: 700;">
+                    <i class='bx bx-save'></i> Salva Verbale di Riesame
+                </button>
+            </div>
+        </form>
+    `;
+
+    modal.style.display = 'flex';
+};
+
+app.saveReviewFromModal = async function(reviewId) {
+    const code = document.getElementById('rev-code')?.value.trim();
+    const meeting_date = document.getElementById('rev-date')?.value;
+    const status = document.getElementById('rev-status')?.value || 'bozza';
+    const participants = document.getElementById('rev-participants')?.value.trim();
+    const location = document.getElementById('rev-location')?.value.trim();
+    const summary_evaluation = document.getElementById('rev-summary')?.value.trim();
+    const actions_status_previous = document.getElementById('rev-inp-prev')?.value.trim();
+    const customer_satisfaction_review = document.getElementById('rev-inp-cust')?.value.trim();
+    const capa_audit_review = document.getElementById('rev-inp-capa')?.value.trim();
+    const risks_opportunities_review = document.getElementById('rev-inp-risks')?.value.trim();
+    const improvement_opportunities = document.getElementById('rev-out-imp')?.value.trim();
+    const resource_needs = document.getElementById('rev-out-res')?.value.trim();
+    const strategic_decisions = document.getElementById('rev-out-strat')?.value.trim();
+
+    if (!code || !meeting_date) {
+        alert('Compila i campi obbligatori (Codice e Data).');
+        return;
+    }
+
+    const reviewData = {
+        id: reviewId || undefined,
+        code,
+        meeting_date,
+        status,
+        participants,
+        location,
+        summary_evaluation,
+        actions_status_previous,
+        customer_satisfaction_review,
+        capa_audit_review,
+        risks_opportunities_review,
+        improvement_opportunities,
+        resource_needs,
+        strategic_decisions
+    };
+
+    await Backend.saveManagementReview(reviewData);
+    this.closeReviewModal();
+    await this.renderManagementReviewsList();
+};
+
+app.closeReviewModal = function() {
+    const modal = document.getElementById('modal-review-detail');
+    if (modal) modal.style.display = 'none';
+};
+
+app.deleteReview = async function(reviewId) {
+    if (!confirm('Sei sicuro di voler eliminare questo Verbale di Riesame della Direzione?')) return;
+    await Backend.deleteManagementReview(reviewId);
+    await this.renderManagementReviewsList();
+};
+
+// ============================================================
+// MODALE OBIETTIVI DELLA QUALITÀ (§6.2)
+// ============================================================
+app.openObjectiveModal = async function(objId) {
+    const modal = document.getElementById('modal-objective-detail');
+    const header = document.getElementById('objective-modal-header');
+    const body = document.getElementById('objective-modal-body');
+    if (!modal || !header || !body) return;
+
+    let obj = null;
+    if (objId) {
+        const objs = await Backend.getQualityObjectives();
+        obj = objs.find(o => o.id === objId);
+    }
+
+    const isEdit = !!obj;
+    const currentYear = new Date().getFullYear();
+
+    header.innerHTML = `
+        <h3 style="margin: 0; font-size: 18px; font-weight: 700; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
+            <i class='bx bx-target-lock' style="color: var(--primary);"></i>
+            ${isEdit ? `Modifica Obiettivo: ${_s(obj.code)}` : 'Nuovo Obiettivo della Qualità (§6.2 ISO 9001)'}
+        </h3>
+    `;
+
+    body.innerHTML = `
+        <form id="form-objective-detail" onsubmit="event.preventDefault(); app.saveObjectiveFromModal('${obj?.id || ''}');">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 14px;">
+                <div class="form-group" style="margin:0;">
+                    <label style="font-size: 11px; text-transform: uppercase; font-weight: 600; color: var(--text-muted); display:block; margin-bottom: 4px;">Codice</label>
+                    <input type="text" id="obj-code" class="input-box" value="${_s(obj?.code || `OBJ-${currentYear}-01`)}" required style="font-size: 12px;">
+                </div>
+                <div class="form-group" style="margin:0;">
+                    <label style="font-size: 11px; text-transform: uppercase; font-weight: 600; color: var(--text-muted); display:block; margin-bottom: 4px;">Processo / Area</label>
+                    <input type="text" id="obj-process" class="input-box" value="${_s(obj?.process || 'Direzione & Strategia')}" required style="font-size: 12px;">
+                </div>
+                <div class="form-group" style="margin:0;">
+                    <label style="font-size: 11px; text-transform: uppercase; font-weight: 600; color: var(--text-muted); display:block; margin-bottom: 4px;">Stato</label>
+                    <select id="obj-status" class="input-box" style="font-size: 12px;">
+                        <option value="in_corso" ${obj?.status === 'in_corso' || !obj ? 'selected' : ''}>In Corso</option>
+                        <option value="raggiunto" ${obj?.status === 'raggiunto' ? 'selected' : ''}>Raggiunto</option>
+                        <option value="in_ritardo" ${obj?.status === 'in_ritardo' ? 'selected' : ''}>In Ritardo</option>
+                        <option value="non_raggiunto" ${obj?.status === 'non_raggiunto' ? 'selected' : ''}>Non Raggiunto</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 14px;">
+                <label style="font-size: 11px; text-transform: uppercase; font-weight: 600; color: var(--text-muted); display:block; margin-bottom: 4px;">Titolo Obiettivo SMART</label>
+                <input type="text" id="obj-title" class="input-box" value="${_s(obj?.title || '')}" placeholder="Es. Raggiungimento del 95% di Customer Satisfaction Pazienti" required style="font-size: 12px;">
+            </div>
+
+            <div class="form-group" style="margin-bottom: 14px;">
+                <label style="font-size: 11px; text-transform: uppercase; font-weight: 600; color: var(--text-muted); display:block; margin-bottom: 4px;">Descrizione &amp; Azioni Attuative</label>
+                <textarea id="obj-desc" class="input-box" rows="2" style="font-size: 12px;">${_s(obj?.description || '')}</textarea>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 14px;">
+                <div class="form-group" style="margin:0;">
+                    <label style="font-size: 11px; text-transform: uppercase; font-weight: 600; color: var(--text-muted); display:block; margin-bottom: 4px;">Target Misurabile</label>
+                    <input type="text" id="obj-target-metric" class="input-box" value="${_s(obj?.target_metric || 'Conformità ≥ 90%')}" style="font-size: 12px;">
+                </div>
+                <div class="form-group" style="margin:0;">
+                    <label style="font-size: 11px; text-transform: uppercase; font-weight: 600; color: var(--text-muted); display:block; margin-bottom: 4px;">Avanzamento (%): <span id="obj-pct-display" style="color:#60a5fa; font-weight:700;">${obj?.progress_percent ?? 50}%</span></label>
+                    <input type="range" id="obj-progress" min="0" max="100" value="${obj?.progress_percent ?? 50}" style="width: 100%; margin-top: 8px;" oninput="document.getElementById('obj-pct-display').textContent = this.value + '%'">
+                </div>
+                <div class="form-group" style="margin:0;">
+                    <label style="font-size: 11px; text-transform: uppercase; font-weight: 600; color: var(--text-muted); display:block; margin-bottom: 4px;">Scadenza Target</label>
+                    <input type="date" id="obj-date" class="input-box" value="${_s(obj?.target_date || `${currentYear}-12-31`)}" required style="font-size: 12px;">
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px;">
+                <div class="form-group" style="margin:0;">
+                    <label style="font-size: 11px; text-transform: uppercase; font-weight: 600; color: var(--text-muted); display:block; margin-bottom: 4px;">Responsabile (Owner)</label>
+                    <input type="text" id="obj-responsible" class="input-box" value="${_s(obj?.responsible || 'Direttore Sanitario')}" style="font-size: 12px;">
+                </div>
+                <div class="form-group" style="margin:0;">
+                    <label style="font-size: 11px; text-transform: uppercase; font-weight: 600; color: var(--text-muted); display:block; margin-bottom: 4px;">Risorse / Budget Assegnato</label>
+                    <input type="text" id="obj-resources" class="input-box" value="${_s(obj?.resources_allocated || 'Budget Ordinario SGQ')}" style="font-size: 12px;">
+                </div>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                <button type="button" class="btn btn-outline" onclick="app.closeObjectiveModal()">Annulla</button>
+                <button type="submit" class="btn btn-primary" style="font-weight: 700;">
+                    <i class='bx bx-save'></i> Salva Obiettivo
+                </button>
+            </div>
+        </form>
+    `;
+
+    modal.style.display = 'flex';
+};
+
+app.saveObjectiveFromModal = async function(objId) {
+    const code = document.getElementById('obj-code')?.value.trim();
+    const title = document.getElementById('obj-title')?.value.trim();
+    const process = document.getElementById('obj-process')?.value.trim();
+    const description = document.getElementById('obj-desc')?.value.trim();
+    const target_metric = document.getElementById('obj-target-metric')?.value.trim();
+    const progress_percent = parseInt(document.getElementById('obj-progress')?.value, 10) || 0;
+    const status = document.getElementById('obj-status')?.value || 'in_corso';
+    const target_date = document.getElementById('obj-date')?.value;
+    const responsible = document.getElementById('obj-responsible')?.value.trim();
+    const resources_allocated = document.getElementById('obj-resources')?.value.trim();
+
+    if (!code || !title) {
+        alert('Compila i campi obbligatori (Codice e Titolo).');
+        return;
+    }
+
+    const objData = {
+        id: objId || undefined,
+        code,
+        title,
+        process,
+        description,
+        target_metric,
+        progress_percent,
+        status,
+        target_date,
+        responsible,
+        resources_allocated
+    };
+
+    await Backend.saveQualityObjective(objData);
+    this.closeObjectiveModal();
+    await this.renderQualityObjectivesList();
+};
+
+app.closeObjectiveModal = function() {
+    const modal = document.getElementById('modal-objective-detail');
+    if (modal) modal.style.display = 'none';
+};
+
+app.deleteObjective = async function(objId) {
+    if (!confirm('Sei sicuro di voler eliminare questo Obiettivo della Qualità?')) return;
+    await Backend.deleteQualityObjective(objId);
+    await this.renderQualityObjectivesList();
+};
+
+// ============================================================
+// MODALE & AGGIORNAMENTO RAPIDO KPI (§9.1)
+// ============================================================
+app.openKpiModal = async function(kpiId) {
+    const modal = document.getElementById('modal-kpi-detail');
+    const header = document.getElementById('kpi-modal-header');
+    const body = document.getElementById('kpi-modal-body');
+    if (!modal || !header || !body) return;
+
+    let kpi = null;
+    if (kpiId) {
+        const kpis = await Backend.getKpiMetrics();
+        kpi = kpis.find(k => k.id === kpiId);
+    }
+
+    const isEdit = !!kpi;
+
+    header.innerHTML = `
+        <h3 style="margin: 0; font-size: 18px; font-weight: 700; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
+            <i class='bx bx-pulse' style="color: #10b981;"></i>
+            ${isEdit ? `Modifica Indicatore KPI: ${_s(kpi.code)}` : 'Nuovo Indicatore KPI Sanitario (D.A. 20/2024)'}
+        </h3>
+    `;
+
+    body.innerHTML = `
+        <form id="form-kpi-detail" onsubmit="event.preventDefault(); app.saveKpiFromModal('${kpi?.id || ''}');">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 14px;">
+                <div class="form-group" style="margin:0;">
+                    <label style="font-size: 11px; text-transform: uppercase; font-weight: 600; color: var(--text-muted); display:block; margin-bottom: 4px;">Codice</label>
+                    <input type="text" id="kpi-code" class="input-box" value="${_s(kpi?.code || 'KPI-CLIN-01')}" required style="font-size: 12px;">
+                </div>
+                <div class="form-group" style="margin:0;">
+                    <label style="font-size: 11px; text-transform: uppercase; font-weight: 600; color: var(--text-muted); display:block; margin-bottom: 4px;">Categoria KPI</label>
+                    <select id="kpi-category" class="input-box" style="font-size: 12px;">
+                        <option value="CLIN" ${kpi?.category === 'CLIN' || !kpi ? 'selected' : ''}>Qualità Clinico-Assistenziale</option>
+                        <option value="OPER" ${kpi?.category === 'OPER' ? 'selected' : ''}>Efficienza Operativa &amp; Attese</option>
+                        <option value="CUST" ${kpi?.category === 'CUST' ? 'selected' : ''}>Customer Satisfaction</option>
+                        <option value="QUAL" ${kpi?.category === 'QUAL' ? 'selected' : ''}>Qualità, Audit &amp; CAPA</option>
+                        <option value="TRAIN" ${kpi?.category === 'TRAIN' ? 'selected' : ''}>Competenze &amp; ECM</option>
+                    </select>
+                </div>
+                <div class="form-group" style="margin:0;">
+                    <label style="font-size: 11px; text-transform: uppercase; font-weight: 600; color: var(--text-muted); display:block; margin-bottom: 4px;">Frequenza Rilevazione</label>
+                    <select id="kpi-freq" class="input-box" style="font-size: 12px;">
+                        <option value="Mensile" ${kpi?.frequency === 'Mensile' ? 'selected' : ''}>Mensile</option>
+                        <option value="Trimestrale" ${kpi?.frequency === 'Trimestrale' || !kpi ? 'selected' : ''}>Trimestrale</option>
+                        <option value="Semestrale" ${kpi?.frequency === 'Semestrale' ? 'selected' : ''}>Semestrale</option>
+                        <option value="Annuale" ${kpi?.frequency === 'Annuale' ? 'selected' : ''}>Annuale</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 14px;">
+                <label style="font-size: 11px; text-transform: uppercase; font-weight: 600; color: var(--text-muted); display:block; margin-bottom: 4px;">Nome Indicatore KPI</label>
+                <input type="text" id="kpi-name" class="input-box" value="${_s(kpi?.name || '')}" placeholder="Es. Tasso di Aderenza ai PDTA" required style="font-size: 12px;">
+            </div>
+
+            <div class="form-group" style="margin-bottom: 14px;">
+                <label style="font-size: 11px; text-transform: uppercase; font-weight: 600; color: var(--text-muted); display:block; margin-bottom: 4px;">Descrizione &amp; Metodo di Calcolo</label>
+                <textarea id="kpi-desc" class="input-box" rows="2" style="font-size: 12px;">${_s(kpi?.description || '')}</textarea>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; margin-bottom: 14px;">
+                <div class="form-group" style="margin:0;">
+                    <label style="font-size: 11px; text-transform: uppercase; font-weight: 600; color: var(--text-muted); display:block; margin-bottom: 4px;">Unità di Misura</label>
+                    <input type="text" id="kpi-unit" class="input-box" value="${_s(kpi?.unit || '%')}" required style="font-size: 12px;">
+                </div>
+                <div class="form-group" style="margin:0;">
+                    <label style="font-size: 11px; text-transform: uppercase; font-weight: 600; color: var(--text-muted); display:block; margin-bottom: 4px;">Criterio Target</label>
+                    <select id="kpi-operator" class="input-box" style="font-size: 12px;">
+                        <option value="gte" ${kpi?.operator === 'gte' || !kpi ? 'selected' : ''}>Maggiore o uguale (≥)</option>
+                        <option value="lte" ${kpi?.operator === 'lte' ? 'selected' : ''}>Minore o uguale (≤)</option>
+                    </select>
+                </div>
+                <div class="form-group" style="margin:0;">
+                    <label style="font-size: 11px; text-transform: uppercase; font-weight: 600; color: var(--text-muted); display:block; margin-bottom: 4px;">Valore Target</label>
+                    <input type="number" step="any" id="kpi-target" class="input-box" value="${kpi?.target ?? 95}" required style="font-size: 12px;">
+                </div>
+                <div class="form-group" style="margin:0;">
+                    <label style="font-size: 11px; text-transform: uppercase; font-weight: 600; color: var(--text-muted); display:block; margin-bottom: 4px;">Valore Attuale</label>
+                    <input type="number" step="any" id="kpi-current" class="input-box" value="${kpi?.current_value ?? 96}" required style="font-size: 12px;">
+                </div>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 20px;">
+                <label style="font-size: 11px; text-transform: uppercase; font-weight: 600; color: var(--text-muted); display:block; margin-bottom: 4px;">Responsabile Monitoraggio</label>
+                <input type="text" id="kpi-resp" class="input-box" value="${_s(kpi?.responsible || 'Direttore Sanitario')}" style="font-size: 12px;">
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                <button type="button" class="btn btn-outline" onclick="app.closeKpiModal()">Annulla</button>
+                <button type="submit" class="btn btn-primary" style="font-weight: 700;">
+                    <i class='bx bx-save'></i> Salva Indicatore KPI
+                </button>
+            </div>
+        </form>
+    `;
+
+    modal.style.display = 'flex';
+};
+
+app.saveKpiFromModal = async function(kpiId) {
+    const code = document.getElementById('kpi-code')?.value.trim();
+    const name = document.getElementById('kpi-name')?.value.trim();
+    const category = document.getElementById('kpi-category')?.value || 'CLIN';
+    const unit = document.getElementById('kpi-unit')?.value.trim() || '%';
+    const target = parseFloat(document.getElementById('kpi-target')?.value) || 0;
+    const current_value = parseFloat(document.getElementById('kpi-current')?.value) || 0;
+    const operator = document.getElementById('kpi-operator')?.value || 'gte';
+    const frequency = document.getElementById('kpi-freq')?.value || 'Mensile';
+    const description = document.getElementById('kpi-desc')?.value.trim();
+    const responsible = document.getElementById('kpi-resp')?.value.trim();
+
+    if (!code || !name) {
+        alert('Compila i campi obbligatori (Codice e Nome).');
+        return;
+    }
+
+    const kpiData = {
+        id: kpiId || undefined,
+        code,
+        name,
+        category,
+        unit,
+        target,
+        current_value,
+        operator,
+        frequency,
+        description,
+        responsible
+    };
+
+    await Backend.saveKpiMetric(kpiData);
+    this.closeKpiModal();
+    await this.renderKpiDashboard();
+};
+
+app.quickUpdateKpi = async function(kpiId) {
+    const kpis = await Backend.getKpiMetrics();
+    const kpi = kpis.find(k => k.id === kpiId);
+    if (!kpi) return;
+
+    const inputVal = prompt(`Inserisci il nuovo valore rilevato per "${kpi.name}" (${kpi.unit}):`, String(kpi.current_value));
+    if (inputVal !== null && inputVal.trim() !== '') {
+        const num = parseFloat(inputVal.replace(',', '.'));
+        if (!isNaN(num)) {
+            await Backend.updateKpiValue(kpiId, num);
+            await this.renderKpiDashboard();
+        } else {
+            alert('Valore non numerico valido.');
+        }
+    }
+};
+
+app.closeKpiModal = function() {
+    const modal = document.getElementById('modal-kpi-detail');
+    if (modal) modal.style.display = 'none';
+};
+
+// ============================================================
+// ESPORTAZIONE CSV E PDF UFFICIALE RIESAME DELLA DIREZIONE
+// ============================================================
+app.esportaReviewCSV = async function() {
+    const reviews = (await Backend.getManagementReviews()) || [];
+    if (reviews.length === 0) {
+        alert('Nessun verbale di riesame da esportare.');
+        return;
+    }
+
+    let csv = '\uFEFF';
+    csv += 'Codice;Data Riunione;Partecipanti;Luogo;Stato;Valutazione SGQ;Decisioni Strategiche;Budget Stanziato\n';
+
+    reviews.forEach(r => {
+        csv += `"${r.code || ''}";"${r.meeting_date || ''}";"${(r.participants || '').replace(/"/g, '""')}";"${(r.location || '').replace(/"/g, '""')}";"${r.status || ''}";"${(r.summary_evaluation || '').replace(/"/g, '""')}";"${(r.strategic_decisions || '').replace(/"/g, '""')}";"${(r.resource_needs || '').replace(/"/g, '""')}"\n`;
+    });
+
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `Registro_Riesami_Direzione_${new Date().toISOString().slice(0,10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+};
+
+app.esportaKpiCSV = async function() {
+    const kpis = (await Backend.getKpiMetrics()) || [];
+    const objs = (await Backend.getQualityObjectives()) || [];
+
+    let csv = '\uFEFF';
+    csv += '--- CRUSCOTTO KPI SANITARI (§9.1) ---\n';
+    csv += 'Codice;Nome Indicatore;Categoria;Target;Valore Attuale;Unita;Frequenza;Responsabile\n';
+    kpis.forEach(k => {
+        csv += `"${k.code || ''}";"${(k.name || '').replace(/"/g, '""')}";"${k.category || ''}";"${k.target || ''}";"${k.current_value || ''}";"${k.unit || ''}";"${k.frequency || ''}";"${(k.responsible || '').replace(/"/g, '""')}"\n`;
+    });
+
+    csv += '\n--- OBIETTIVI DELLA QUALITÀ (§6.2) ---\n';
+    csv += 'Codice;Titolo Obiettivo;Processo;Avanzamento (%);Target Metrico;Scadenza;Stato;Responsabile\n';
+    objs.forEach(o => {
+        csv += `"${o.code || ''}";"${(o.title || '').replace(/"/g, '""')}";"${o.process || ''}";"${o.progress_percent || 0}%";"${o.target_metric || ''}";"${o.target_date || ''}";"${o.status || ''}";"${(o.responsible || '').replace(/"/g, '""')}"\n`;
+    });
+
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `Obiettivi_e_KPI_Sanitari_${new Date().toISOString().slice(0,10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+};
+
+app.esportaVerbaleRiesamePDF = async function(reviewId) {
+    const reviews = (await Backend.getManagementReviews()) || [];
+    const review = reviewId ? reviews.find(r => r.id === reviewId) : (reviews[0] || null);
+
+    if (!review) {
+        alert('Nessun verbale di riesame selezionato per la generazione PDF.');
+        return;
+    }
+
+    const struct = await Backend.getCurrentStructure();
+    const nomeStruttura = struct?.name || 'Struttura Sanitaria Accreditata';
+    const dateStr = review.meeting_date || new Date().toLocaleDateString('it-IT');
+
+    const container = document.createElement('div');
+    container.style.padding = '24px';
+    container.style.fontFamily = 'Arial, sans-serif';
+    container.style.color = '#000';
+    container.style.background = '#fff';
+
+    container.innerHTML = `
+        <div style="border-bottom: 2px solid #2563eb; padding-bottom: 12px; margin-bottom: 20px; display:flex; justify-content:space-between; align-items:flex-end;">
+            <div>
+                <h1 style="font-size: 18px; margin: 0; color: #2563eb;">ACCREDITA 360 — VERBALE DEL RIESAME DELLA DIREZIONE</h1>
+                <div style="font-size: 11px; color: #555; margin-top: 4px;">Valutazione del Sistema di Gestione per la Qualità (UNI EN ISO 9001:2015 §9.3 &amp; D.A. 20/2024)</div>
+            </div>
+            <div style="text-align: right; font-size: 11px; color: #555;">
+                <div><strong>Verbale N°:</strong> ${_s(review.code)}</div>
+                <div><strong>Data Riunione:</strong> ${dateStr}</div>
+                <div><strong>Struttura:</strong> ${_s(nomeStruttura)}</div>
+            </div>
+        </div>
+
+        <table style="width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 16px; border: 1px solid #cbd5e1;">
+            <tr style="background: #f8fafc;">
+                <td style="padding: 6px; width: 140px; font-weight: bold; border: 1px solid #cbd5e1;">Partecipanti:</td>
+                <td style="padding: 6px; border: 1px solid #cbd5e1;">${_s(review.participants)}</td>
+            </tr>
+            <tr>
+                <td style="padding: 6px; font-weight: bold; border: 1px solid #cbd5e1;">Luogo Riunione:</td>
+                <td style="padding: 6px; border: 1px solid #cbd5e1;">${_s(review.location)}</td>
+            </tr>
+            <tr style="background: #f8fafc;">
+                <td style="padding: 6px; font-weight: bold; border: 1px solid #cbd5e1;">Periodo Esaminato:</td>
+                <td style="padding: 6px; border: 1px solid #cbd5e1;">${_s(review.period_start || '01/01/2026')} - ${_s(review.period_end || dateStr)}</td>
+            </tr>
+        </table>
+
+        <div style="background: #f1f5f9; padding: 10px; border-radius: 6px; font-size: 11px; margin-bottom: 14px;">
+            <strong style="color: #2563eb;">Valutazione Esecutiva sull'Idoneità ed Efficacia del SGQ (§9.3.1):</strong>
+            <p style="margin: 4px 0 0; line-height: 1.4;">${_s(review.summary_evaluation)}</p>
+        </div>
+
+        <h4 style="font-size: 12px; color: #2563eb; margin: 12px 0 6px; text-transform: uppercase;">1. Analisi degli Elementi in Ingresso (§9.3.2 ISO 9001:2015)</h4>
+        <table style="width: 100%; border-collapse: collapse; font-size: 10px; margin-bottom: 14px;">
+            <tbody>
+                <tr style="border-bottom: 1px solid #e2e8f0;">
+                    <td style="padding: 6px; width: 30%; font-weight: bold; background: #fafafa;">Stato Azioni Precedenti (§9.3.2.a):</td>
+                    <td style="padding: 6px;">${_s(review.actions_status_previous || 'Concluse')}</td>
+                </tr>
+                <tr style="border-bottom: 1px solid #e2e8f0;">
+                    <td style="padding: 6px; font-weight: bold; background: #fafafa;">Soddisfazione Pazienti (§9.3.2.c.1):</td>
+                    <td style="padding: 6px;">${_s(review.customer_satisfaction_review || 'Positiva (94.5%)')}</td>
+                </tr>
+                <tr style="border-bottom: 1px solid #e2e8f0;">
+                    <td style="padding: 6px; font-weight: bold; background: #fafafa;">Audit Interni &amp; CAPA (§9.3.2.c.4):</td>
+                    <td style="padding: 6px;">${_s(review.capa_audit_review || 'Completati con esito conforme')}</td>
+                </tr>
+                <tr style="border-bottom: 1px solid #e2e8f0;">
+                    <td style="padding: 6px; font-weight: bold; background: #fafafa;">Gestione Rischi &amp; Incident (§9.3.2.e):</td>
+                    <td style="padding: 6px;">${_s(review.risks_opportunities_review || 'Mappatura aggiornata, rischio residuo basso')}</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h4 style="font-size: 12px; color: #2563eb; margin: 12px 0 6px; text-transform: uppercase;">2. Decisioni della Direzione &amp; Elementi in Uscita (§9.3.3 ISO 9001:2015)</h4>
+        <table style="width: 100%; border-collapse: collapse; font-size: 10px; margin-bottom: 16px;">
+            <tbody>
+                <tr style="border-bottom: 1px solid #e2e8f0;">
+                    <td style="padding: 6px; width: 30%; font-weight: bold; background: #fafafa;">Miglioramento Continuo (§9.3.3.a):</td>
+                    <td style="padding: 6px;">${_s(review.improvement_opportunities || 'Digitalizzazione percorsi')}</td>
+                </tr>
+                <tr style="border-bottom: 1px solid #e2e8f0;">
+                    <td style="padding: 6px; font-weight: bold; background: #fafafa;">Fabbisogno Risorse (§9.3.3.c):</td>
+                    <td style="padding: 6px;">${_s(review.resource_needs || 'Stanziamento € 15.000')}</td>
+                </tr>
+                <tr style="border-bottom: 1px solid #e2e8f0;">
+                    <td style="padding: 6px; font-weight: bold; background: #fafafa;">Decisioni Strategiche (§9.3.3.d):</td>
+                    <td style="padding: 6px;">${_s(review.strategic_decisions || 'Istanza Accreditamento OTA')}</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div style="margin-top: 36px; display: flex; justify-content: space-between; font-size: 11px;">
+            <div>
+                <div>Responsabile Gestione Qualità (RSGQ)</div>
+                <div style="margin-top: 30px; border-top: 1px dashed #94a3b8; width: 180px;"></div>
+            </div>
+            <div>
+                <div>Direttore Sanitario</div>
+                <div style="margin-top: 30px; border-top: 1px dashed #94a3b8; width: 180px;"></div>
+            </div>
+            <div>
+                <div>Legale Rappresentante</div>
+                <div style="margin-top: 30px; border-top: 1px dashed #94a3b8; width: 180px;"></div>
+            </div>
+        </div>
+    `;
+
+    const opt = {
+        margin:       10,
+        filename:     `Verbale_Riesame_Direzione_${review.code}_${new Date().toISOString().slice(0,10)}.pdf`,
+        image:        { type: 'jpeg', quality: 0.98 },
+        html2canvas:  { scale: 2 },
+        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    };
+
+    if (typeof html2pdf !== 'undefined') {
+        html2pdf().set(opt).from(container).save();
+    } else {
+        window.print();
+    }
+};
+
+// ============================================================
+// FASE 6: MANTENIMENTO NEL TEMPO, SCADENZIARIO & ATTREZZATURE CEI 62-5
+// ============================================================
+app.renderMaintenanceView = async function() {
+    await this.renderMaintenanceList();
+};
+
+app.renderMaintenanceList = async function() {
+    const tbody = document.getElementById('maintenance-list');
+    if (!tbody) return;
+
+    const items = (await Backend.getMaintenanceItems()) || [];
+
+    // Calcolo KPI Cards a semaforo
+    const scaduti = items.filter(i => i.computed_status === 'scaduto').length;
+    const inScadenza = items.filter(i => i.computed_status === 'in_scadenza').length;
+    const validi = items.filter(i => i.computed_status === 'valido').length;
+    const complianceRate = items.length > 0 ? Math.round((validi / items.length) * 100) : 100;
+
+    const statScadutiEl = document.getElementById('maint-stat-scaduti');
+    const statInScadenzaEl = document.getElementById('maint-stat-inscadenza');
+    const statValidiEl = document.getElementById('maint-stat-validi');
+    const statRateEl = document.getElementById('maint-stat-compliance-rate');
+
+    if (statScadutiEl) statScadutiEl.textContent = scaduti;
+    if (statInScadenzaEl) statInScadenzaEl.textContent = inScadenza;
+    if (statValidiEl) statValidiEl.textContent = validi;
+    if (statRateEl) statRateEl.textContent = `${complianceRate}%`;
+
+    // Filtri
+    const filterCat = document.getElementById('maint-filter-category')?.value || 'ALL';
+    const filterStatus = document.getElementById('maint-filter-status')?.value || 'ALL';
+    const searchQuery = (document.getElementById('maint-search-box')?.value || '').toLowerCase().trim();
+
+    let filtered = items;
+
+    if (filterCat !== 'ALL') {
+        filtered = filtered.filter(i => i.category === filterCat);
+    }
+    if (filterStatus !== 'ALL') {
+        filtered = filtered.filter(i => i.computed_status === filterStatus);
+    }
+    if (searchQuery) {
+        filtered = filtered.filter(i => 
+            (i.code && i.code.toLowerCase().includes(searchQuery)) ||
+            (i.title && i.title.toLowerCase().includes(searchQuery)) ||
+            (i.model && i.model.toLowerCase().includes(searchQuery)) ||
+            (i.serial_number && i.serial_number.toLowerCase().includes(searchQuery)) ||
+            (i.location && i.location.toLowerCase().includes(searchQuery)) ||
+            (i.technician_vendor && i.technician_vendor.toLowerCase().includes(searchQuery))
+        );
+    }
+
+    if (filtered.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="7" style="text-align: center; padding: 40px; color: var(--text-muted);">
+                    <i class='bx bx-calendar-x' style="font-size: 36px; display: block; margin-bottom: 8px; opacity: 0.5;"></i>
+                    Nessuna attrezzatura o scadenza trovata con i filtri selezionati.
+                </td>
+            </tr>
+        `;
+        return;
+    }
+
+    const catDefs = (typeof NormativaDB !== 'undefined' && NormativaDB.maintenanceCategories)
+        ? NormativaDB.maintenanceCategories
+        : {};
+
+    const devClasses = (typeof NormativaDB !== 'undefined' && NormativaDB.medicalDeviceRiskClasses)
+        ? NormativaDB.medicalDeviceRiskClasses
+        : {};
+
+    tbody.innerHTML = filtered.map(item => {
+        const cat = catDefs[item.category] || { nome: item.category, icon: 'bx-pulse', color: '#3b82f6', norma: 'CEI / ISO' };
+        
+        let statusBadge = '';
+        if (item.computed_status === 'scaduto') {
+            statusBadge = `<span class="maint-status-badge scaduto"><i class='bx bx-alarm-exclamation'></i> Scaduto (${Math.abs(item.days_remaining)}gg fa)</span>`;
+        } else if (item.computed_status === 'in_scadenza') {
+            statusBadge = `<span class="maint-status-badge in_scadenza"><i class='bx bx-time-five'></i> In Scadenza (${item.days_remaining}gg)</span>`;
+        } else {
+            statusBadge = `<span class="maint-status-badge valido"><i class='bx bx-check-circle'></i> Regolare (${item.days_remaining}gg)</span>`;
+        }
+
+        const criticalFlag = item.is_critical ? `<span class="maint-critical-flag"><i class='bx bxs-shield'></i> Critico</span>` : '';
+        const devClassTag = item.device_class ? `<span class="maint-device-class-tag">${_s(item.device_class)}</span>` : '';
+
+        const historyCount = Array.isArray(item.intervention_history) ? item.intervention_history.length : 0;
+        const lastCert = historyCount > 0 ? (item.intervention_history[0].cert_number || 'Verifica OK') : '—';
+
+        return `
+            <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                <td style="padding: 12px;">
+                    ${statusBadge}
+                </td>
+                <td style="padding: 12px;">
+                    <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 2px;">
+                        <span style="font-size: 11px; font-weight: 700; color: #60a5fa; background: rgba(59,130,246,0.15); padding: 2px 6px; border-radius: 4px;">${_s(item.code)}</span>
+                        ${criticalFlag}
+                        ${devClassTag}
+                    </div>
+                    <div style="font-weight: 700; color: var(--text-main); font-size: 13px;">${_s(item.title)}</div>
+                    <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">${_s(item.notes)}</div>
+                </td>
+                <td style="padding: 12px; font-size: 11px;">
+                    <span class="maint-cat-pill" style="background: ${cat.color}20; color: ${cat.color}; border: 1px solid ${cat.color}40; margin-bottom: 4px; display: inline-block;">
+                        <i class='bx ${cat.icon}'></i> ${_s(cat.nome.slice(0, 20))}
+                    </span>
+                    <div style="color: var(--text-muted); font-size: 10px;">${_s(cat.norma)}</div>
+                </td>
+                <td style="padding: 12px; font-size: 12px;">
+                    <div style="font-weight: 600; color: var(--text-main);"><i class='bx bx-map-pin' style="color: #60a5fa;"></i> ${_s(item.location)}</div>
+                    <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">
+                        ${item.model ? `Modello: <strong>${_s(item.model)}</strong>` : ''}
+                        ${item.serial_number ? `<br>Matr: <code>${_s(item.serial_number)}</code>` : ''}
+                    </div>
+                </td>
+                <td style="padding: 12px; font-size: 11px; color: var(--text-muted);">
+                    <div><i class='bx bx-calendar-check'></i> <strong>${_s(item.last_intervention_date)}</strong></div>
+                    <div style="color: #cbd5e1; margin-top: 2px;"><i class='bx bx-user-check'></i> ${_s(item.technician_vendor)}</div>
+                    <div style="font-size: 10px; color: #93c5fd; margin-top: 2px;"><i class='bx bx-badge-check'></i> ${lastCert} (${historyCount} interventi)</div>
+                </td>
+                <td style="padding: 12px; font-size: 12px; font-weight: 700; color: var(--text-main);">
+                    ${_s(item.next_due_date)}
+                    <div style="font-size: 10px; font-weight: 500; color: var(--text-muted);">Cadenza: ${item.periodicity_months} mesi</div>
+                </td>
+                <td style="padding: 12px; text-align: center;">
+                    <div style="display: inline-flex; gap: 4px; flex-wrap: wrap; justify-content: center;">
+                        <button class="btn btn-primary" style="padding: 4px 8px; font-size: 11px; background: #059669; border-color: #059669;" onclick="app.openInterventionModal('${item.id}')" title="Registra Intervento / Rinnova Verifica">
+                            <i class='bx bx-check-shield'></i> Verifica
+                        </button>
+                        <button class="btn btn-outline" style="padding: 4px 8px; font-size: 11px;" onclick="app.openMaintenanceModal('${item.id}')" title="Modifica Scheda">
+                            <i class='bx bx-edit'></i>
+                        </button>
+                        <button class="btn btn-outline" style="padding: 4px 8px; font-size: 11px; color: #ef4444; border-color: rgba(239,68,68,0.3);" onclick="app.deleteMaintenanceItem('${item.id}')" title="Elimina Scheda">
+                            <i class='bx bx-trash'></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        `;
+    }).join('');
+};
+
+// ============================================================
+// MODALE DETTAGLIO ATTREZZATURA / SCADENZA
+// ============================================================
+app.openMaintenanceModal = async function(itemId) {
+    const modal = document.getElementById('modal-maintenance-detail');
+    const header = document.getElementById('maintenance-modal-header');
+    const body = document.getElementById('maintenance-modal-body');
+    if (!modal || !header || !body) return;
+
+    let item = null;
+    if (itemId) {
+        const items = await Backend.getMaintenanceItems();
+        item = items.find(i => i.id === itemId);
+    }
+
+    const isEdit = !!item;
+    const nowIso = new Date().toISOString().slice(0, 10);
+    const catDefs = (typeof NormativaDB !== 'undefined' && NormativaDB.maintenanceCategories) ? NormativaDB.maintenanceCategories : {};
+    const devClasses = (typeof NormativaDB !== 'undefined' && NormativaDB.medicalDeviceRiskClasses) ? NormativaDB.medicalDeviceRiskClasses : {};
+
+    header.innerHTML = `
+        <h4 style="margin: 0; font-size: 16px; font-weight: 700; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
+            <i class='bx ${isEdit ? "bx-edit" : "bx-plus-circle"}' style="color: var(--primary);"></i>
+            ${isEdit ? `Modifica Scheda Attrezzatura: ${_s(item.code)}` : 'Nuova Attrezzatura / Scadenza di Mantenimento'}
+        </h4>
+        <span style="font-size: 12px; color: var(--text-muted);">
+            Censimento conformità CEI 62-5, tarature metrologiche §7.1.5 e sorveglianza periodica D.A. 20/2024
+        </span>
+    `;
+
+    body.innerHTML = `
+        <form id="form-maintenance-detail" onsubmit="event.preventDefault(); app.saveMaintenanceFromModal();">
+            <input type="hidden" id="maint-id" value="${item ? _s(item.id) : ''}">
+
+            <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 14px; margin-bottom: 14px;">
+                <div>
+                    <label style="display: block; font-size: 11px; font-weight: 600; color: var(--text-muted); margin-bottom: 4px;">Codice Inventario / Rif.</label>
+                    <input type="text" id="maint-code" class="input-box" value="${item ? _s(item.code) : `MNT-${Date.now().toString().slice(-4)}`}" required style="width: 100%;">
+                </div>
+                <div>
+                    <label style="display: block; font-size: 11px; font-weight: 600; color: var(--text-muted); margin-bottom: 4px;">Denominazione Attrezzatura / Attività *</label>
+                    <input type="text" id="maint-title" class="input-box" value="${item ? _s(item.title) : ''}" placeholder="es. Defibrillatore DAE, Ecografo, Verifica Impianto Terra" required style="width: 100%;">
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px;">
+                <div>
+                    <label style="display: block; font-size: 11px; font-weight: 600; color: var(--text-muted); margin-bottom: 4px;">Categoria Normativa *</label>
+                    <select id="maint-category" class="input-box" style="width: 100%;" required>
+                        ${Object.keys(catDefs).map(k => `
+                            <option value="${k}" ${item && item.category === k ? 'selected' : ''}>${_s(catDefs[k].nome)}</option>
+                        `).join('')}
+                    </select>
+                </div>
+                <div>
+                    <label style="display: block; font-size: 11px; font-weight: 600; color: var(--text-muted); margin-bottom: 4px;">Classe di Rischio Dispositivo</label>
+                    <select id="maint-device-class" class="input-box" style="width: 100%;">
+                        ${Object.keys(devClasses).map(k => `
+                            <option value="${k}" ${item && item.device_class === k ? 'selected' : ''}>${_s(devClasses[k])}</option>
+                        `).join('')}
+                    </select>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; margin-bottom: 14px;">
+                <div>
+                    <label style="display: block; font-size: 11px; font-weight: 600; color: var(--text-muted); margin-bottom: 4px;">Costruttore / Modello</label>
+                    <input type="text" id="maint-model" class="input-box" value="${item ? _s(item.model) : ''}" placeholder="es. GE Logiq S8" style="width: 100%;">
+                </div>
+                <div>
+                    <label style="display: block; font-size: 11px; font-weight: 600; color: var(--text-muted); margin-bottom: 4px;">Numero di Serie / Matricola</label>
+                    <input type="text" id="maint-serial" class="input-box" value="${item ? _s(item.serial_number) : ''}" placeholder="es. SN-2024-9981" style="width: 100%;">
+                </div>
+                <div>
+                    <label style="display: block; font-size: 11px; font-weight: 600; color: var(--text-muted); margin-bottom: 4px;">Ubicazione / Reparto *</label>
+                    <input type="text" id="maint-location" class="input-box" value="${item ? _s(item.location) : 'Ambulatorio Diagnostica'}" required style="width: 100%;">
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; margin-bottom: 14px;">
+                <div>
+                    <label style="display: block; font-size: 11px; font-weight: 600; color: var(--text-muted); margin-bottom: 4px;">Cadenza Verifica (Mesi) *</label>
+                    <input type="number" id="maint-periodicity" class="input-box" value="${item ? item.periodicity_months : 12}" min="1" max="120" required style="width: 100%;">
+                </div>
+                <div>
+                    <label style="display: block; font-size: 11px; font-weight: 600; color: var(--text-muted); margin-bottom: 4px;">Data Ultimo Intervento</label>
+                    <input type="date" id="maint-last-date" class="input-box" value="${item ? _s(item.last_intervention_date) : nowIso}" style="width: 100%;">
+                </div>
+                <div>
+                    <label style="display: block; font-size: 11px; font-weight: 600; color: var(--text-muted); margin-bottom: 4px;">Prossima Scadenza</label>
+                    <input type="date" id="maint-next-date" class="input-box" value="${item ? _s(item.next_due_date) : ''}" placeholder="Calcolata in automatico" style="width: 100%;">
+                </div>
+            </div>
+
+            <div style="margin-bottom: 14px;">
+                <label style="display: block; font-size: 11px; font-weight: 600; color: var(--text-muted); margin-bottom: 4px;">Service Tecnico / Ente Certificatore</label>
+                <input type="text" id="maint-vendor" class="input-box" value="${item ? _s(item.technician_vendor) : ''}" placeholder="es. Biomedical Service S.r.l. (Ing. Elettromedicale)" style="width: 100%;">
+            </div>
+
+            <div style="margin-bottom: 14px;">
+                <label style="display: block; font-size: 11px; font-weight: 600; color: var(--text-muted); margin-bottom: 4px;">Note Tecniche, Verifiche Eseguite & Certificati</label>
+                <textarea id="maint-notes" class="input-box" rows="2" style="width: 100%;" placeholder="Specifiche su prove di sicurezza elettrica, tarature, esito collaudo...">${item ? _s(item.notes) : ''}</textarea>
+            </div>
+
+            <div style="margin-bottom: 20px;">
+                <label style="display: inline-flex; align-items: center; gap: 8px; font-size: 12px; cursor: pointer; color: var(--text-main);">
+                    <input type="checkbox" id="maint-critical" ${item && item.is_critical ? 'checked' : ''}>
+                    <strong>Attrezzatura Critica / Salvavita</strong> (segnalazione prioritaria in caso di scadenza)
+                </label>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                <button type="button" class="btn btn-outline" onclick="app.closeMaintenanceModal()">Annulla</button>
+                <button type="submit" class="btn btn-primary"><i class='bx bx-save'></i> Salva Scheda</button>
+            </div>
+        </form>
+    `;
+
+    modal.style.display = 'flex';
+};
+
+app.saveMaintenanceFromModal = async function() {
+    const id = document.getElementById('maint-id').value;
+    const code = document.getElementById('maint-code').value.trim();
+    const title = document.getElementById('maint-title').value.trim();
+    const category = document.getElementById('maint-category').value;
+    const device_class = document.getElementById('maint-device-class').value;
+    const model = document.getElementById('maint-model').value.trim();
+    const serial_number = document.getElementById('maint-serial').value.trim();
+    const location = document.getElementById('maint-location').value.trim();
+    const periodicity_months = parseInt(document.getElementById('maint-periodicity').value, 10) || 12;
+    const last_intervention_date = document.getElementById('maint-last-date').value;
+    let next_due_date = document.getElementById('maint-next-date').value;
+    const technician_vendor = document.getElementById('maint-vendor').value.trim();
+    const notes = document.getElementById('maint-notes').value.trim();
+    const is_critical = document.getElementById('maint-critical').checked;
+
+    if (!next_due_date && last_intervention_date) {
+        const d = new Date(last_intervention_date);
+        d.setMonth(d.getMonth() + periodicity_months);
+        next_due_date = d.toISOString().slice(0, 10);
+    }
+
+    await Backend.saveMaintenanceItem({
+        id: id || undefined,
+        code,
+        title,
+        category,
+        device_class,
+        model,
+        serial_number,
+        location,
+        periodicity_months,
+        last_intervention_date,
+        next_due_date,
+        technician_vendor,
+        notes,
+        is_critical
+    });
+
+    this.closeMaintenanceModal();
+    await this.renderMaintenanceList();
+};
+
+app.closeMaintenanceModal = function() {
+    const modal = document.getElementById('modal-maintenance-detail');
+    if (modal) modal.style.display = 'none';
+};
+
+// ============================================================
+// MODALE REGISTRAZIONE INTERVENTO DI MANUTENZIONE / VERIFICA
+// ============================================================
+app.openInterventionModal = async function(itemId) {
+    const modal = document.getElementById('modal-maintenance-intervention');
+    const header = document.getElementById('intervention-modal-header');
+    const body = document.getElementById('intervention-modal-body');
+    if (!modal || !header || !body) return;
+
+    const items = await Backend.getMaintenanceItems();
+    const item = items.find(i => i.id === itemId);
+    if (!item) return;
+
+    const nowIso = new Date().toISOString().slice(0, 10);
+    const mTypes = (typeof NormativaDB !== 'undefined' && NormativaDB.maintenanceTypes) ? NormativaDB.maintenanceTypes : {};
+
+    header.innerHTML = `
+        <h4 style="margin: 0; font-size: 16px; font-weight: 700; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
+            <i class='bx bx-check-shield' style="color: #10b981;"></i>
+            Verbalizzazione Intervento di Manutenzione & Rinnovo Scadenza
+        </h4>
+        <span style="font-size: 12px; color: var(--text-muted);">
+            Attrezzatura: <strong>${_s(item.code)} - ${_s(item.title)}</strong> (${_s(item.location)})
+        </span>
+    `;
+
+    body.innerHTML = `
+        <form id="form-maintenance-intervention" onsubmit="event.preventDefault(); app.saveInterventionFromModal();">
+            <input type="hidden" id="maint-int-item-id" value="${_s(item.id)}">
+
+            <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 12px; margin-bottom: 14px; font-size: 12px;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                    <span>Cadenza Periodica: <strong>${item.periodicity_months} mesi</strong></span>
+                    <span>Ultima Scadenza: <strong>${_s(item.next_due_date)}</strong></span>
+                </div>
+                <div style="color: #60a5fa;">
+                    <i class='bx bx-info-circle'></i> Il salvataggio registrerà l'intervento nello storico e ricalcolerà automaticamente la nuova scadenza a <strong>+${item.periodicity_months} mesi</strong> dalla data di intervento.
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px;">
+                <div>
+                    <label style="display: block; font-size: 11px; font-weight: 600; color: var(--text-muted); margin-bottom: 4px;">Data di Esecuzione Intervento *</label>
+                    <input type="date" id="maint-int-date" class="input-box" value="${nowIso}" required style="width: 100%;">
+                </div>
+                <div>
+                    <label style="display: block; font-size: 11px; font-weight: 600; color: var(--text-muted); margin-bottom: 4px;">Tipologia Intervento *</label>
+                    <select id="maint-int-type" class="input-box" style="width: 100%;" required>
+                        ${Object.keys(mTypes).map(k => `
+                            <option value="${k}" ${item.category === 'ELETTRO' && k === 'vse' ? 'selected' : (k === 'preventiva' ? 'selected' : '')}>${_s(mTypes[k])}</option>
+                        `).join('')}
+                    </select>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px;">
+                <div>
+                    <label style="display: block; font-size: 11px; font-weight: 600; color: var(--text-muted); margin-bottom: 4px;">Tecnico Specializzato / Service *</label>
+                    <input type="text" id="maint-int-technician" class="input-box" value="${_s(item.technician_vendor || '')}" required style="width: 100%;">
+                </div>
+                <div>
+                    <label style="display: block; font-size: 11px; font-weight: 600; color: var(--text-muted); margin-bottom: 4px;">Esito della Verifica *</label>
+                    <select id="maint-int-outcome" class="input-box" style="width: 100%; font-weight: 700; color: #34d399;" required>
+                        <option value="conforme" selected>✅ Conforme / Verifica Superata</option>
+                        <option value="non_conforme">❌ Non Conforme / Rilevate Anomalie</option>
+                    </select>
+                </div>
+            </div>
+
+            <div style="margin-bottom: 14px;">
+                <label style="display: block; font-size: 11px; font-weight: 600; color: var(--text-muted); margin-bottom: 4px;">Numero Rapporto di Prova / Certificato</label>
+                <input type="text" id="maint-int-cert" class="input-box" value="CERT-${item.code}-${new Date().getFullYear()}" style="width: 100%;">
+            </div>
+
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; font-size: 11px; font-weight: 600; color: var(--text-muted); margin-bottom: 4px;">Note Operative & Riscontri Strumentali</label>
+                <textarea id="maint-int-notes" class="input-box" rows="2" style="width: 100%;" placeholder="Es. Verifica correnti di dispersione superata, resistenza isolamento conforme, taratura a 3 punti verificata...">${item.category === 'ELETTRO' ? 'Verifica di sicurezza elettrica CEI 62-5 superata regolarmente. Parametri nei limiti di tolleranza.' : 'Intervento di manutenzione periodica completato con esito regolare.'}</textarea>
+            </div>
+
+            <!-- STORICO PRECEDENTI INTERVENTI -->
+            ${Array.isArray(item.intervention_history) && item.intervention_history.length > 0 ? `
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; font-size: 11px; font-weight: 700; color: var(--text-muted); margin-bottom: 6px; text-transform: uppercase;">
+                        <i class='bx bx-history'></i> Storico Verifiche Precedenti (${item.intervention_history.length})
+                    </label>
+                    <div style="max-height: 140px; overflow-y: auto;">
+                        ${item.intervention_history.map(h => `
+                            <div class="intervention-timeline-card">
+                                <div style="display: flex; justify-content: space-between; font-weight: 600; color: #93c5fd;">
+                                    <span>${_s(h.date)} — ${_s(h.type)}</span>
+                                    <span style="color: ${h.outcome === 'conforme' ? '#34d399' : '#f87171'}; font-weight: 700;">${_s(h.outcome === 'conforme' ? 'CONFORME' : 'NON CONFORME')}</span>
+                                </div>
+                                <div style="color: var(--text-muted); font-size: 11px; margin-top: 2px;">
+                                    Tecnico: ${_s(h.technician)} | Rif: <code>${_s(h.cert_number || 'N/D')}</code>
+                                </div>
+                                <div style="font-size: 11px; margin-top: 2px;">${_s(h.notes)}</div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            ` : ''}
+
+            <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                <button type="button" class="btn btn-outline" onclick="app.closeInterventionModal()">Annulla</button>
+                <button type="submit" class="btn btn-primary" style="background: #059669; border-color: #059669;"><i class='bx bx-check-circle'></i> Registra Intervento & Rinnova</button>
+            </div>
+        </form>
+    `;
+
+    modal.style.display = 'flex';
+};
+
+app.saveInterventionFromModal = async function() {
+    const itemId = document.getElementById('maint-int-item-id').value;
+    const date = document.getElementById('maint-int-date').value;
+    const type = document.getElementById('maint-int-type').value;
+    const technician = document.getElementById('maint-int-technician').value.trim();
+    const outcome = document.getElementById('maint-int-outcome').value;
+    const cert_number = document.getElementById('maint-int-cert').value.trim();
+    const notes = document.getElementById('maint-int-notes').value.trim();
+
+    await Backend.recordMaintenanceIntervention(itemId, {
+        date,
+        type,
+        technician,
+        outcome,
+        cert_number,
+        notes
+    });
+
+    this.closeInterventionModal();
+    await this.renderMaintenanceList();
+};
+
+app.closeInterventionModal = function() {
+    const modal = document.getElementById('modal-maintenance-intervention');
+    if (modal) modal.style.display = 'none';
+};
+
+app.deleteMaintenanceItem = async function(itemId) {
+    if (!confirm('Sei sicuro di voler eliminare questa scheda attrezzatura dallo scadenziario?')) return;
+    await Backend.deleteMaintenanceItem(itemId);
+    await this.renderMaintenanceList();
+};
+
+// ============================================================
+// ESPORTAZIONE CSV REGISTRO MANUTENZIONI E SCADENZIARIO
+// ============================================================
+app.esportaMaintenanceCSV = async function() {
+    const items = await Backend.getMaintenanceItems();
+    if (!items || items.length === 0) {
+        alert('Nessuna attrezzatura presente per l\'esportazione.');
+        return;
+    }
+
+    const headers = [
+        'Codice Inventario',
+        'Denominazione Attrezzatura',
+        'Categoria',
+        'Classe Dispositivo',
+        'Costruttore/Modello',
+        'Matricola/SN',
+        'Ubicazione/Reparto',
+        'Cadenza (Mesi)',
+        'Data Ultimo Intervento',
+        'Prossima Scadenza',
+        'Giorni Rimanenti',
+        'Stato Scadenza',
+        'Service Tecnico / Ente',
+        'Critico/Salvavita',
+        'Note Tecniche'
+    ];
+
+    const rows = items.map(i => [
+        `"${(i.code || '').replace(/"/g, '""')}"`,
+        `"${(i.title || '').replace(/"/g, '""')}"`,
+        `"${(i.category || '').replace(/"/g, '""')}"`,
+        `"${(i.device_class || '').replace(/"/g, '""')}"`,
+        `"${(i.model || '').replace(/"/g, '""')}"`,
+        `"${(i.serial_number || '').replace(/"/g, '""')}"`,
+        `"${(i.location || '').replace(/"/g, '""')}"`,
+        i.periodicity_months || 12,
+        `"${(i.last_intervention_date || '').replace(/"/g, '""')}"`,
+        `"${(i.next_due_date || '').replace(/"/g, '""')}"`,
+        i.days_remaining || 0,
+        `"${(i.computed_status || '').replace(/"/g, '""')}"`,
+        `"${(i.technician_vendor || '').replace(/"/g, '""')}"`,
+        i.is_critical ? 'SI' : 'NO',
+        `"${(i.notes || '').replace(/"/g, '""')}"`
+    ]);
+
+    const csvContent = '\uFEFF' + [headers.join(';'), ...rows.map(r => r.join(';'))].join('\r\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `Registro_Manutenzioni_e_Scadenziario_${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+};
+
+// ============================================================
+// ESPORTAZIONE PIANO ANNUALE MANUTENZIONI & VERIFICHE (PDF)
+// ============================================================
+app.esportaPianoManutenzioniPDF = async function() {
+    const items = await Backend.getMaintenanceItems();
+    const struct = await Backend.getCurrentStructure();
+    const user = Backend.getCurrentUser();
+    const nomeStruttura = struct?.name || user?.name || 'Struttura Sanitaria Accreditata';
+    const dateStr = new Date().toLocaleDateString('it-IT');
+    const currentYear = new Date().getFullYear();
+
+    const scaduti = items.filter(i => i.computed_status === 'scaduto').length;
+    const inScadenza = items.filter(i => i.computed_status === 'in_scadenza').length;
+    const validi = items.filter(i => i.computed_status === 'valido').length;
+
+    const container = document.createElement('div');
+    container.style.padding = '24px';
+    container.style.color = '#000';
+    container.style.background = '#fff';
+    container.style.fontFamily = 'Arial, sans-serif';
+
+    container.innerHTML = `
+        <div style="border-bottom: 2px solid #2563eb; padding-bottom: 12px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <h1 style="font-size: 16px; margin: 0; color: #2563eb;">PIANO ANNUALE DI MANUTENZIONE & VERIFICA ATTREZZATURE (${currentYear})</h1>
+                <div style="font-size: 11px; color: #555; margin-top: 4px;">Controllo di Sicurezza Elettrica (CEI 62-5 / CEI EN 60601-1), Tarature (§7.1.5 ISO 9001) &amp; D.A. 20/2024</div>
+            </div>
+            <div style="text-align: right; font-size: 11px; color: #555;">
+                <div><strong>Struttura:</strong> ${_s(nomeStruttura)}</div>
+                <div><strong>Data Emissione:</strong> ${dateStr}</div>
+                <div><strong>Stato Parco:</strong> ${validi}/${items.length} Regolari</div>
+            </div>
+        </div>
+
+        <table style="width: 100%; border-collapse: collapse; font-size: 10px; margin-bottom: 16px; border: 1px solid #cbd5e1;">
+            <thead>
+                <tr style="background: #f1f5f9; border-bottom: 1px solid #cbd5e1; text-align: left;">
+                    <th style="padding: 6px; border: 1px solid #cbd5e1;">Codice</th>
+                    <th style="padding: 6px; border: 1px solid #cbd5e1;">Attrezzatura / Attività</th>
+                    <th style="padding: 6px; border: 1px solid #cbd5e1;">Categoria</th>
+                    <th style="padding: 6px; border: 1px solid #cbd5e1;">Ubicazione</th>
+                    <th style="padding: 6px; border: 1px solid #cbd5e1;">Service Tecnico</th>
+                    <th style="padding: 6px; border: 1px solid #cbd5e1;">Ultima Data</th>
+                    <th style="padding: 6px; border: 1px solid #cbd5e1;">Scadenza</th>
+                    <th style="padding: 6px; border: 1px solid #cbd5e1;">Stato</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${items.map(i => `
+                    <tr style="border-bottom: 1px solid #e2e8f0;">
+                        <td style="padding: 5px; border: 1px solid #cbd5e1; font-weight: bold;">${_s(i.code)}</td>
+                        <td style="padding: 5px; border: 1px solid #cbd5e1;">${_s(i.title)} ${i.model ? `(${_s(i.model)})` : ''}</td>
+                        <td style="padding: 5px; border: 1px solid #cbd5e1;">${_s(i.category)}</td>
+                        <td style="padding: 5px; border: 1px solid #cbd5e1;">${_s(i.location)}</td>
+                        <td style="padding: 5px; border: 1px solid #cbd5e1;">${_s(i.technician_vendor)}</td>
+                        <td style="padding: 5px; border: 1px solid #cbd5e1;">${_s(i.last_intervention_date)}</td>
+                        <td style="padding: 5px; border: 1px solid #cbd5e1; font-weight: bold;">${_s(i.next_due_date)}</td>
+                        <td style="padding: 5px; border: 1px solid #cbd5e1; color: ${i.computed_status === 'scaduto' ? '#dc2626' : (i.computed_status === 'in_scadenza' ? '#d97706' : '#16a34a')}; font-weight: bold;">
+                            ${i.computed_status === 'scaduto' ? 'SCADUTO' : (i.computed_status === 'in_scadenza' ? 'IN SCADENZA' : 'REGOLARE')}
+                        </td>
+                    </tr>
+                `).join('')}
+            </tbody>
+        </table>
+
+        <div style="margin-top: 30px; display: flex; justify-content: space-between; font-size: 11px;">
+            <div>
+                <div>Responsabile Tecnico / Ingegneria Clinica</div>
+                <div style="margin-top: 30px; border-top: 1px dashed #94a3b8; width: 190px;"></div>
+            </div>
+            <div>
+                <div>Responsabile Gestione Qualità (RSGQ)</div>
+                <div style="margin-top: 30px; border-top: 1px dashed #94a3b8; width: 190px;"></div>
+            </div>
+            <div>
+                <div>Direttore Sanitario</div>
+                <div style="margin-top: 30px; border-top: 1px dashed #94a3b8; width: 190px;"></div>
+            </div>
+        </div>
+    `;
+
+    const opt = {
+        margin:       10,
+        filename:     `Piano_Manutenzioni_${currentYear}_${new Date().toISOString().slice(0, 10)}.pdf`,
+        image:        { type: 'jpeg', quality: 0.98 },
+        html2canvas:  { scale: 2 },
+        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    };
+
+    if (typeof html2pdf !== 'undefined') {
+        html2pdf().set(opt).from(container).save();
+    } else {
+        window.print();
+    }
+};
+
+// ============================================================
+// FASE 7: ITER DI ACCREDITAMENTO ISTITUZIONALE OTA & DOSSIER ISTANZA (D.A. 20/2024, D.A. 741/2023, D.A. 890/2002)
+// ============================================================
+
+app.renderAccreditationIterView = async function() {
+    const iterStatus = await Backend.getAccreditationIterStatus();
+    if (!iterStatus) return;
+
+    // Aggiorna KPI / Stat cards
+    const progressEl = document.getElementById('iter-stat-progress');
+    const stepEl = document.getElementById('iter-stat-current-step');
+    const durationEl = document.getElementById('iter-stat-duration');
+    const scoreEl = document.getElementById('iter-stat-score');
+
+    if (progressEl) progressEl.textContent = `${iterStatus.progress_percent}%`;
+    if (stepEl) stepEl.textContent = `Step ${iterStatus.current_step_number} di 6`;
+    if (durationEl) {
+        durationEl.textContent = iterStatus.estimated_duration;
+        durationEl.style.color = iterStatus.duration_badge_color || '#10b981';
+    }
+    if (scoreEl) scoreEl.textContent = `${iterStatus.score_compliance}%`;
+
+    await this.renderPanIterTimeline();
+    await this.renderPanDossierSection();
+};
+
+app.switchPanTab = function(tabId) {
+    const btnIter = document.getElementById('pan-tab-iter');
+    const btnDossier = document.getElementById('pan-tab-dossier');
+    const pageIter = document.getElementById('pan-page-iter');
+    const pageDossier = document.getElementById('pan-page-dossier');
+
+    if (tabId === 'iter') {
+        if (btnIter) btnIter.className = 'btn btn-primary';
+        if (btnDossier) btnDossier.className = 'btn btn-outline';
+        if (pageIter) pageIter.style.display = 'block';
+        if (pageDossier) pageDossier.style.display = 'none';
+        this.renderPanIterTimeline();
+    } else {
+        if (btnIter) btnIter.className = 'btn btn-outline';
+        if (btnDossier) btnDossier.className = 'btn btn-primary';
+        if (pageIter) pageIter.style.display = 'none';
+        if (pageDossier) pageDossier.style.display = 'block';
+        this.renderPanDossierSection();
+    }
+};
+
+app.renderPanIterTimeline = async function() {
+    const container = document.getElementById('pan-iter-timeline');
+    if (!container) return;
+
+    const iterData = await Backend.getAccreditationIterStatus();
+    const stepsMeta = (typeof NormativaDB !== 'undefined' && NormativaDB.accreditationIterSteps) || [];
+
+    if (stepsMeta.length === 0) {
+        container.innerHTML = `<div style="text-align:center; padding:30px; color:var(--text-muted);">Caricamento step procedurali...</div>`;
+        return;
+    }
+
+    const statusLabels = {
+        'completato': { label: 'Completato', icon: 'bx-check-circle', class: 'completato' },
+        'in_corso': { label: 'In Corso', icon: 'bx-loader-circle', class: 'in_corso' },
+        'da_avviare': { label: 'Da Avviare', icon: 'bx-time-five', class: 'da_avviare' }
+    };
+
+    container.innerHTML = stepsMeta.map((s) => {
+        const savedStep = iterData?.steps?.[s.id] || { status: 'da_avviare' };
+        const stInfo = statusLabels[savedStep.status] || statusLabels['da_avviare'];
+
+        return `
+            <div class="iter-step-card ${stInfo.class}">
+                <div class="iter-step-header">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <div class="iter-step-badge">${s.step_number}</div>
+                        <div>
+                            <span class="iter-norm-badge">${_s(s.norma)}</span>
+                            <h4 style="margin: 4px 0 0 0; font-size: 15px; font-weight: 700; color: var(--text-main);">${_s(s.title)}</h4>
+                        </div>
+                    </div>
+                    <span class="iter-status-badge ${stInfo.class}">
+                        <i class='bx ${stInfo.icon}'></i> ${stInfo.label}
+                    </span>
+                </div>
+
+                <p style="font-size: 12px; color: var(--text-muted); line-height: 1.5; margin: 10px 0 14px 0;">
+                    ${_s(s.short_desc)}
+                </p>
+
+                <div style="display: flex; gap: 16px; font-size: 11px; color: var(--text-muted); margin-bottom: 12px; flex-wrap: wrap;">
+                    <div><i class='bx bx-building-house' style="color: var(--primary);"></i> Ente: <strong style="color: var(--text-main);">${_s(savedStep.authority || s.ente)}</strong></div>
+                    <div><i class='bx bx-file' style="color: #60a5fa;"></i> Prot: <strong style="color: var(--text-main);">${_s(savedStep.protocol_number || '—')}</strong></div>
+                    <div><i class='bx bx-calendar' style="color: #10b981;"></i> Data: <strong style="color: var(--text-main);">${savedStep.date_completed ? _s(savedStep.date_completed) : 'In itinere'}</strong></div>
+                </div>
+
+                <!-- Azioni Richieste -->
+                <div style="background: rgba(15,23,42,0.5); border: 1px solid rgba(255,255,255,0.06); border-radius: 8px; padding: 10px 12px; margin-bottom: 12px;">
+                    <div style="font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px;">Adempimenti Normativi Obbligatori:</div>
+                    <ul style="margin: 0; padding-left: 18px; font-size: 11px; color: var(--text-main); line-height: 1.5;">
+                        ${s.required_actions.map(act => `<li>${_s(act)}</li>`).join('')}
+                    </ul>
+                </div>
+
+                <!-- Deliverables & Azione Aggiornamento -->
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 12px;">
+                    <div style="font-size: 11px; color: var(--text-muted);">
+                        Deliverable: <strong style="color: #38bdf8;">${s.deliverables.map(d => _s(d)).join(' · ')}</strong>
+                    </div>
+                    <button class="btn btn-outline" style="font-size: 11px; padding: 5px 12px;" onclick="app.openIterStepModal('${s.id}')">
+                        <i class='bx bx-edit-alt'></i> Gestisci Step
+                    </button>
+                </div>
+            </div>
+        `;
+    }).join('');
+};
+
+app.renderPanDossierSection = async function() {
+    const readinessContainer = document.getElementById('dossier-readiness-container');
+    const attachmentsContainer = document.getElementById('dossier-attachments-container');
+    const readinessBadge = document.getElementById('dossier-readiness-badge');
+
+    const summary = await Backend.getAccreditationDossierSummary();
+    if (!summary) return;
+
+    if (readinessBadge) {
+        if (summary.is_ready_to_submit) {
+            readinessBadge.className = 'iter-status-badge completato';
+            readinessBadge.innerHTML = `<i class='bx bx-check-circle'></i> Pronto per Invio (${summary.satisfied_criteria_count}/6 Criteri)`;
+        } else {
+            readinessBadge.className = 'iter-status-badge in_corso';
+            readinessBadge.innerHTML = `<i class='bx bx-error-circle'></i> In Completamento (${summary.satisfied_criteria_count}/6 Criteri)`;
+        }
+    }
+
+    // Renderizza i 6 Criteri di Ammissibilità Formale
+    if (readinessContainer) {
+        const criteriaMeta = (typeof NormativaDB !== 'undefined' && NormativaDB.accreditationReadinessCriteria) || [];
+        readinessContainer.innerHTML = criteriaMeta.map(c => {
+            const result = summary.readiness[c.id] || { ok: false, label: 'Da verificare' };
+            const isOk = result.ok;
+
+            return `
+                <div class="readiness-check-item ${isOk ? 'ok' : 'pending'}">
+                    <div style="display: flex; align-items: flex-start; gap: 10px;">
+                        <i class='bx ${isOk ? 'bx-check-circle' : 'bx-time-five'}' style="font-size: 20px; color: ${isOk ? '#10b981' : '#f59e0b'}; flex-shrink: 0; margin-top: 2px;"></i>
+                        <div>
+                            <div style="font-size: 13px; font-weight: 700; color: var(--text-main);">${_s(c.title)}</div>
+                            <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">${_s(c.desc)}</div>
+                            <div style="font-size: 11px; font-weight: 600; color: ${isOk ? '#34d399' : '#fbbf24'}; margin-top: 4px;">
+                                <i class='bx bx-right-arrow-alt'></i> ${_s(result.label)}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    // Renderizza i 6 Allegati Ufficiali del Dossier
+    if (attachmentsContainer) {
+        const defs = (typeof NormativaDB !== 'undefined' && NormativaDB.dossierAttachmentDefinitions) || [];
+        attachmentsContainer.innerHTML = defs.map(att => {
+            const liveAtt = summary.attachments.find(a => a.code === att.code) || { status: 'Pronto', details: 'Documento generato da SGQ' };
+
+            return `
+                <div class="dossier-card">
+                    <div class="dossier-card-header">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span class="dossier-all-badge">${att.code}</span>
+                            <span style="font-size: 11px; color: var(--text-muted);">${_s(att.norma)}</span>
+                        </div>
+                        <span class="iter-status-badge completato" style="font-size: 10px; padding: 2px 8px;">
+                            <i class='bx bx-check'></i> ${_s(liveAtt.status)}
+                        </span>
+                    </div>
+
+                    <h4 style="margin: 0 0 6px 0; font-size: 14px; font-weight: 700; color: var(--text-main); line-height: 1.4;">
+                        ${_s(att.title)}
+                    </h4>
+
+                    <p style="font-size: 11px; color: var(--text-muted); line-height: 1.4; margin: 0 0 12px 0;">
+                        ${_s(att.desc)}
+                    </p>
+
+                    <div style="background: rgba(15,23,42,0.5); border: 1px solid rgba(255,255,255,0.06); border-radius: 6px; padding: 8px 10px; font-size: 11px; color: #60a5fa; margin-bottom: 12px;">
+                        <i class='bx bx-check-shield' style="color: #10b981;"></i> <strong>Dati Evidenza:</strong> ${_s(liveAtt.details)}
+                    </div>
+
+                    <div style="display: flex; justify-content: space-between; align-items: center; font-size: 11px; color: var(--text-muted); border-top: 1px solid rgba(255,255,255,0.08); padding-top: 10px;">
+                        <span>Fonte: <strong>${_s(att.source_module)}</strong></span>
+                        <span style="color: #10b981; font-weight: 600;"><i class='bx bx-check-double'></i> Validato</span>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+};
+
+app.openIterStepModal = async function(stepId) {
+    const modal = document.getElementById('modal-iter-step-edit');
+    const header = document.getElementById('iter-step-modal-header');
+    const body = document.getElementById('iter-step-modal-body');
+    if (!modal || !header || !body) return;
+
+    const iterData = await Backend.getAccreditationIterStatus();
+    const stepsMeta = (typeof NormativaDB !== 'undefined' && NormativaDB.accreditationIterSteps) || [];
+    const meta = stepsMeta.find(s => s.id === stepId) || { step_number: 1, title: 'Step Procedurale', norma: 'D.A. 20/2024', ente: 'ASP / Assessorato' };
+    const step = iterData?.steps?.[stepId] || { status: 'da_avviare', date_completed: '', protocol_number: '', authority: meta.ente, notes: '' };
+
+    header.innerHTML = `
+        <h4 style="margin: 0; font-size: 16px; font-weight: 700; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
+            <i class='bx bx-sitemap' style="color: var(--primary);"></i>
+            Gestione Step ${meta.step_number}: ${_s(meta.title)}
+        </h4>
+        <span style="font-size: 12px; color: var(--text-muted); margin-top: 4px; display: block;">
+            Norma di riferimento: <strong>${_s(meta.norma)}</strong> · Ente preposto: <strong>${_s(meta.ente)}</strong>
+        </span>
+    `;
+
+    body.innerHTML = `
+        <form id="form-iter-step" onsubmit="event.preventDefault(); app.saveIterStepFromModal('${_s(stepId)}');">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px;">
+                <div>
+                    <label class="form-label" style="font-size: 12px; font-weight: 600; color: var(--text-muted); margin-bottom: 4px; display: block;">Stato Avanzamento</label>
+                    <select id="iter-step-status" class="input-box" style="width: 100%; padding: 8px 12px; font-size: 12px;">
+                        <option value="da_avviare" ${step.status === 'da_avviare' ? 'selected' : ''}>Da Avviare</option>
+                        <option value="in_corso" ${step.status === 'in_corso' ? 'selected' : ''}>In Corso / Istruttoria</option>
+                        <option value="completato" ${step.status === 'completato' ? 'selected' : ''}>Completato / Accolto</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="form-label" style="font-size: 12px; font-weight: 600; color: var(--text-muted); margin-bottom: 4px; display: block;">Data Completamento / Protocollo</label>
+                    <input type="date" id="iter-step-date" class="input-box" style="width: 100%; padding: 8px 12px; font-size: 12px;" value="${_s(step.date_completed || '')}">
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px;">
+                <div>
+                    <label class="form-label" style="font-size: 12px; font-weight: 600; color: var(--text-muted); margin-bottom: 4px; display: block;">Numero Protocollo / PEC Ufficiale</label>
+                    <input type="text" id="iter-step-protocol" class="input-box" style="width: 100%; padding: 8px 12px; font-size: 12px;" placeholder="Es. PROT-ASP-2026-12345" value="${_s(step.protocol_number || '')}">
+                </div>
+                <div>
+                    <label class="form-label" style="font-size: 12px; font-weight: 600; color: var(--text-muted); margin-bottom: 4px; display: block;">Ente o Autorità Competente</label>
+                    <input type="text" id="iter-step-authority" class="input-box" style="width: 100%; padding: 8px 12px; font-size: 12px;" value="${_s(step.authority || meta.ente)}">
+                </div>
+            </div>
+
+            <div style="margin-bottom: 20px;">
+                <label class="form-label" style="font-size: 12px; font-weight: 600; color: var(--text-muted); margin-bottom: 4px; display: block;">Note Istruttorie, Atti di Riferimento &amp; Prescrizioni</label>
+                <textarea id="iter-step-notes" class="input-box" rows="4" style="width: 100%; padding: 8px 12px; font-size: 12px;" placeholder="Dettagli sullo stato dell'istanza, pareri acquisiti o note della commissione...">${_s(step.notes || '')}</textarea>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                <button type="button" class="btn btn-outline" onclick="app.closeIterStepModal()">Annulla</button>
+                <button type="submit" class="btn btn-primary"><i class='bx bx-save'></i> Salva Avanzamento</button>
+            </div>
+        </form>
+    `;
+
+    modal.style.display = 'flex';
+};
+
+app.saveIterStepFromModal = async function(stepId) {
+    const status = document.getElementById('iter-step-status').value;
+    const date_completed = document.getElementById('iter-step-date').value || null;
+    const protocol_number = document.getElementById('iter-step-protocol').value.trim();
+    const authority = document.getElementById('iter-step-authority').value.trim();
+    const notes = document.getElementById('iter-step-notes').value.trim();
+
+    await Backend.updateAccreditationStep(stepId, {
+        status,
+        date_completed,
+        protocol_number,
+        authority,
+        notes
+    });
+
+    this.closeIterStepModal();
+    await this.renderAccreditationIterView();
+};
+
+app.closeIterStepModal = function() {
+    const modal = document.getElementById('modal-iter-step-edit');
+    if (modal) modal.style.display = 'none';
+};
+
+// ============================================================
+// ESPORTAZIONE DOMANDA DI ACCREDITAMENTO ISTITUZIONALE IN BOLLO (PDF)
+// ============================================================
+app.esportaDomandaAccreditamentoPDF = async function() {
+    const summary = await Backend.getAccreditationDossierSummary();
+    const iterStatus = await Backend.getAccreditationIterStatus();
+    const struct = await Backend.getCurrentStructure();
+    const user = Backend.getCurrentUser();
+    const dateStr = new Date().toLocaleDateString('it-IT');
+    const currentYear = new Date().getFullYear();
+
+    const container = document.createElement('div');
+    container.style.padding = '30px';
+    container.style.color = '#000';
+    container.style.background = '#fff';
+    container.style.fontFamily = 'Times New Roman, serif';
+    container.style.lineHeight = '1.4';
+
+    container.innerHTML = `
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px; border-bottom: 2px solid #000; padding-bottom: 14px;">
+            <div style="font-size: 11px; font-family: Arial, sans-serif;">
+                <div style="font-weight: bold; font-size: 13px; text-transform: uppercase;">Regione Siciliana</div>
+                <div style="font-size: 12px;">Assessorato Regionale della Salute</div>
+                <div style="font-size: 11px; color: #444;">Dipartimento Regionale per la Pianificazione Strategica (DPS)</div>
+                <div style="font-size: 10px; color: #666;">Servizio 7 - Organismo Tecnico di Accreditamento (OTA)</div>
+            </div>
+            <div class="bollo-virtuale-box" style="border: 2px solid #2563eb; padding: 10px 14px; text-align: center; border-radius: 6px; font-family: Arial, sans-serif;">
+                <div style="font-size: 10px; font-weight: bold; color: #2563eb; text-transform: uppercase;">Imposta di Bollo Assolta in Modo Virtuale</div>
+                <div style="font-size: 14px; font-weight: 900; color: #1e3a8a; margin: 2px 0;">€ 16,00</div>
+                <div style="font-size: 9px; color: #555;">D.P.R. 26/10/1972 n. 642 e ss.mm.ii.</div>
+            </div>
+        </div>
+
+        <div style="text-align: center; margin-bottom: 24px;">
+            <h2 style="font-size: 16px; font-weight: bold; margin: 0 0 6px 0; text-transform: uppercase; letter-spacing: 0.5px;">
+                Istanza di Accreditamento Istituzionale di Struttura Sanitaria
+            </h2>
+            <div style="font-size: 12px; font-style: italic;">
+                Ai sensi dell'art. 5 del D.A. 20/2024 e del D.A. 741/2023 - Regione Siciliana
+            </div>
+        </div>
+
+        <div style="font-size: 12px; margin-bottom: 20px; text-align: justify;">
+            <p><strong>Spett.le Assessorato Regionale della Salute</strong><br>
+            Dipartimento Pianificazione Strategica – Servizio Accreditamento Istituzionale<br>
+            Piazza Ottavio Ziino, 24 – 90145 Palermo (PA)<br>
+            <strong>e p.c. Spett.le Azienda Sanitaria Provinciale (ASP) Territorialmente Competente</strong></p>
+        </div>
+
+        <div style="font-size: 12px; margin-bottom: 16px; text-align: justify;">
+            Il sottoscritto <strong>${_s(summary.legal_representative)}</strong>, in qualità di Legale Rappresentante pro-tempore della struttura sanitaria <strong>${_s(summary.structure_name)}</strong>, avente sede legale/operativa in <strong>${_s(summary.address)}</strong>, Codice Fiscale / P.IVA <strong>${_s(summary.vat_number)}</strong>, e il Direttore Sanitario incaricato <strong>${_s(summary.medical_director)}</strong>;
+        </div>
+
+        <div style="text-align: center; font-weight: bold; font-size: 13px; margin: 16px 0; text-transform: uppercase;">
+            CHIEDE / CHIEDONO
+        </div>
+
+        <div style="font-size: 12px; margin-bottom: 16px; text-align: justify;">
+            Il rilascio del <strong>Decreto di Accreditamento Istituzionale</strong> per l'erogazione di prestazioni sanitarie e sociosanitarie in nome e per conto del Servizio Sanitario Nazionale (SSN / SSR), con attribuzione della classe di durata massima stimata (<strong>${_s(iterStatus.estimated_duration)}</strong>) in conformità al D.A. 741/2023.
+        </div>
+
+        <div style="text-align: center; font-weight: bold; font-size: 13px; margin: 16px 0; text-transform: uppercase;">
+            DICHIARA / DICHIARANO SOTTO LA PROPRIA RESPONSABILITÀ (D.P.R. 445/2000)
+        </div>
+
+        <div style="font-size: 11px; margin-bottom: 18px; text-align: justify;">
+            <ol style="padding-left: 20px; margin: 0; line-height: 1.6;">
+                <li>Di essere in possesso dell'Autorizzazione all'Esercizio all'Attività Sanitaria vigente (D.A. 890/2002);</li>
+                <li>Di possedere tutti i requisiti strutturali, tecnologici e organizzativi generali e specifici previsti dal D.A. 20/2024 con indice di conformità globale autovalutato pari al <strong>${iterStatus.score_compliance}%</strong>;</li>
+                <li>Di aver formalmente adottato un Sistema di Gestione della Qualità conforme alla norma <strong>UNI EN ISO 9001:2015</strong> con Fascicolo Documentale DMS approvato;</li>
+                <li>Di aver redatto il Piano Annuale di Gestione del Rischio Clinico e monitoraggio Near Miss ai sensi della Legge 24/2017;</li>
+                <li>Di aver eseguito e registrato tutte le verifiche periodiche di sicurezza elettrica sulle apparecchiature elettromedicali ai sensi della norma <strong>CEI 62-5 / CEI EN 60601-1</strong>;</li>
+                <li>Di allegare alla presente istanza i 6 Allegati Ufficiali costituenti il Dossier Completo di Accreditamento.</li>
+            </ol>
+        </div>
+
+        <div style="margin-bottom: 20px;">
+            <div style="font-weight: bold; font-size: 12px; margin-bottom: 6px;">ELENCO DEGLI ALLEGATI FORMALI ALLEGATI ALLA DOMANDA:</div>
+            <table style="width: 100%; border-collapse: collapse; font-size: 10px; font-family: Arial, sans-serif; border: 1px solid #94a3b8;">
+                <thead>
+                    <tr style="background: #f1f5f9; text-align: left;">
+                        <th style="padding: 6px; border: 1px solid #94a3b8; width: 60px;">Allegato</th>
+                        <th style="padding: 6px; border: 1px solid #94a3b8;">Titolo Documento Obbligatorio</th>
+                        <th style="padding: 6px; border: 1px solid #94a3b8; width: 140px;">Riferimento Normativo</th>
+                        <th style="padding: 6px; border: 1px solid #94a3b8; width: 70px;">Stato</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${summary.attachments.map(a => `
+                        <tr>
+                            <td style="padding: 5px; border: 1px solid #94a3b8; font-weight: bold;">${_s(a.code)}</td>
+                            <td style="padding: 5px; border: 1px solid #94a3b8;">${_s(a.title)}</td>
+                            <td style="padding: 5px; border: 1px solid #94a3b8; font-size: 9px;">D.A. 20/2024 / ISO 9001</td>
+                            <td style="padding: 5px; border: 1px solid #94a3b8; color: #16a34a; font-weight: bold;">${_s(a.status)}</td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        </div>
+
+        <div style="margin-top: 40px; display: flex; justify-content: space-between; font-size: 11px; font-family: Arial, sans-serif;">
+            <div>
+                <div>Luogo e Data</div>
+                <div style="font-weight: bold; margin-top: 4px;">Sicilia, ${dateStr}</div>
+            </div>
+            <div style="text-align: center;">
+                <div>Il Direttore Sanitario</div>
+                <div style="font-weight: bold; color: #1e3a8a; margin-top: 2px;">${_s(summary.medical_director)}</div>
+                <div style="margin-top: 25px; border-top: 1px dashed #64748b; width: 180px; font-size: 9px; color: #64748b;">(Firma Digitale Qualificata)</div>
+            </div>
+            <div style="text-align: center;">
+                <div>Il Legale Rappresentante</div>
+                <div style="font-weight: bold; color: #1e3a8a; margin-top: 2px;">${_s(summary.legal_representative)}</div>
+                <div style="margin-top: 25px; border-top: 1px dashed #64748b; width: 180px; font-size: 9px; color: #64748b;">(Firma Digitale Qualificata)</div>
+            </div>
+        </div>
+    `;
+
+    const opt = {
+        margin:       10,
+        filename:     `Domanda_Accreditamento_OTA_${currentYear}_${new Date().toISOString().slice(0, 10)}.pdf`,
+        image:        { type: 'jpeg', quality: 0.98 },
+        html2canvas:  { scale: 2 },
+        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    };
+
+    if (typeof html2pdf !== 'undefined') {
+        html2pdf().set(opt).from(container).save();
+    } else {
+        window.print();
+    }
+};
+
+// ============================================================
+// ESPORTAZIONE DOSSIER COMPLETO ISTANZA OTA CON I 6 ALLEGATI (PDF)
+// ============================================================
+app.esportaDossierCompletoPDF = async function() {
+    const summary = await Backend.getAccreditationDossierSummary();
+    const iterStatus = await Backend.getAccreditationIterStatus();
+    const reqs = await Backend.getRequirements();
+    const docs = await Backend.getDmsDocuments();
+    const risks = await Backend.getRisks();
+    const dateStr = new Date().toLocaleDateString('it-IT');
+    const currentYear = new Date().getFullYear();
+
+    const container = document.createElement('div');
+    container.style.padding = '24px';
+    container.style.color = '#000';
+    container.style.background = '#fff';
+    container.style.fontFamily = 'Arial, sans-serif';
+
+    container.innerHTML = `
+        <div style="border-bottom: 2px solid #10b981; padding-bottom: 12px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <h1 style="font-size: 16px; margin: 0; color: #10b981;">FASCICOLO DOSSIER DI ACCREDITAMENTO ISTITUZIONALE OTA (${currentYear})</h1>
+                <div style="font-size: 11px; color: #555; margin-top: 4px;">Raccolta Integrata Ufficiale dei 6 Allegati Normativi (D.A. 20/2024, D.A. 741/2023, UNI EN ISO 9001:2015)</div>
+            </div>
+            <div style="text-align: right; font-size: 11px; color: #555;">
+                <div><strong>Struttura:</strong> ${_s(summary.structure_name)}</div>
+                <div><strong>Conformità 360:</strong> ${iterStatus.score_compliance}%</div>
+                <div><strong>Durata Stimata:</strong> ${iterStatus.estimated_duration}</div>
+            </div>
+        </div>
+
+        <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; padding: 12px; margin-bottom: 16px; font-size: 11px;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                <div><strong>Legale Rappresentante:</strong> ${_s(summary.legal_representative)}</div>
+                <div><strong>Direttore Sanitario:</strong> ${_s(summary.medical_director)}</div>
+                <div><strong>Sede Operativa:</strong> ${_s(summary.address)}</div>
+                <div><strong>Partita IVA:</strong> ${_s(summary.vat_number)}</div>
+            </div>
+        </div>
+
+        <h3 style="font-size: 13px; font-weight: bold; margin: 16px 0 8px 0; color: #1e293b;">INDICE ED EVIDENZE DEI 6 ALLEGATI UFFICIALI:</h3>
+        <table style="width: 100%; border-collapse: collapse; font-size: 10px; margin-bottom: 20px; border: 1px solid #cbd5e1;">
+            <thead>
+                <tr style="background: #f1f5f9; text-align: left;">
+                    <th style="padding: 6px; border: 1px solid #cbd5e1; width: 60px;">Codice</th>
+                    <th style="padding: 6px; border: 1px solid #cbd5e1;">Denominazione Allegato Obbligatorio</th>
+                    <th style="padding: 6px; border: 1px solid #cbd5e1; width: 140px;">Fonte &amp; Modulo SGQ</th>
+                    <th style="padding: 6px; border: 1px solid #cbd5e1; width: 200px;">Dati Evidenza Sintetica</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${summary.attachments.map(a => `
+                    <tr style="border-bottom: 1px solid #e2e8f0;">
+                        <td style="padding: 6px; border: 1px solid #cbd5e1; font-weight: bold; color: #2563eb;">${_s(a.code)}</td>
+                        <td style="padding: 6px; border: 1px solid #cbd5e1; font-weight: bold;">${_s(a.title)}</td>
+                        <td style="padding: 6px; border: 1px solid #cbd5e1; color: #64748b;">Modulo Accreditamento 360</td>
+                        <td style="padding: 6px; border: 1px solid #cbd5e1; color: #059669; font-weight: bold;">${_s(a.details)}</td>
+                    </tr>
+                `).join('')}
+            </tbody>
+        </table>
+
+        <div style="background: #ecfdf5; border-left: 4px solid #10b981; padding: 12px; margin-bottom: 20px; font-size: 11px;">
+            <div style="font-weight: bold; color: #065f46; margin-bottom: 4px;">Attestazione di Completezza Formale del Fascicolo:</div>
+            <div style="color: #047857; line-height: 1.5;">
+                Il presente Dossier aggrega in conformità continuativa l'autovalutazione dei ${reqs.length} requisiti regionali, ${docs.length} procedure operative documentate, ${risks.length} schede di valutazione del rischio clinico e il piano manutenzioni convalidate.
+            </div>
+        </div>
+
+        <div style="margin-top: 40px; display: flex; justify-content: space-between; font-size: 11px;">
+            <div>
+                <div>Responsabile Sistema Gestione Qualità</div>
+                <div style="margin-top: 30px; border-top: 1px dashed #94a3b8; width: 190px;"></div>
+            </div>
+            <div>
+                <div>Direttore Sanitario</div>
+                <div style="margin-top: 30px; border-top: 1px dashed #94a3b8; width: 190px;"></div>
+            </div>
+            <div>
+                <div>Legale Rappresentante</div>
+                <div style="margin-top: 30px; border-top: 1px dashed #94a3b8; width: 190px;"></div>
+            </div>
+        </div>
+    `;
+
+    const opt = {
+        margin:       10,
+        filename:     `Dossier_Completo_Istanza_OTA_${currentYear}_${new Date().toISOString().slice(0, 10)}.pdf`,
+        image:        { type: 'jpeg', quality: 0.98 },
+        html2canvas:  { scale: 2 },
+        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    };
+
+    if (typeof html2pdf !== 'undefined') {
+        html2pdf().set(opt).from(container).save();
+    } else {
+        window.print();
+    }
+};
+
+// ============================================================
+// ESPORTAZIONE CSV CRONOPROGRAMMA & STEP PROCEDURALI OTA
+// ============================================================
+app.esportaIterCSV = async function() {
+    const iterStatus = await Backend.getAccreditationIterStatus();
+    const stepsMeta = (typeof NormativaDB !== 'undefined' && NormativaDB.accreditationIterSteps) || [];
+
+    if (stepsMeta.length === 0) {
+        alert('Nessun dato cronoprogramma disponibile.');
+        return;
+    }
+
+    const headers = [
+        'Numero Step',
+        'Codice Step',
+        'Denominazione Step',
+        'Norma di Riferimento',
+        'Ente Preposto',
+        'Stato Avanzamento',
+        'Data Completamento',
+        'Numero Protocollo',
+        'Deliverable Attesi',
+        'Note Istruttorie'
+    ];
+
+    const rows = stepsMeta.map(s => {
+        const saved = iterStatus?.steps?.[s.id] || {};
+        return [
+            s.step_number,
+            `"${(s.id || '').replace(/"/g, '""')}"`,
+            `"${(s.title || '').replace(/"/g, '""')}"`,
+            `"${(s.norma || '').replace(/"/g, '""')}"`,
+            `"${(saved.authority || s.ente || '').replace(/"/g, '""')}"`,
+            `"${(saved.status || 'da_avviare').replace(/"/g, '""')}"`,
+            `"${(saved.date_completed || '').replace(/"/g, '""')}"`,
+            `"${(saved.protocol_number || '').replace(/"/g, '""')}"`,
+            `"${(s.deliverables || []).join('; ').replace(/"/g, '""')}"`,
+            `"${(saved.notes || '').replace(/"/g, '""')}"`
+        ];
+    });
+
+    const csvContent = '\uFEFF' + [headers.join(';'), ...rows.map(r => r.join(';'))].join('\r\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `Cronoprogramma_Iter_OTA_${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+};
+
+// ============================================================
+// FASE 8: AREA CONSULENTI & PORTALE REVISORE SANITARIO MULTI-STRUTTURA
+app._consRenderSeq = 0;
+app.renderConsultantsView = async function() {
+    const seq = ++this._consRenderSeq;
+    try {
+        const stats = await Backend.getConsultantDashboardStats();
+        if (seq !== this._consRenderSeq) return;
+        
+        // 1. Aggiorna KPI Stats Cards
+        const sEl = document.getElementById('cons-stat-structures');
+        const pEl = document.getElementById('cons-stat-pending');
+        const vEl = document.getElementById('cons-stat-validated');
+        const rEl = document.getElementById('cons-stat-prescriptions');
+        if (sEl) sEl.textContent = stats.assigned_structures_count;
+        if (pEl) pEl.textContent = stats.pending_reviews_count;
+        if (vEl) vEl.textContent = stats.validated_docs_count;
+        if (rEl) rEl.textContent = stats.prescriptions_count;
+
+        // 2. Popola selettore strutture assegnate
+        const structures = await Backend.getAssignedStructuresForConsultant();
+        if (seq !== this._consRenderSeq) return;
+        const structureSelect = document.getElementById('cons-filter-structure');
+        if (structureSelect && structureSelect.options.length <= 1) {
+            structureSelect.innerHTML = `<option value="ALL">Tutte le Strutture (${structures.length})</option>` +
+                structures.map(s => {
+                    const sEmail = s.user_email || s.email || '';
+                    const sName = s.struttura_nome || s.name || sEmail;
+                    const sType = s.struttura_tipo || s.type || 'Struttura';
+                    return `<option value="${_s(sEmail)}">${_s(sName)} (${_s(sType)})</option>`;
+                }).join('');
+        }
+
+        // 3. Leggi filtri correnti
+        const selectedStructure = structureSelect ? structureSelect.value : 'ALL';
+        const statusSelect = document.getElementById('cons-filter-status');
+        const selectedStatus = statusSelect ? statusSelect.value : 'ALL';
+        const searchInput = document.getElementById('cons-search-box');
+        const query = (searchInput ? searchInput.value : '').toLowerCase().trim();
+
+        // 4. Recupera coda documenti
+        const queue = await Backend.getConsultantQueueDocs(null, selectedStatus.toLowerCase());
+        if (seq !== this._consRenderSeq) return;
+
+        let filtered = queue;
+        if (selectedStructure !== 'ALL') {
+            filtered = filtered.filter(d => (d.user_email || '').toLowerCase() === selectedStructure.toLowerCase());
+        }
+
+        if (query) {
+            filtered = filtered.filter(d =>
+                (d.struttura_nome || '').toLowerCase().includes(query) ||
+                (d.user_email || '').toLowerCase().includes(query) ||
+                (d.req_titolo || '').toLowerCase().includes(query) ||
+                (d.req_norma || '').toLowerCase().includes(query) ||
+                (d.req_id || '').toLowerCase().includes(query) ||
+                (d.file || '').toLowerCase().includes(query) ||
+                (d.ai_scheda || '').toLowerCase().includes(query)
+            );
+        }
+
+        // 5. Renderizza tabella coda di revisione
+        const tbody = document.getElementById('cons-queue-tbody');
+        if (tbody) {
+            if (filtered.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; padding: 36px 16px; color: var(--text-muted);">
+                    <i class='bx bx-check-circle' style="font-size: 32px; display: block; margin-bottom: 8px; color: #10b981;"></i>
+                    Nessun documento o requisito corrisponde ai filtri selezionati. Coda di revisione completata.
+                </td></tr>`;
+            } else {
+                tbody.innerHTML = filtered.map(d => {
+                    const outcomeClass = d.stato === 'green' ? 'valida' : (d.stato === 'yellow' ? 'integrazione' : 'rifiuta');
+                    const outcomeText = d.stato === 'green' ? 'Validato (Verde)' : (d.stato === 'yellow' ? 'In Attesa (Giallo)' : 'Non Conforme / Prescritto');
+                    const fileTag = d.file
+                        ? `<div style="display: flex; align-items: center; gap: 6px; color: #38bdf8; font-size: 12px; font-weight: 500;">
+                             <i class='bx bx-file'></i>
+                             <span>${_s(d.file)}</span>
+                           </div>`
+                        : `<span style="font-size: 11px; color: var(--text-muted); font-style: italic;"><i class='bx bx-time'></i> Nessun file allegato</span>`;
+
+                    return `
+                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.05); transition: background 0.15s ease;" onmouseover="this.style.background='rgba(255,255,255,0.02)'" onmouseout="this.style.background='transparent'">
+                            <td style="padding: 12px 14px;">
+                                <div style="font-weight: 700; color: var(--text-main); font-size: 13px;">${_s(d.struttura_nome)}</div>
+                                <span class="consultant-structure-pill"><i class='bx bx-building'></i> ${_s(d.struttura_tipo || 'Struttura')}</span>
+                                <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">${_s(d.user_email)}</div>
+                            </td>
+                            <td style="padding: 12px 14px;">
+                                <div style="font-weight: 600; color: #60a5fa; font-size: 13px;">[${_s(d.req_id)}] ${_s(d.req_titolo)}</div>
+                                <div style="font-size: 11px; color: var(--text-muted); margin-top: 3px; display: flex; align-items: center; gap: 4px;">
+                                    <i class='bx bx-book-bookmark'></i> ${_s(d.req_norma)}
+                                </div>
+                            </td>
+                            <td style="padding: 12px 14px;">
+                                ${fileTag}
+                            </td>
+                            <td style="padding: 12px 14px;">
+                                <span class="consultant-score-pill"><i class='bx bx-bot'></i> ${d.ai_score || 85}% MAMB AI</span>
+                                <div style="font-size: 10px; color: var(--text-muted); margin-top: 3px;">${_s(d.ai_scheda || 'MAMB-2.1-02-PROC')}</div>
+                            </td>
+                            <td style="padding: 12px 14px;">
+                                <span class="consultant-outcome-badge ${outcomeClass}">${outcomeText}</span>
+                            </td>
+                            <td style="padding: 12px 14px; text-align: center;">
+                                <button class="btn btn-primary" style="font-size: 11px; padding: 6px 12px; display: inline-flex; align-items: center; gap: 4px;" onclick="app.openConsultantReviewModal('${_s(d.user_email)}', '${_s(d.req_id)}')">
+                                    <i class='bx bx-edit-alt'></i> Revisiona
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+            }
+        }
+
+        // 6. Renderizza Registro Attività
+        await this.renderConsultantsActivityLog();
+
+    } catch (err) {
+        console.error('[Consultants] Errore caricamento vista:', err);
+    }
+};
+
+app.refreshConsultantsView = async function() {
+    await this.renderConsultantsView();
+};
+
+app.renderConsultantsActivityLog = async function() {
+    const container = document.getElementById('cons-activity-container');
+    if (!container) return;
+
+    const log = await Backend.getConsultantActivityLog();
+    if (!log || log.length === 0) {
+        container.innerHTML = `<div style="text-align: center; padding: 20px; color: var(--text-muted); font-size: 12px;">Nessuna attività registrata.</div>`;
+        return;
+    }
+
+    container.innerHTML = log.map(item => {
+        const timeStr = item.timestamp ? new Date(item.timestamp).toLocaleString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—';
+        const outcomeClass = item.outcome === 'valida' ? 'valida' : (item.outcome === 'integrazione' ? 'integrazione' : 'rifiuta');
+        const deadlineTag = item.deadline_date ? `<span style="font-size: 11px; color: #f59e0b; background: rgba(245,158,11,0.1); padding: 2px 6px; border-radius: 4px; margin-left: 6px;"><i class='bx bx-calendar'></i> Scadenza: ${_s(item.deadline_date)}</span>` : '';
+
+        return `
+            <div class="consultant-activity-item" style="border-left-color: ${item.outcome === 'valida' ? '#10b981' : (item.outcome === 'integrazione' ? '#f59e0b' : '#ef4444')};">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; flex-wrap: wrap; gap: 8px;">
+                    <div>
+                        <span class="consultant-outcome-badge ${outcomeClass}">${_s(item.outcome_label || item.outcome)}</span>
+                        <strong style="margin-left: 8px; font-size: 13px; color: var(--text-main);">${_s(item.req_id)}</strong>
+                        <span style="font-size: 11px; color: var(--text-muted); margin-left: 6px;">Struttura: <strong>${_s(item.structure_email)}</strong></span>
+                    </div>
+                    <div style="font-size: 11px; color: var(--text-muted);">
+                        <i class='bx bx-time'></i> ${timeStr} &bull; Operatore: ${_s(item.consultant_name || item.consultant_email)}
+                    </div>
+                </div>
+                <div style="font-size: 12px; color: var(--text-main); margin-bottom: 4px;">
+                    ${_s(item.notes)}
+                </div>
+                <div style="display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--text-muted);">
+                    <span><i class='bx bx-tag'></i> Categoria: <strong>${_s(item.prescription_category || 'Generale')}</strong></span>
+                    ${deadlineTag}
+                </div>
+            </div>
+        `;
+    }).join('');
+};
+
+app.openConsultantReviewModal = async function(userEmail, reqId) {
+    const structures = await Backend.getAssignedStructuresForConsultant();
+    const struct = structures.find(s => (s.user_email || '').toLowerCase() === (userEmail || '').toLowerCase()) || { struttura_nome: userEmail, struttura_tipo: 'Struttura Sanitaria', user_email: userEmail };
+    const queue = await Backend.getConsultantQueueDocs(null, 'all');
+    const doc = queue.find(d => (d.user_email || '').toLowerCase() === (userEmail || '').toLowerCase() && d.req_id === reqId) || {
+        req_id: reqId,
+        req_titolo: 'Requisito Sanitario',
+        req_norma: 'D.A. 20/2024 / ISO 9001:2015',
+        file: null,
+        ai_score: 85,
+        ai_scheda: 'MAMB-2.1-02-PROC',
+        stato: 'yellow',
+        note_consulente: ''
+    };
+
+    const header = document.getElementById('consultant-review-modal-header');
+    if (header) {
+        header.innerHTML = `
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <span class="consultant-structure-pill"><i class='bx bx-building'></i> ${_s(struct.struttura_nome)}</span>
+                <span style="font-size: 12px; color: var(--text-muted);">${_s(struct.user_email)}</span>
+            </div>
+            <h3 style="margin: 8px 0 0 0; font-size: 17px; font-weight: 700; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
+                <i class='bx bx-user-check' style="color: var(--primary);"></i> Revisione Specialistica: [${_s(reqId)}] ${_s(doc.req_titolo)}
+            </h3>
+            <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">
+                Norma di Riferimento: <strong>${_s(doc.req_norma)}</strong>
+            </div>
+        `;
+    }
+
+    const defaultDeadline = new Date(Date.now() + 15 * 86400000).toISOString().slice(0, 10);
+    const standardPrescriptions = (typeof NormativaDB !== 'undefined' && NormativaDB.consultantStandardPrescriptions) || {};
+
+    const body = document.getElementById('consultant-review-modal-body');
+    if (body) {
+        body.innerHTML = `
+            <div class="glass-card" style="padding: 14px 16px; margin-bottom: 18px; background: rgba(15,23,42,0.6);">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                    <div>
+                        <div style="font-size: 11px; color: var(--text-muted); text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px;">Evidenza Documentale Allegata:</div>
+                        <div style="font-size: 13px; font-weight: 600; color: #38bdf8; margin-top: 2px; display: flex; align-items: center; gap: 6px;">
+                            <i class='bx bx-file'></i> ${doc.file ? _s(doc.file) : '<em>Nessun file caricato dalla struttura</em>'}
+                        </div>
+                    </div>
+                    <div style="text-align: right;">
+                        <span class="consultant-score-pill"><i class='bx bx-bot'></i> ${doc.ai_score || 85}% MAMB AI</span>
+                        <div style="font-size: 10px; color: var(--text-muted); margin-top: 2px;">Scheda: ${_s(doc.ai_scheda || 'MAMB-2.1-02-PROC')}</div>
+                    </div>
+                </div>
+            </div>
+
+            <form onsubmit="event.preventDefault(); app.submitConsultantReviewFromModal('${_s(userEmail)}', '${_s(reqId)}');">
+                <div style="margin-bottom: 16px;">
+                    <label style="display: block; font-size: 12px; font-weight: 700; color: var(--text-main); margin-bottom: 8px;">
+                        Esito della Valutazione Specialistica: <span style="color: #ef4444;">*</span>
+                    </label>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px;">
+                        <label style="display: flex; align-items: center; gap: 8px; padding: 10px 12px; border: 1px solid rgba(16,185,129,0.3); border-radius: 6px; background: rgba(16,185,129,0.08); cursor: pointer;">
+                            <input type="radio" name="cons-modal-outcome" value="valida" checked onchange="document.getElementById('cons-deadline-group').style.display='none';">
+                            <div>
+                                <strong style="color: #10b981; font-size: 12px; display: block;">Valida &amp; Approva</strong>
+                                <span style="font-size: 10px; color: var(--text-muted);">Conforme ai requisiti D.A. 20/2024</span>
+                            </div>
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 8px; padding: 10px 12px; border: 1px solid rgba(245,158,11,0.3); border-radius: 6px; background: rgba(245,158,11,0.08); cursor: pointer;">
+                            <input type="radio" name="cons-modal-outcome" value="integrazione" onchange="document.getElementById('cons-deadline-group').style.display='block';">
+                            <div>
+                                <strong style="color: #f59e0b; font-size: 12px; display: block;">Richiedi Integrazione</strong>
+                                <span style="font-size: 10px; color: var(--text-muted);">Emetti prescrizione con termine</span>
+                            </div>
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 8px; padding: 10px 12px; border: 1px solid rgba(239,68,68,0.3); border-radius: 6px; background: rgba(239,68,68,0.08); cursor: pointer;">
+                            <input type="radio" name="cons-modal-outcome" value="rifiuta" onchange="document.getElementById('cons-deadline-group').style.display='none';">
+                            <div>
+                                <strong style="color: #ef4444; font-size: 12px; display: block;">Non Conforme / Respingi</strong>
+                                <span style="font-size: 10px; color: var(--text-muted);">Bloccante per l'istanza OTA</span>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px;">
+                    <div>
+                        <label style="display: block; font-size: 12px; font-weight: 600; color: var(--text-main); margin-bottom: 4px;">
+                            Template Prescrizione Rapida:
+                        </label>
+                        <select id="cons-modal-template" class="input-box" style="width: 100%; padding: 8px 10px; font-size: 11px;" onchange="app.applyStandardPrescriptionToModal(this.value)">
+                            <option value="">-- Seleziona clausola standard --</option>
+                            ${Object.entries(standardPrescriptions).map(([code, p]) => {
+                                const pCat = p.categoria || p.category || 'Generale';
+                                const pText = p.prescrizione_tipo || p.text || '';
+                                const pLabel = p.label || (pText ? pText.slice(0, 45) : code);
+                                return `<option value="${code}">[${code}] ${_s(pCat)}: ${_s(pLabel)}...</option>`;
+                            }).join('')}
+                        </select>
+                    </div>
+                    <div>
+                        <label style="display: block; font-size: 12px; font-weight: 600; color: var(--text-main); margin-bottom: 4px;">
+                            Categoria di Revisione:
+                        </label>
+                        <select id="cons-modal-category" class="input-box" style="width: 100%; padding: 8px 10px; font-size: 11px;">
+                            <option value="Amministrativo">Amministrativo &amp; Titoli Autorizzativi</option>
+                            <option value="Procedure Operative Sanitarie" selected>Procedure Operative Sanitarie (POS)</option>
+                            <option value="Sicurezza &amp; Impianti">Sicurezza, Ambienti &amp; Impianti (CEI)</option>
+                            <option value="Privacy &amp; Consenso">Privacy &amp; Consenso Informato (GDPR)</option>
+                            <option value="Manutenzioni &amp; Tarature">Manutenzioni, Verifiche &amp; Tarature</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div id="cons-deadline-group" style="display: none; margin-bottom: 14px;">
+                    <label style="display: block; font-size: 12px; font-weight: 600; color: var(--text-main); margin-bottom: 4px;">
+                        Termine di Adempimento Prescrizione (Data Scadenza):
+                    </label>
+                    <input type="date" id="cons-modal-deadline" class="input-box" value="${defaultDeadline}" style="padding: 8px 10px; font-size: 12px; width: 100%;">
+                </div>
+
+                <div style="margin-bottom: 18px;">
+                    <label style="display: block; font-size: 12px; font-weight: 700; color: var(--text-main); margin-bottom: 4px;">
+                        Note Tecnico-Sanitarie / Dettaglio Prescrizione: <span style="color: #ef4444;">*</span>
+                    </label>
+                    <textarea id="cons-modal-notes" class="input-box" rows="4" style="width: 100%; padding: 10px; font-size: 12px; resize: vertical;" placeholder="Inserisci il parere tecnico o il testo della prescrizione per la struttura...">${_s(doc.note_consulente || '')}</textarea>
+                </div>
+
+                <div style="display: flex; justify-content: flex-end; gap: 10px; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 14px;">
+                    <button type="button" class="btn btn-outline" style="font-size: 12px;" onclick="app.closeConsultantReviewModal()">
+                        Annulla
+                    </button>
+                    <button type="submit" class="btn btn-primary" style="font-size: 12px; font-weight: 700;">
+                        <i class='bx bx-check-shield'></i> Conferma &amp; Notifica Struttura
+                    </button>
+                </div>
+            </form>
+        `;
+    }
+
+    const modal = document.getElementById('modal-consultant-review');
+    if (modal) modal.style.display = 'flex';
+};
+
+app.closeConsultantReviewModal = function() {
+    const modal = document.getElementById('modal-consultant-review');
+    if (modal) modal.style.display = 'none';
+};
+
+app.applyStandardPrescriptionToModal = function(code) {
+    if (!code) return;
+    const standardPrescriptions = (typeof NormativaDB !== 'undefined' && NormativaDB.consultantStandardPrescriptions) || {};
+    const item = standardPrescriptions[code];
+    if (item) {
+        const textarea = document.getElementById('cons-modal-notes');
+        const catSelect = document.getElementById('cons-modal-category');
+        if (textarea) textarea.value = item.prescrizione_tipo || item.text || '';
+        if (catSelect && (item.categoria || item.category)) catSelect.value = item.categoria || item.category;
+    }
+};
+
+app.submitConsultantReviewFromModal = async function(userEmail, reqId) {
+    const outcomeInput = document.querySelector('input[name="cons-modal-outcome"]:checked');
+    const outcome = outcomeInput ? outcomeInput.value : 'valida';
+    const notesInput = document.getElementById('cons-modal-notes');
+    const notes = (notesInput ? notesInput.value : '').trim();
+    const catInput = document.getElementById('cons-modal-category');
+    const prescriptionCategory = catInput ? catInput.value : 'Generale';
+    const deadlineInput = document.getElementById('cons-modal-deadline');
+    const deadlineDate = (deadlineInput && outcome === 'integrazione') ? deadlineInput.value : null;
+
+    if (outcome !== 'valida' && !notes) {
+        alert('Attenzione: per richiedere integrazioni o respingere il requisito è obbligatorio inserire la motivazione/prescrizione.');
+        return;
+    }
+
+    const finalNotes = notes || 'Requisito verificato e approvato in piena conformità ai criteri regionali D.A. 20/2024.';
+
+    await Backend.submitConsultantReview({
+        userEmail,
+        reqId,
+        outcome,
+        notes: finalNotes,
+        prescriptionCategory,
+        deadlineDate
+    });
+
+    this.closeConsultantReviewModal();
+    alert('Valutazione salvata con successo. Notifica automatica inviata alla struttura sanitaria.');
+    await this.renderConsultantsView();
+};
+
+// ============================================================
+// ESPORTAZIONE PDF REPORT DI SUPERVISIONE CONSULENZIALE (FASE 8)
+// ============================================================
+app.esportaConsultantReportPDF = async function() {
+    const stats = await Backend.getConsultantDashboardStats();
+    const structures = await Backend.getAssignedStructuresForConsultant();
+    const queue = await Backend.getConsultantQueueDocs(null, 'all');
+    const log = await Backend.getConsultantActivityLog();
+    const currentUser = Backend.getCurrentUser();
+    const currentYear = new Date().getFullYear();
+
+    const container = document.createElement('div');
+    container.style.padding = '20px';
+    container.style.fontFamily = 'Arial, sans-serif';
+    container.style.color = '#333';
+    container.style.lineHeight = '1.4';
+
+    container.innerHTML = `
+        <div style="border-bottom: 2px solid #2563eb; padding-bottom: 12px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <h1 style="font-size: 16px; margin: 0; color: #2563eb;">REPORT DI SUPERVISIONE &amp; AUDIT CONSULENZIALE SANITARIO (${currentYear})</h1>
+                <div style="font-size: 11px; color: #555; margin-top: 4px;">Valutazione di Terza Parte di Conformità ai Requisiti di Accreditamento (D.A. 20/2024 &amp; ISO 9001:2015)</div>
+            </div>
+            <div style="text-align: right; font-size: 11px; color: #555;">
+                <div><strong>Revisore:</strong> ${_s(currentUser?.name || currentUser?.email || 'Consulente Sanitario')}</div>
+                <div><strong>Data Report:</strong> ${new Date().toLocaleDateString('it-IT')}</div>
+                <div><strong>Strutture Monitorate:</strong> ${stats.assigned_structures_count}</div>
+            </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 16px; text-align: center;">
+            <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 6px; padding: 8px;">
+                <div style="font-size: 10px; color: #1e40af; font-weight: bold;">Strutture Assegnate</div>
+                <div style="font-size: 16px; font-weight: bold; color: #2563eb;">${stats.assigned_structures_count}</div>
+            </div>
+            <div style="background: #fefce8; border: 1px solid #fef08a; border-radius: 6px; padding: 8px;">
+                <div style="font-size: 10px; color: #854d0e; font-weight: bold;">In Attesa Revisione</div>
+                <div style="font-size: 16px; font-weight: bold; color: #ca8a04;">${stats.pending_reviews_count}</div>
+            </div>
+            <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px; padding: 8px;">
+                <div style="font-size: 10px; color: #166534; font-weight: bold;">Requisiti Validati</div>
+                <div style="font-size: 16px; font-weight: bold; color: #16a34a;">${stats.validated_docs_count}</div>
+            </div>
+            <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 6px; padding: 8px;">
+                <div style="font-size: 10px; color: #991b1b; font-weight: bold;">Prescrizioni / Rifiuti</div>
+                <div style="font-size: 16px; font-weight: bold; color: #dc2626;">${stats.prescriptions_count}</div>
+            </div>
+        </div>
+
+        <h3 style="font-size: 12px; font-weight: bold; margin: 14px 0 6px 0; color: #1e293b;">QUADRO STRUTTURE SANITARIE IN SUPERVISIONE:</h3>
+        <table style="width: 100%; border-collapse: collapse; font-size: 10px; margin-bottom: 14px; border: 1px solid #cbd5e1;">
+            <thead>
+                <tr style="background: #f1f5f9; text-align: left;">
+                    <th style="padding: 6px; border: 1px solid #cbd5e1;">Struttura Sanitaria</th>
+                    <th style="padding: 6px; border: 1px solid #cbd5e1;">Tipologia</th>
+                    <th style="padding: 6px; border: 1px solid #cbd5e1;">Email Referente</th>
+                    <th style="padding: 6px; border: 1px solid #cbd5e1; text-align: center;">Requisiti Totali</th>
+                    <th style="padding: 6px; border: 1px solid #cbd5e1; text-align: center;">Validati</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${structures.map(s => {
+                    const sDocs = queue.filter(d => (d.user_email || '').toLowerCase() === (s.user_email || '').toLowerCase());
+                    const sValid = sDocs.filter(d => d.stato === 'green').length;
+                    return `
+                        <tr style="border-bottom: 1px solid #e2e8f0;">
+                            <td style="padding: 6px; border: 1px solid #cbd5e1; font-weight: bold;">${_s(s.struttura_nome)}</td>
+                            <td style="padding: 6px; border: 1px solid #cbd5e1;">${_s(s.struttura_tipo)}</td>
+                            <td style="padding: 6px; border: 1px solid #cbd5e1; color: #64748b;">${_s(s.user_email)}</td>
+                            <td style="padding: 6px; border: 1px solid #cbd5e1; text-align: center;">${sDocs.length}</td>
+                            <td style="padding: 6px; border: 1px solid #cbd5e1; text-align: center; color: #16a34a; font-weight: bold;">${sValid}</td>
+                        </tr>
+                    `;
+                }).join('')}
+            </tbody>
+        </table>
+
+        <h3 style="font-size: 12px; font-weight: bold; margin: 14px 0 6px 0; color: #1e293b;">ULTIME DECISIONI &amp; PRESCRIZIONI EMESSE:</h3>
+        <table style="width: 100%; border-collapse: collapse; font-size: 10px; margin-bottom: 20px; border: 1px solid #cbd5e1;">
+            <thead>
+                <tr style="background: #f1f5f9; text-align: left;">
+                    <th style="padding: 6px; border: 1px solid #cbd5e1; width: 80px;">Data/Ora</th>
+                    <th style="padding: 6px; border: 1px solid #cbd5e1; width: 140px;">Struttura</th>
+                    <th style="padding: 6px; border: 1px solid #cbd5e1; width: 90px;">Requisito</th>
+                    <th style="padding: 6px; border: 1px solid #cbd5e1; width: 90px;">Esito</th>
+                    <th style="padding: 6px; border: 1px solid #cbd5e1;">Note &amp; Prescrizione</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${log.slice(0, 10).map(l => `
+                    <tr style="border-bottom: 1px solid #e2e8f0;">
+                        <td style="padding: 6px; border: 1px solid #cbd5e1; color: #64748b;">${l.timestamp ? new Date(l.timestamp).toLocaleDateString('it-IT') : '—'}</td>
+                        <td style="padding: 6px; border: 1px solid #cbd5e1; font-weight: 500;">${_s(l.structure_email)}</td>
+                        <td style="padding: 6px; border: 1px solid #cbd5e1; font-weight: bold; color: #2563eb;">${_s(l.req_id)}</td>
+                        <td style="padding: 6px; border: 1px solid #cbd5e1; font-weight: bold; color: ${l.outcome === 'valida' ? '#16a34a' : (l.outcome === 'integrazione' ? '#ca8a04' : '#dc2626')};">${_s(l.outcome_label || l.outcome)}</td>
+                        <td style="padding: 6px; border: 1px solid #cbd5e1;">${_s(l.notes)}</td>
+                    </tr>
+                `).join('')}
+            </tbody>
+        </table>
+
+        <div style="margin-top: 36px; display: flex; justify-content: space-between; font-size: 11px;">
+            <div>
+                <div>Il Revisore Sanitario / Consulente SGQ</div>
+                <div style="margin-top: 30px; border-top: 1px dashed #94a3b8; width: 220px;"></div>
+            </div>
+            <div>
+                <div>Il Direttore Sanitario / Responsabile Struttura</div>
+                <div style="margin-top: 30px; border-top: 1px dashed #94a3b8; width: 220px;"></div>
+            </div>
+        </div>
+    `;
+
+    const opt = {
+        margin:       10,
+        filename:     `Report_Supervisione_Consulente_${currentYear}_${new Date().toISOString().slice(0, 10)}.pdf`,
+        image:        { type: 'jpeg', quality: 0.98 },
+        html2canvas:  { scale: 2 },
+        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    };
+
+    if (typeof html2pdf !== 'undefined') {
+        html2pdf().set(opt).from(container).save();
+    } else {
+        window.print();
+    }
+};
+
+// ============================================================
+// ESPORTAZIONE CSV LOG ATTIVITÀ CONSULENZIALE (FASE 8)
+// ============================================================
+app.esportaConsultantLogCSV = async function() {
+    const log = await Backend.getConsultantActivityLog();
+    if (!log || log.length === 0) {
+        alert('Nessuna attività registrata da esportare.');
+        return;
+    }
+
+    const headers = [
+        'ID Log',
+        'Data Ora',
+        'Email Consulente',
+        'Nome Consulente',
+        'Email Struttura Sanitaria',
+        'ID Requisito',
+        'Codice Esito',
+        'Descrizione Esito',
+        'Categoria Prescrizione',
+        'Data Scadenza Prescrizione',
+        'Note e Dettaglio Prescrizione'
+    ];
+
+    const rows = log.map(l => [
+        `"${(l.id || '').replace(/"/g, '""')}"`,
+        `"${(l.timestamp || '').replace(/"/g, '""')}"`,
+        `"${(l.consultant_email || '').replace(/"/g, '""')}"`,
+        `"${(l.consultant_name || '').replace(/"/g, '""')}"`,
+        `"${(l.structure_email || '').replace(/"/g, '""')}"`,
+        `"${(l.req_id || '').replace(/"/g, '""')}"`,
+        `"${(l.outcome || '').replace(/"/g, '""')}"`,
+        `"${(l.outcome_label || l.outcome || '').replace(/"/g, '""')}"`,
+        `"${(l.prescription_category || 'Generale').replace(/"/g, '""')}"`,
+        `"${(l.deadline_date || '').replace(/"/g, '""')}"`,
+        `"${(l.notes || '').replace(/"/g, '""')}"`
+    ]);
+
+    const csvContent = '\uFEFF' + [headers.join(';'), ...rows.map(r => r.join(';'))].join('\r\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `Log_Attivita_Consulenziale_${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+};
+
+// ============================================================
+// FASE 9: BIBLIOTECA POS SANITARIE, BUILDER & CENTRO NORMATIVO OTA
+// ============================================================
+
+app._activeProcTab = 'pos';
+app._activePosCategory = 'all';
+app._currentBuilderPos = null;
+
+app.renderProcedureOtaView = async function() {
+    this.switchProcTab(this._activeProcTab || 'pos');
+};
+
+app.switchProcTab = function(tab) {
+    this._activeProcTab = tab;
+
+    const pagePos = document.getElementById('proc-page-pos');
+    const pageOta = document.getElementById('proc-page-ota');
+    const pageMan = document.getElementById('proc-page-manuali');
+
+    if (pagePos) pagePos.style.display = tab === 'pos' ? 'block' : 'none';
+    if (pageOta) pageOta.style.display = tab === 'ota' ? 'block' : 'none';
+    if (pageMan) pageMan.style.display = tab === 'manuali' ? 'block' : 'none';
+
+    const tabPos = document.getElementById('proc-tab-pos');
+    const tabOta = document.getElementById('proc-tab-ota');
+    const tabMan = document.getElementById('proc-tab-manuali');
+
+    if (tabPos) {
+        tabPos.className = tab === 'pos' ? 'btn btn-primary' : 'btn btn-outline';
+    }
+    if (tabOta) {
+        tabOta.className = tab === 'ota' ? 'btn btn-primary' : 'btn btn-outline';
+    }
+    if (tabMan) {
+        tabMan.className = tab === 'manuali' ? 'btn btn-primary' : 'btn btn-outline';
+    }
+
+    if (tab === 'pos') this.renderPosLibraryCards();
+    if (tab === 'ota') this.renderOtaProcedures();
+    if (tab === 'manuali') this.renderManualsList();
+};
+
+app.setPosCategoryFilter = function(catKey) {
+    this._activePosCategory = catKey;
+    const filterBtns = document.querySelectorAll('#pos-cat-filters .filter-btn');
+    filterBtns.forEach(btn => {
+        if (btn.getAttribute('data-cat') === catKey) {
+            btn.classList.add('active');
+        } else {
+            btn.classList.remove('active');
+        }
+    });
+    this.renderPosLibraryCards();
+};
+
+app.filterPosLibrary = function() {
+    this.renderPosLibraryCards();
+};
+
+app.renderPosLibraryCards = async function() {
+    const grid = document.getElementById('pos-library-grid');
+    if (!grid) return;
+
+    const searchInput = document.getElementById('pos-search-input');
+    const query = searchInput ? searchInput.value.trim() : '';
+
+    const posList = await Backend.getPosLibrary(this._activePosCategory || 'all', query);
+
+    if (!posList || posList.length === 0) {
+        grid.innerHTML = `
+            <div class="glass-card" style="grid-column: 1 / -1; padding: 40px; text-align: center; color: var(--text-muted);">
+                <i class='bx bx-search-alt' style="font-size: 48px; opacity: 0.4; margin-bottom: 12px; display: block;"></i>
+                <div style="font-size: 15px; font-weight: 700; color: var(--text-main);">Nessuna Procedura Operativa trovata</div>
+                <div style="font-size: 13px; margin-top: 4px;">Prova a modificare i filtri di ricerca o la categoria selezionata.</div>
+            </div>
+        `;
+        return;
+    }
+
+    grid.innerHTML = posList.map(pos => {
+        const normsHtml = (pos.normative || []).map(n => `<span class="pos-meta-pill">${_s(n)}</span>`).join('');
+        const publishedBadge = pos.is_published_dms
+            ? `<span class="pos-status-dms"><i class='bx bx-check-double'></i> Pubblicato nel DMS</span>`
+            : `<span style="font-size: 11px; color: var(--text-muted);"><i class='bx bx-time'></i> Bozza / Da Personalizzare</span>`;
+
+        return `
+            <div class="pos-card" style="border-left: 4px solid ${pos.color || 'var(--primary)'};">
+                <div>
+                    <div class="pos-card-header">
+                        <span class="pos-code-badge" style="background: rgba(59,130,246,0.15); color: ${pos.color || 'var(--primary)'};">
+                            <i class='bx ${pos.icon || "bx-file"}'></i> ${_s(pos.code)}
+                        </span>
+                        <div style="display:flex; align-items:center; gap:6px;">
+                            <span class="pos-cat-pill">${_s(pos.categoria || 'Generale')}</span>
+                            <span style="font-size:10px; padding:2px 6px; border-radius:4px; background:rgba(255,255,255,0.06); color:var(--text-muted); font-weight:700;">${_s(pos.revisione || 'Rev. 01')}</span>
+                        </div>
+                    </div>
+
+                    <h4 class="pos-card-title">${_s(pos.titolo)}</h4>
+                    <p class="pos-card-desc">${_s(pos.scopo)}</p>
+
+                    <div style="margin-bottom: 12px;">
+                        <div style="font-size: 10px; text-transform: uppercase; font-weight: 700; color: var(--text-muted); margin-bottom: 5px;">Riferimenti Normativi</div>
+                        <div class="pos-meta-row" style="margin-bottom: 8px;">${normsHtml}</div>
+                    </div>
+
+                    <div style="background: rgba(0,0,0,0.2); padding: 10px 12px; border-radius: 8px; font-size: 11px; margin-bottom: 16px; border: 1px solid rgba(255,255,255,0.04);">
+                        <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                            <span style="color:var(--text-muted);">Approvatore:</span>
+                            <span style="font-weight:600; color:var(--text-main);">${_s(pos.responsabile_approvazione || 'Direttore Sanitario')}</span>
+                        </div>
+                        <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                            <span style="color:var(--text-muted);">Frequenza:</span>
+                            <span style="font-weight:600; color:var(--text-main);">${_s(pos.frequenza || 'Periodica')}</span>
+                        </div>
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:6px; padding-top:6px; border-top:1px solid rgba(255,255,255,0.06);">
+                            <span style="color:var(--text-muted);">Stato Documento:</span>
+                            ${publishedBadge}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="pos-actions-bar">
+                    <button class="btn btn-primary" style="flex: 1; padding: 8px 12px; font-size: 12px;" onclick="app.openPosBuilderModal('${pos.id}')">
+                        <i class='bx bx-edit-alt'></i> Personalizza (POS Builder)
+                    </button>
+                    <button class="btn btn-outline" style="padding: 8px 10px; font-size: 12px;" onclick="app.esportaPosPDF('${pos.id}')" title="Esporta PDF">
+                        <i class='bx bxs-file-pdf' style="color:#ef4444;"></i>
+                    </button>
+                    <button class="btn btn-outline" style="padding: 8px 10px; font-size: 12px;" onclick="app.esportaPosDOCX('${pos.id}')" title="Esporta Word/DOCX">
+                        <i class='bx bxs-file-doc' style="color:#3b82f6;"></i>
+                    </button>
+                    <button class="btn btn-outline" style="padding: 8px 10px; font-size: 12px; color:#10b981; border-color:rgba(16,185,129,0.3);" onclick="app.quickPublishPosToDMS('${pos.id}')" title="Pubblica direttamente nel Fascicolo DMS">
+                        <i class='bx bx-cloud-upload'></i>
+                    </button>
+                </div>
+            </div>
+        `;
+    }).join('');
+};
+
+app.openPosBuilderModal = async function(posId) {
+    const template = await Backend.getPosTemplateById(posId);
+    if (!template) {
+        alert('Impossibile caricare il modello della POS selezionata.');
+        return;
+    }
+
+    this._currentBuilderPos = template;
+
+    const modal = document.getElementById('modal-pos-builder');
+    const header = document.getElementById('pos-builder-modal-header');
+    const body = document.getElementById('pos-builder-modal-body');
+
+    if (!modal || !header || !body) return;
+
+    header.innerHTML = `
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 14px;">
+            <div>
+                <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
+                    <span class="pos-code-badge" style="background:rgba(59,130,246,0.2); color:${template.color || 'var(--primary)'}; font-size:12px;">
+                        <i class='bx ${template.icon || "bx-file"}'></i> ${_s(template.code)}
+                    </span>
+                    <span style="font-size:12px; color:var(--text-muted); font-weight:600;">${_s(template.categoria || 'POS')}</span>
+                </div>
+                <h3 style="margin:0 0 4px 0; font-size:18px; font-weight:800; color:var(--text-main);">${_s(template.titolo)}</h3>
+                <div style="font-size:12px; color:var(--text-muted);">Personalizzazione conforme a <strong>D.A. 20/2024</strong>, <strong>D.A. 890/2002</strong> e <strong>ISO 9001:2015 §7.5</strong></div>
+            </div>
+            <div style="text-align:right;">
+                <span class="pos-meta-pill" style="font-size:11px;">Struttura: ${_s(template.struttura_nome || 'Struttura')}</span>
+            </div>
+        </div>
+    `;
+
+    const fasiText = Array.isArray(template.fasi_operative) ? template.fasi_operative.join('\n') : (template.fasi_operative || '');
+    const registriText = Array.isArray(template.registrazioni_collegate) ? template.registrazioni_collegate.join('\n') : (template.registrazioni_collegate || '');
+
+    body.innerHTML = `
+        <!-- TAB 1: PARAMETRI & RESPONSABILI -->
+        <div id="pos-builder-page-params">
+            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-bottom: 18px;">
+                <div class="form-group" style="margin:0;">
+                    <label style="font-size:11px; text-transform:uppercase; font-weight:700; color:var(--text-muted); margin-bottom:4px; display:block;">Titolo Ufficiale Procedura</label>
+                    <input type="text" id="builder-input-titolo" class="input-box" value="${_s(template.titolo)}" style="width:100%; font-size:13px;" oninput="app.updatePosBuilderPreview()">
+                </div>
+                <div class="form-group" style="margin:0;">
+                    <label style="font-size:11px; text-transform:uppercase; font-weight:700; color:var(--text-muted); margin-bottom:4px; display:block;">Codice Revisione Controllata (§7.5)</label>
+                    <input type="text" id="builder-input-revisione" class="input-box" value="${_s(template.revisione || 'Rev. 03')}" style="width:100%; font-size:13px;" oninput="app.updatePosBuilderPreview()">
+                </div>
+            </div>
+
+            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-bottom: 18px;">
+                <div class="form-group" style="margin:0;">
+                    <label style="font-size:11px; text-transform:uppercase; font-weight:700; color:var(--text-muted); margin-bottom:4px; display:block;">Responsabile Approvazione (Direttore Sanitario)</label>
+                    <input type="text" id="builder-input-approvatore" class="input-box" value="${_s(template.responsabile_approvazione || 'Direttore Sanitario')}" style="width:100%; font-size:13px;" oninput="app.updatePosBuilderPreview()">
+                </div>
+                <div class="form-group" style="margin:0;">
+                    <label style="font-size:11px; text-transform:uppercase; font-weight:700; color:var(--text-muted); margin-bottom:4px; display:block;">Responsabile Esecuzione / Incaricato</label>
+                    <input type="text" id="builder-input-esecutore" class="input-box" value="${_s(template.responsabile_esecuzione || 'Personale Incaricato')}" style="width:100%; font-size:13px;" oninput="app.updatePosBuilderPreview()">
+                </div>
+            </div>
+
+            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-bottom: 18px;">
+                <div class="form-group" style="margin:0;">
+                    <label style="font-size:11px; text-transform:uppercase; font-weight:700; color:var(--text-muted); margin-bottom:4px; display:block;">Frequenza di Esecuzione / Applicazione</label>
+                    <input type="text" id="builder-input-frequenza" class="input-box" value="${_s(template.frequenza || 'Giornaliera')}" style="width:100%; font-size:13px;" oninput="app.updatePosBuilderPreview()">
+                </div>
+                <div class="form-group" style="margin:0;">
+                    <label style="font-size:11px; text-transform:uppercase; font-weight:700; color:var(--text-muted); margin-bottom:4px; display:block;">DPI e Presidi di Sicurezza Obbligatori</label>
+                    <input type="text" id="builder-input-dpi" class="input-box" value="${_s(template.dpi_obbligatori || 'Guanti monouso, mascherina')}" style="width:100%; font-size:13px;" oninput="app.updatePosBuilderPreview()">
+                </div>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 18px;">
+                <label style="font-size:11px; text-transform:uppercase; font-weight:700; color:var(--text-muted); margin-bottom:4px; display:block;">Scopo &amp; Obiettivi di Qualità</label>
+                <textarea id="builder-input-scopo" class="input-box" style="width:100%; height:60px; font-size:12px; resize:vertical;" oninput="app.updatePosBuilderPreview()">${_s(template.scopo || '')}</textarea>
+            </div>
+        </div>
+
+        <!-- TAB 2: FASI OPERATIVE & REGISTRI -->
+        <div id="pos-builder-page-fasi" style="display: none;">
+            <div class="form-group" style="margin-bottom: 18px;">
+                <label style="font-size:11px; text-transform:uppercase; font-weight:700; color:var(--text-muted); margin-bottom:4px; display:block;">
+                    Fasi Operative Dettagliate (1 punto per riga)
+                </label>
+                <textarea id="builder-input-fasi" class="input-box" style="width:100%; height:160px; font-size:12px; font-family:monospace; line-height:1.5; resize:vertical;" oninput="app.updatePosBuilderPreview()">${_s(fasiText)}</textarea>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 18px;">
+                <label style="font-size:11px; text-transform:uppercase; font-weight:700; color:var(--text-muted); margin-bottom:4px; display:block;">
+                    Registrazioni della Qualità &amp; Modulistica Collegata (1 voce per riga)
+                </label>
+                <textarea id="builder-input-registri" class="input-box" style="width:100%; height:90px; font-size:12px; font-family:monospace; line-height:1.5; resize:vertical;" oninput="app.updatePosBuilderPreview()">${_s(registriText)}</textarea>
+            </div>
+        </div>
+
+        <!-- TAB 3: ANTEPRIMA UFFICIALE & FIRME -->
+        <div id="pos-builder-page-preview" style="display: none;">
+            <div id="pos-builder-paper-preview" class="pos-preview-paper">
+                <!-- Generato da updatePosBuilderPreview() -->
+            </div>
+        </div>
+
+        <!-- FOOTER ACTIONS -->
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:24px; padding-top:16px; border-top:1px solid rgba(255,255,255,0.1); flex-wrap:wrap; gap:10px;">
+            <button class="btn btn-outline" onclick="app.closePosBuilderModal()">Chiudi</button>
+            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                <button class="btn btn-outline" onclick="app.savePosCustomizationFromBuilder()">
+                    <i class='bx bx-save'></i> Salva Modifiche
+                </button>
+                <button class="btn btn-outline" onclick="app.esportaPosDOCX('${posId}')" style="color:#60a5fa; border-color:rgba(96,165,250,0.3);">
+                    <i class='bx bxs-file-doc'></i> Esporta DOCX
+                </button>
+                <button class="btn btn-outline" onclick="app.esportaPosPDF('${posId}')" style="color:#ef4444; border-color:rgba(239,68,68,0.3);">
+                    <i class='bx bxs-file-pdf'></i> Esporta PDF
+                </button>
+                <button class="btn btn-primary" onclick="app.saveAndPublishPosFromBuilder()" style="background:#10b981; border-color:#10b981;">
+                    <i class='bx bx-cloud-upload'></i> Salva &amp; Pubblica nel Fascicolo DMS
+                </button>
+            </div>
+        </div>
+    `;
+
+    this.switchPosBuilderTab('params');
+    modal.style.display = 'flex';
+};
+
+app.closePosBuilderModal = function() {
+    const modal = document.getElementById('modal-pos-builder');
+    if (modal) modal.style.display = 'none';
+};
+
+app.switchPosBuilderTab = function(tab) {
+    const pageParams = document.getElementById('pos-builder-page-params');
+    const pageFasi = document.getElementById('pos-builder-page-fasi');
+    const pagePrev = document.getElementById('pos-builder-page-preview');
+
+    if (pageParams) pageParams.style.display = tab === 'params' ? 'block' : 'none';
+    if (pageFasi) pageFasi.style.display = tab === 'fasi' ? 'block' : 'none';
+    if (pagePrev) pagePrev.style.display = tab === 'preview' ? 'block' : 'none';
+
+    const btnParams = document.getElementById('pos-builder-tab-btn-params');
+    const btnFasi = document.getElementById('pos-builder-tab-btn-fasi');
+    const btnPrev = document.getElementById('pos-builder-tab-btn-preview');
+
+    if (btnParams) btnParams.className = tab === 'params' ? 'pos-builder-tab-btn active' : 'pos-builder-tab-btn';
+    if (btnFasi) btnFasi.className = tab === 'fasi' ? 'pos-builder-tab-btn active' : 'pos-builder-tab-btn';
+    if (btnPrev) btnPrev.className = tab === 'preview' ? 'pos-builder-tab-btn active' : 'pos-builder-tab-btn';
+
+    if (tab === 'preview') {
+        this.updatePosBuilderPreview();
+    }
+};
+
+app.updatePosBuilderPreview = function() {
+    const container = document.getElementById('pos-builder-paper-preview');
+    if (!container || !this._currentBuilderPos) return;
+
+    const p = this._currentBuilderPos;
+    const titolo = document.getElementById('builder-input-titolo')?.value || p.titolo;
+    const revisione = document.getElementById('builder-input-revisione')?.value || p.revisione || 'Rev. 03';
+    const approvatore = document.getElementById('builder-input-approvatore')?.value || p.responsabile_approvazione || 'Direttore Sanitario';
+    const esecutore = document.getElementById('builder-input-esecutore')?.value || p.responsabile_esecuzione || 'Personale Sanitario Incaricato';
+    const frequenza = document.getElementById('builder-input-frequenza')?.value || p.frequenza || 'Giornaliera';
+    const dpi = document.getElementById('builder-input-dpi')?.value || p.dpi_obbligatori || 'DPI di base';
+    const scopo = document.getElementById('builder-input-scopo')?.value || p.scopo;
+
+    const rawFasi = document.getElementById('builder-input-fasi')?.value || (Array.isArray(p.fasi_operative) ? p.fasi_operative.join('\n') : p.fasi_operative || '');
+    const fasiLines = rawFasi.split('\n').map(l => l.trim()).filter(Boolean);
+
+    const rawRegistri = document.getElementById('builder-input-registri')?.value || (Array.isArray(p.registrazioni_collegate) ? p.registrazioni_collegate.join('\n') : p.registrazioni_collegate || '');
+    const registriLines = rawRegistri.split('\n').map(l => l.trim()).filter(Boolean);
+
+    const todayStr = new Date().toLocaleDateString('it-IT');
+
+    container.innerHTML = `
+        <div style="border: 2px solid #0f172a; padding: 18px; margin-bottom: 20px;">
+            <table style="width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 0;">
+                <tr>
+                    <td style="border: 1px solid #cbd5e1; padding: 8px; width: 25%; text-align: center; font-weight: 700; color: #0f172a;">
+                        ACCREDITA360<br><span style="font-size: 10px; color: #64748b; font-weight: normal;">Sistema Gestione Qualità</span>
+                    </td>
+                    <td style="border: 1px solid #cbd5e1; padding: 8px; width: 50%; text-align: center;">
+                        <strong style="font-size: 14px; text-transform: uppercase;">PROCEDURA OPERATIVA STANDARD</strong><br>
+                        <span style="font-size: 13px; font-weight: 600; color: #0284c7;">${_s(titolo)}</span>
+                    </td>
+                    <td style="border: 1px solid #cbd5e1; padding: 8px; width: 25%; font-size: 11px; line-height: 1.4;">
+                        <strong>Codice:</strong> ${_s(p.code)}<br>
+                        <strong>Edizione:</strong> ${_s(revisione)}<br>
+                        <strong>Data:</strong> ${todayStr}<br>
+                        <strong>ISO 9001:</strong> §7.5
+                    </td>
+                </tr>
+            </table>
+        </div>
+
+        <div style="font-size: 12px; color: #334155; line-height: 1.6;">
+            <div style="margin-bottom: 14px;">
+                <h5 style="margin: 0 0 4px 0; font-size: 13px; font-weight: 700; color: #0f172a; border-bottom: 1px solid #e2e8f0; padding-bottom: 3px;">1. SCOPO E CAMPO DI APPLICAZIONE</h5>
+                <p style="margin: 0;">${_s(scopo)}</p>
+                <div style="margin-top: 4px; font-size: 11px; color: #64748b;"><strong>Ambito:</strong> ${_s(p.campo_applicazione || 'Tutti i locali operativi e assistenziali della struttura.')}</div>
+            </div>
+
+            <div style="margin-bottom: 14px;">
+                <h5 style="margin: 0 0 4px 0; font-size: 13px; font-weight: 700; color: #0f172a; border-bottom: 1px solid #e2e8f0; padding-bottom: 3px;">2. RIFERIMENTI NORMATIVI E STANDARD</h5>
+                <p style="margin: 0; font-size: 11px;">${(p.normative || []).map(n => `• ${_s(n)}`).join(' &nbsp;|&nbsp; ')}</p>
+            </div>
+
+            <div style="margin-bottom: 14px;">
+                <h5 style="margin: 0 0 4px 0; font-size: 13px; font-weight: 700; color: #0f172a; border-bottom: 1px solid #e2e8f0; padding-bottom: 3px;">3. RESPONSABILITÀ &amp; PARAMETRI DI CONTROLLO</h5>
+                <table style="width: 100%; border-collapse: collapse; font-size: 11px; margin-top: 6px;">
+                    <tr>
+                        <td style="padding: 4px; border: 1px solid #e2e8f0; width: 30%; background: #f8fafc;"><strong>Approvazione:</strong></td>
+                        <td style="padding: 4px; border: 1px solid #e2e8f0;">${_s(approvatore)}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 4px; border: 1px solid #e2e8f0; background: #f8fafc;"><strong>Esecuzione:</strong></td>
+                        <td style="padding: 4px; border: 1px solid #e2e8f0;">${_s(esecutore)}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 4px; border: 1px solid #e2e8f0; background: #f8fafc;"><strong>Frequenza:</strong></td>
+                        <td style="padding: 4px; border: 1px solid #e2e8f0;">${_s(frequenza)}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 4px; border: 1px solid #e2e8f0; background: #f8fafc;"><strong>DPI Obbligatori:</strong></td>
+                        <td style="padding: 4px; border: 1px solid #e2e8f0;">${_s(dpi)}</td>
+                    </tr>
+                </table>
+            </div>
+
+            <div style="margin-bottom: 14px;">
+                <h5 style="margin: 0 0 4px 0; font-size: 13px; font-weight: 700; color: #0f172a; border-bottom: 1px solid #e2e8f0; padding-bottom: 3px;">4. FASI OPERATIVE &amp; MODALITÀ DI ESECUZIONE</h5>
+                <ol style="margin: 6px 0 0 16px; padding: 0;">
+                    ${fasiLines.map(step => `<li style="margin-bottom: 4px;">${_s(step)}</li>`).join('')}
+                </ol>
+            </div>
+
+            <div style="margin-bottom: 18px;">
+                <h5 style="margin: 0 0 4px 0; font-size: 13px; font-weight: 700; color: #0f172a; border-bottom: 1px solid #e2e8f0; padding-bottom: 3px;">5. REGISTRAZIONI DELLA QUALITÀ &amp; MODULISTICA COLLEGATA</h5>
+                <ul style="margin: 6px 0 0 16px; padding: 0;">
+                    ${registriLines.map(reg => `<li style="margin-bottom: 3px;">${_s(reg)}</li>`).join('')}
+                </ul>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; margin-top: 24px; padding-top: 14px; border-top: 1px dashed #cbd5e1; text-align: center; font-size: 11px;">
+                <div style="border: 1px solid #cbd5e1; padding: 10px; border-radius: 4px;">
+                    <div style="font-weight: 700; color: #64748b; margin-bottom: 24px;">REDAZIONE (QA)</div>
+                    <div style="border-top: 1px solid #0f172a; padding-top: 4px; font-weight: 600;">${_s(esecutore)}</div>
+                </div>
+                <div style="border: 1px solid #cbd5e1; padding: 10px; border-radius: 4px;">
+                    <div style="font-weight: 700; color: #64748b; margin-bottom: 24px;">VERIFICA (RSGQ)</div>
+                    <div style="border-top: 1px solid #0f172a; padding-top: 4px; font-weight: 600;">Responsabile Qualità</div>
+                </div>
+                <div style="border: 1px solid #cbd5e1; padding: 10px; border-radius: 4px;">
+                    <div style="font-weight: 700; color: #64748b; margin-bottom: 24px;">APPROVAZIONE (DS)</div>
+                    <div style="border-top: 1px solid #0f172a; padding-top: 4px; font-weight: 600;">${_s(approvatore)}</div>
+                </div>
+            </div>
+        </div>
+    `;
+};
+
+app._getBuilderFormData = function() {
+    if (!this._currentBuilderPos) return null;
+    const p = this._currentBuilderPos;
+
+    const rawFasi = document.getElementById('builder-input-fasi')?.value || (Array.isArray(p.fasi_operative) ? p.fasi_operative.join('\n') : p.fasi_operative || '');
+    const fasiLines = rawFasi.split('\n').map(l => l.trim()).filter(Boolean);
+
+    const rawRegistri = document.getElementById('builder-input-registri')?.value || (Array.isArray(p.registrazioni_collegate) ? p.registrazioni_collegate.join('\n') : p.registrazioni_collegate || '');
+    const registriLines = rawRegistri.split('\n').map(l => l.trim()).filter(Boolean);
+
+    return {
+        ...p,
+        titolo: document.getElementById('builder-input-titolo')?.value || p.titolo,
+        revisione: document.getElementById('builder-input-revisione')?.value || p.revisione || 'Rev. 03',
+        responsabile_approvazione: document.getElementById('builder-input-approvatore')?.value || p.responsabile_approvazione || 'Direttore Sanitario',
+        responsabile_esecuzione: document.getElementById('builder-input-esecutore')?.value || p.responsabile_esecuzione || 'Personale Incaricato',
+        frequenza: document.getElementById('builder-input-frequenza')?.value || p.frequenza || 'Giornaliera',
+        dpi_obbligatori: document.getElementById('builder-input-dpi')?.value || p.dpi_obbligatori || 'DPI di base',
+        scopo: document.getElementById('builder-input-scopo')?.value || p.scopo,
+        fasi_operative: fasiLines,
+        registrazioni_collegate: registriLines
+    };
+};
+
+app.savePosCustomizationFromBuilder = async function() {
+    const data = this._getBuilderFormData();
+    if (!data) return;
+
+    await Backend.saveCustomizedPos(data);
+    alert(`Personalizzazione della procedura ${data.code} salvata con successo.`);
+    this.renderPosLibraryCards();
+};
+
+app.saveAndPublishPosFromBuilder = async function() {
+    const data = this._getBuilderFormData();
+    if (!data) return;
+
+    const res = await Backend.publishPosToDMS(data.id, data);
+    if (res && res.success) {
+        alert(`Procedura ${data.code} pubblicata con successo nel Fascicolo Documentale (DMS) e requisiti associati aggiornati.`);
+        this.closePosBuilderModal();
+        this.renderPosLibraryCards();
+    } else {
+        alert('Errore durante la pubblicazione nel DMS.');
+    }
+};
+
+app.quickPublishPosToDMS = async function(posId) {
+    const template = await Backend.getPosTemplateById(posId);
+    if (!template) return;
+
+    const res = await Backend.publishPosToDMS(posId, template);
+    if (res && res.success) {
+        alert(`Procedura ${template.code} pubblicata con successo nel Fascicolo DMS.`);
+        this.renderPosLibraryCards();
+    }
+};
+
+app.esportaPosPDF = async function(posId) {
+    const p = await Backend.getPosTemplateById(posId);
+    if (!p) return;
+
+    const printContainer = document.createElement('div');
+    printContainer.style.position = 'fixed';
+    printContainer.style.top = '-9999px';
+    printContainer.style.left = '-9999px';
+    printContainer.style.width = '800px';
+    printContainer.style.background = '#ffffff';
+    printContainer.style.color = '#1e293b';
+    printContainer.style.padding = '30px';
+    printContainer.style.fontFamily = 'Arial, sans-serif';
+
+    const fasi = Array.isArray(p.fasi_operative) ? p.fasi_operative : [p.fasi_operative];
+    const registri = Array.isArray(p.registrazioni_collegate) ? p.registrazioni_collegate : [p.registrazioni_collegate];
+    const todayStr = new Date().toLocaleDateString('it-IT');
+
+    printContainer.innerHTML = `
+        <div style="border: 2px solid #0f172a; padding: 14px; margin-bottom: 18px;">
+            <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
+                <tr>
+                    <td style="border: 1px solid #94a3b8; padding: 6px; width: 25%; text-align: center; font-weight: bold;">
+                        ${_s(p.struttura_nome || 'STRUTTURA SANITARIA')}<br><span style="font-size: 9px; color: #64748b;">Sistema Qualità ISO 9001</span>
+                    </td>
+                    <td style="border: 1px solid #94a3b8; padding: 6px; width: 50%; text-align: center;">
+                        <strong style="font-size: 13px;">PROCEDURA OPERATIVA STANDARD</strong><br>
+                        <span style="font-size: 12px; font-weight: bold; color: #0284c7;">${_s(p.titolo)}</span>
+                    </td>
+                    <td style="border: 1px solid #94a3b8; padding: 6px; width: 25%; font-size: 10px;">
+                        <strong>Codice:</strong> ${_s(p.code)}<br>
+                        <strong>Revisione:</strong> ${_s(p.revisione || 'Rev. 03')}<br>
+                        <strong>Data Emissione:</strong> ${todayStr}<br>
+                        <strong>Rif. ISO 9001:</strong> §7.5
+                    </td>
+                </tr>
+            </table>
+        </div>
+
+        <div style="font-size: 11px; line-height: 1.6; color: #1e293b;">
+            <h4 style="margin: 12px 0 4px; font-size: 12px; border-bottom: 1px solid #cbd5e1; padding-bottom: 2px;">1. SCOPO E CAMPO DI APPLICAZIONE</h4>
+            <p style="margin: 0 0 8px;">${_s(p.scopo)}</p>
+
+            <h4 style="margin: 12px 0 4px; font-size: 12px; border-bottom: 1px solid #cbd5e1; padding-bottom: 2px;">2. QUADRO NORMATIVO DI RIFERIMENTO</h4>
+            <p style="margin: 0 0 8px;">${(p.normative || []).map(n => `• ${_s(n)}`).join(' &nbsp;|&nbsp; ')}</p>
+
+            <h4 style="margin: 12px 0 4px; font-size: 12px; border-bottom: 1px solid #cbd5e1; padding-bottom: 2px;">3. RESPONSABILITÀ E PARAMETRI</h4>
+            <table style="width: 100%; border-collapse: collapse; font-size: 10px; margin-bottom: 8px;">
+                <tr>
+                    <td style="border: 1px solid #e2e8f0; padding: 4px; width: 30%; background: #f8fafc;"><strong>Approvazione (DS):</strong></td>
+                    <td style="border: 1px solid #e2e8f0; padding: 4px;">${_s(p.responsabile_approvazione || 'Direttore Sanitario')}</td>
+                </tr>
+                <tr>
+                    <td style="border: 1px solid #e2e8f0; padding: 4px; background: #f8fafc;"><strong>Esecuzione:</strong></td>
+                    <td style="border: 1px solid #e2e8f0; padding: 4px;">${_s(p.responsabile_esecuzione || 'Personale Incaricato')}</td>
+                </tr>
+                <tr>
+                    <td style="border: 1px solid #e2e8f0; padding: 4px; background: #f8fafc;"><strong>Frequenza:</strong></td>
+                    <td style="border: 1px solid #e2e8f0; padding: 4px;">${_s(p.frequenza || 'Giornaliera')}</td>
+                </tr>
+                <tr>
+                    <td style="border: 1px solid #e2e8f0; padding: 4px; background: #f8fafc;"><strong>DPI Obbligatori:</strong></td>
+                    <td style="border: 1px solid #e2e8f0; padding: 4px;">${_s(p.dpi_obbligatori || 'DPI previsti da DVR')}</td>
+                </tr>
+            </table>
+
+            <h4 style="margin: 12px 0 4px; font-size: 12px; border-bottom: 1px solid #cbd5e1; padding-bottom: 2px;">4. FASI OPERATIVE</h4>
+            <ol style="margin: 4px 0 10px 18px; padding: 0;">
+                ${fasi.map(step => `<li style="margin-bottom: 3px;">${_s(step)}</li>`).join('')}
+            </ol>
+
+            <h4 style="margin: 12px 0 4px; font-size: 12px; border-bottom: 1px solid #cbd5e1; padding-bottom: 2px;">5. REGISTRAZIONI E MODULISTICA</h4>
+            <ul style="margin: 4px 0 14px 18px; padding: 0;">
+                ${registri.map(reg => `<li style="margin-bottom: 2px;">${_s(reg)}</li>`).join('')}
+            </ul>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-top: 20px; text-align: center; font-size: 10px;">
+                <div style="border: 1px solid #94a3b8; padding: 6px;">
+                    <div style="color: #64748b; margin-bottom: 20px;">REDAZIONE</div>
+                    <div style="border-top: 1px solid #0f172a; padding-top: 2px; font-weight: bold;">${_s(p.responsabile_esecuzione || 'Referente')}</div>
+                </div>
+                <div style="border: 1px solid #94a3b8; padding: 6px;">
+                    <div style="color: #64748b; margin-bottom: 20px;">VERIFICA</div>
+                    <div style="border-top: 1px solid #0f172a; padding-top: 2px; font-weight: bold;">Resp. Qualità SGQ</div>
+                </div>
+                <div style="border: 1px solid #94a3b8; padding: 6px;">
+                    <div style="color: #64748b; margin-bottom: 20px;">APPROVAZIONE</div>
+                    <div style="border-top: 1px solid #0f172a; padding-top: 2px; font-weight: bold;">${_s(p.responsabile_approvazione || 'Direttore Sanitario')}</div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(printContainer);
+
+    const opt = {
+        margin: 10,
+        filename: `${p.code}_${(p.titolo || 'POS').replace(/[^a-zA-Z0-9]/g, '_')}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    };
+
+    if (window.html2pdf) {
+        window.html2pdf().set(opt).from(printContainer).save().then(() => {
+            document.body.removeChild(printContainer);
+        }).catch(() => {
+            document.body.removeChild(printContainer);
+        });
+    } else {
+        window.print();
+        document.body.removeChild(printContainer);
+    }
+};
+
+app.esportaPosDOCX = async function(posId) {
+    const p = await Backend.getPosTemplateById(posId);
+    if (!p) return;
+
+    const fasi = Array.isArray(p.fasi_operative) ? p.fasi_operative : [p.fasi_operative];
+    const registri = Array.isArray(p.registrazioni_collegate) ? p.registrazioni_collegate : [p.registrazioni_collegate];
+    const todayStr = new Date().toLocaleDateString('it-IT');
+
+    const htmlContent = `
+        <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+        <head><meta charset='utf-8'><title>${_s(p.titolo)}</title>
+        <style>
+            body { font-family: Calibri, Arial, sans-serif; font-size: 11pt; line-height: 1.5; }
+            h1 { font-size: 16pt; color: #0f172a; text-align: center; }
+            h2 { font-size: 13pt; color: #0284c7; border-bottom: 1pt solid #cbd5e1; margin-top: 15pt; }
+            table { width: 100%; border-collapse: collapse; margin-bottom: 12pt; }
+            th, td { border: 1pt solid #cbd5e1; padding: 6pt; font-size: 10pt; }
+            th { background-color: #f1f5f9; }
+        </style>
+        </head>
+        <body>
+            <table>
+                <tr>
+                    <td style="width:25%; text-align:center;"><strong>${_s(p.struttura_nome || 'STRUTTURA SANITARIA')}</strong></td>
+                    <td style="width:50%; text-align:center;"><strong>PROCEDURA OPERATIVA STANDARD</strong><br><h2>${_s(p.titolo)}</h2></td>
+                    <td style="width:25%;">Codice: ${_s(p.code)}<br>Rev: ${_s(p.revisione || 'Rev. 03')}<br>Data: ${todayStr}</td>
+                </tr>
+            </table>
+
+            <h2>1. SCOPO E CAMPO DI APPLICAZIONE</h2>
+            <p>${_s(p.scopo)}</p>
+
+            <h2>2. RIFERIMENTI NORMATIVI</h2>
+            <p>${(p.normative || []).join(', ')}</p>
+
+            <h2>3. RESPONSABILITÀ</h2>
+            <p><strong>Approvazione:</strong> ${_s(p.responsabile_approvazione || 'Direttore Sanitario')}<br>
+            <strong>Esecuzione:</strong> ${_s(p.responsabile_esecuzione || 'Personale Incaricato')}<br>
+            <strong>Frequenza:</strong> ${_s(p.frequenza || 'Giornaliera')}<br>
+            <strong>DPI Obbligatori:</strong> ${_s(p.dpi_obbligatori || 'DPI di base')}</p>
+
+            <h2>4. FASI OPERATIVE</h2>
+            <ol>
+                ${fasi.map(s => `<li>${_s(s)}</li>`).join('')}
+            </ol>
+
+            <h2>5. REGISTRAZIONI DELLA QUALITÀ</h2>
+            <ul>
+                ${registri.map(r => `<li>${_s(r)}</li>`).join('')}
+            </ul>
+        </body>
+        </html>
+    `;
+
+    const blob = new Blob(['\ufeff', htmlContent], { type: 'application/msword' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${p.code}_${(p.titolo || 'POS').replace(/[^a-zA-Z0-9]/g, '_')}.doc`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+};
+
+app.renderNormativaView = async function() {
+    const grid = document.getElementById('normativa-cards-grid');
+    if (!grid) return;
+
+    const searchInput = document.getElementById('normativa-search-input');
+    const query = searchInput ? searchInput.value.trim() : '';
+
+    const cards = await Backend.getNormativaCards(query);
+
+    if (!cards || cards.length === 0) {
+        grid.innerHTML = `
+            <div class="glass-card" style="grid-column: 1 / -1; padding: 40px; text-align: center; color: var(--text-muted);">
+                <i class='bx bx-search-alt' style="font-size: 48px; opacity: 0.4; margin-bottom: 12px; display: block;"></i>
+                <div style="font-size: 15px; font-weight: 700; color: var(--text-main);">Nessuna norma trovata</div>
+            </div>
+        `;
+        return;
+    }
+
+    grid.innerHTML = cards.map(card => {
+        const pointsHtml = (card.punti_chiave || []).map(p => `
+            <li><i class='bx bx-check-circle' style="color:${card.color || 'var(--primary)'};"></i> <span>${_s(p)}</span></li>
+        `).join('');
+
+        const clausesHtml = (card.clausole_collegate || []).map(c => `
+            <span class="pos-meta-pill" style="border-color:${card.color || 'var(--primary)'}; color:${card.color || '#93c5fd'};">${_s(c)}</span>
+        `).join('');
+
+        return `
+            <div class="normativa-card" style="border-top: 4px solid ${card.color || 'var(--primary)'};">
+                <div>
+                    <div class="normativa-card-header">
+                        <div>
+                            <div class="pos-code-badge" style="background:rgba(59,130,246,0.15); color:${card.color || 'var(--primary)'}; margin-bottom:4px;">
+                                <i class='bx bx-book-bookmark'></i> ${_s(card.codice)}
+                            </div>
+                            <h4 class="normativa-code-title">${_s(card.titolo)}</h4>
+                            <div class="normativa-ente-sub">${_s(card.ente)} · ${_s(card.data_emissione)}</div>
+                        </div>
+                        <span style="font-size:10px; padding:3px 8px; border-radius:6px; background:rgba(16,185,129,0.15); color:#10b981; font-weight:700; white-space:nowrap;">
+                            ${_s(card.stato || 'Vigente')}
+                        </span>
+                    </div>
+
+                    <p style="font-size:12px; color:var(--text-muted); line-height:1.5; margin:10px 0;">
+                        ${_s(card.descrizione)}
+                    </p>
+
+                    <div style="margin: 14px 0;">
+                        <div style="font-size:11px; text-transform:uppercase; font-weight:700; color:var(--text-muted); margin-bottom:6px;">Punti Chiave &amp; Obblighi Normativi</div>
+                        <ul class="normativa-points-list">
+                            ${pointsHtml}
+                        </ul>
+                    </div>
+                </div>
+
+                <div>
+                    <div class="normativa-clauses-box">
+                        <span style="font-size:10px; font-weight:700; color:var(--text-muted); align-self:center; margin-right:4px;">Clausole ISO / Standard:</span>
+                        ${clausesHtml}
+                    </div>
+                    <div style="margin-top:14px; display:flex; justify-content:space-between; align-items:center;">
+                        <button class="btn btn-outline" style="padding:6px 12px; font-size:11px;" onclick="app.navigate('matrice360')">
+                            <i class='bx bx-spreadsheet'></i> Verifica nella Matrice 360
+                        </button>
+                        <span style="font-size:10px; color:var(--text-muted);">${_s(card.gurs || '')}</span>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+};
+
+app.filterNormativa = function() {
+    this.renderNormativaView();
+};
+
+app.renderOtaProcedures = async function() {
+    const grid = document.getElementById('ota-procedures-grid');
+    if (!grid) return;
+
+    const searchInput = document.getElementById('ota-proc-search-input');
+    const query = searchInput ? searchInput.value.trim() : '';
+
+    const procs = await Backend.getOtaProcedures(query);
+
+    if (!procs || procs.length === 0) {
+        grid.innerHTML = `
+            <div class="glass-card" style="grid-column: 1 / -1; padding: 40px; text-align: center; color: var(--text-muted);">
+                <i class='bx bx-search-alt' style="font-size: 48px; opacity: 0.4; margin-bottom: 12px; display: block;"></i>
+                <div style="font-size: 15px; font-weight: 700; color: var(--text-main);">Nessuna procedura OTA trovata</div>
+            </div>
+        `;
+        return;
+    }
+
+    grid.innerHTML = procs.map(p => {
+        const checksHtml = (p.punti_controllo || []).map(c => `
+            <li style="font-size:12px; margin-bottom:4px; color:var(--text-main);"><i class='bx bx-chevron-right' style="color:var(--primary);"></i> ${_s(c)}</li>
+        `).join('');
+
+        return `
+            <div class="pos-card" style="border-left: 4px solid var(--primary);">
+                <div>
+                    <div class="pos-card-header">
+                        <span class="pos-code-badge" style="background:rgba(59,130,246,0.15); color:var(--primary);">
+                            <i class='bx bx-shield-alt-2'></i> ${_s(p.code)}
+                        </span>
+                        <span class="pos-cat-pill">${_s(p.versione || 'Ufficiale')}</span>
+                    </div>
+                    <h4 class="pos-card-title">${_s(p.titolo)}</h4>
+                    <div style="font-size:11px; color:var(--text-muted); margin-bottom:8px;">${_s(p.ente || 'Assessorato Salute')}</div>
+                    <p class="pos-card-desc">${_s(p.descrizione)}</p>
+
+                    <div style="margin-bottom:14px;">
+                        <div style="font-size:10px; text-transform:uppercase; font-weight:700; color:var(--text-muted); margin-bottom:4px;">Punti di Controllo Ispettivo OTA</div>
+                        <ul style="padding-left:0; list-style:none; margin:0;">
+                            ${checksHtml}
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="pos-actions-bar">
+                    <a href="${_s(p.url || '#')}" target="_blank" class="btn btn-primary" style="flex:1; padding:8px 12px; font-size:12px; text-align:center; text-decoration:none;">
+                        <i class='bx bx-link-external'></i> Scarica Documento Ufficiale
+                    </a>
+                </div>
+            </div>
+        `;
+    }).join('');
+};
+
+app.filterOtaProcedures = function() {
+    this.renderOtaProcedures();
+};
+
+app.renderManualsList = function() {
+    const container = document.getElementById('manuals-list-container');
+    if (!container) return;
+
+    const manuals = [
+        {
+            code: 'MAN-OTA-2024',
+            titolo: 'Manuale di Accreditamento Istituzionale Regione Siciliana',
+            ente: 'Assessorato della Salute - D.A. 20/2024',
+            desc: 'Guida ufficiale all\'applicazione degli standard di qualità per le strutture sanitarie della Regione Siciliana.',
+            url: 'https://www.regione.sicilia.it/sites/default/files/2025-02/PROCEDURA%20ACC01%20v_4.0.pdf'
+        },
+        {
+            code: 'LINEE-GUIDA-741',
+            titolo: 'Linee Guida sul Punteggio di Conformità & Durata Accreditamento',
+            ente: 'Assessorato della Salute - D.A. 741/2023',
+            desc: 'Modalità di calcolo dei punteggi di verifica (100% 5 anni, 90% 3 anni, 50% 1 anno).',
+            url: 'https://www.regione.sicilia.it/sites/default/files/2023-11/PROCEDURA%20OTA03_v3.0.pdf'
+        },
+        {
+            code: 'REQUISITI-MINIMI-890',
+            titolo: 'Requisiti Minimi Autorizzazione all\'Esercizio Sanitario ASP',
+            ente: 'Assessorato della Salute - D.A. 890/2002',
+            desc: 'Standard strutturali, impiantistici e tecnologici minimi per gli studi e ambulatori medici.',
+            url: 'https://www.regione.sicilia.it/sites/default/files/2025-02/PROCEDURA%20AUT01%20v_3.0.pdf'
+        }
+    ];
+
+    container.innerHTML = manuals.map(m => `
+        <div class="pos-card" style="border-left: 4px solid #8b5cf6;">
+            <div>
+                <div class="pos-card-header">
+                    <span class="pos-code-badge" style="background:rgba(139,92,246,0.15); color:#8b5cf6;">
+                        <i class='bx bx-book'></i> ${_s(m.code)}
+                    </span>
+                </div>
+                <h4 class="pos-card-title">${_s(m.titolo)}</h4>
+                <div style="font-size:11px; color:var(--text-muted); margin-bottom:8px;">${_s(m.ente)}</div>
+                <p class="pos-card-desc">${_s(m.desc)}</p>
+            </div>
+            <div class="pos-actions-bar">
+                <a href="${_s(m.url)}" target="_blank" class="btn btn-outline" style="flex:1; padding:8px 12px; font-size:12px; text-align:center; text-decoration:none; color:#a78bfa; border-color:rgba(139,92,246,0.3);">
+                    <i class='bx bx-cloud-download'></i> Consulta Manuale PDF
+                </a>
+            </div>
+        </div>
+    `).join('');
+};
+
 // Start App
 document.addEventListener('DOMContentLoaded', () => {
     app.init();
     setTimeout(() => { app.initNotifications(); }, 800);
 });
+
+

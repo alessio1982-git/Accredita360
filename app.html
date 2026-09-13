@@ -27,6 +27,9 @@
                 <li class="active" data-view="dashboard">
                     <a href="#"><i class='bx bx-grid-alt'></i><span>Dashboard Utente</span></a>
                 </li>
+                <li data-view="matrice360">
+                    <a href="#"><i class='bx bx-spreadsheet'></i><span>Matrice Conformità 360</span></a>
+                </li>
                 <li data-view="anagrafica">
                     <a href="#"><i class='bx bx-id-card'></i><span>Anagrafica Struttura</span></a>
                 </li>
@@ -39,20 +42,29 @@
                 <li data-view="documents">
                     <a href="#"><i class='bx bx-folder-open'></i><span>Fascicolo Documentale</span></a>
                 </li>
+                <li data-view="audit-capa">
+                    <a href="#"><i class='bx bx-check-double'></i><span>Audit Interni &amp; CAPA</span></a>
+                </li>
+                <li data-view="risk-management">
+                    <a href="#"><i class='bx bx-shield-plus'></i><span>Risk Management &amp; Incident</span></a>
+                </li>
+                <li data-view="management-review">
+                    <a href="#"><i class='bx bx-pie-chart-alt-2'></i><span>Riesame Direzione &amp; KPI</span></a>
+                </li>
                 <li data-view="maintenance">
                     <a href="#"><i class='bx bx-calendar-event'></i><span>Mantenimento</span></a>
                 </li>
                 <li data-view="consultants" id="nav-consultants" style="display: none;">
                     <a href="#"><i class='bx bx-group'></i><span>Area Consulenti</span></a>
                 </li>
-                <li data-view="normativa" id="nav-normativa" style="display: none;">
+                <li data-view="procedure-ota" id="nav-procedure-ota">
+                    <a href="#"><i class='bx bx-clipboard'></i><span>Biblioteca POS &amp; OTA</span></a>
+                </li>
+                <li data-view="normativa" id="nav-normativa">
                     <a href="#"><i class='bx bx-book-open'></i><span>Quadro Normativo</span></a>
                 </li>
-                <li data-view="procedure-ota" id="nav-procedure-ota" style="display: none;">
-                    <a href="#"><i class='bx bx-clipboard'></i><span>Procedure OTA</span></a>
-                </li>
-                <li data-view="panoramica" id="nav-panoramica" style="display: none;">
-                    <a href="#"><i class='bx bx-map-alt'></i><span>Panoramica</span></a>
+                <li data-view="panoramica" id="nav-panoramica">
+                    <a href="#"><i class='bx bx-sitemap'></i><span>Iter Accreditamento OTA</span></a>
                 </li>
             </ul>
         </nav>
@@ -194,6 +206,180 @@
                                 <h4>Critici</h4>
                                 <span class="stat-value danger" id="stat-crit">-</span>
                             </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- VIEW: Matrice di Conformità 360 -->
+                <div id="view-matrice360" class="view">
+                    <div class="gap-header" style="margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;">
+                        <div>
+                            <h3 style="margin: 0; font-size: 22px; font-weight: 700; color: var(--text-main); display: flex; align-items: center; gap: 10px;">
+                                <i class='bx bx-spreadsheet' style="color: var(--primary); font-size: 26px;"></i> Matrice di Conformità 360
+                            </h3>
+                            <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">
+                                Motore Universale di Controllo: <strong>Autorizzazione ASP</strong> · <strong>Accreditamento OTA</strong> · <strong>UNI EN ISO 9001:2015</strong>
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                            <button class="btn btn-outline" onclick="app.esportaMatrice360('csv')" style="font-size: 12px; padding: 8px 14px;">
+                                <i class='bx bx-export'></i> Esporta CSV / Excel
+                            </button>
+                            <button class="btn btn-primary" onclick="app.esportaMatrice360('pdf')" style="font-size: 12px; padding: 8px 14px;">
+                                <i class='bx bxs-file-pdf'></i> Esporta Report 360 (PDF)
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- STATISTICHE SINTETICHE MATRICE 360 -->
+                    <div class="stats-grid" style="margin-bottom: 24px; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));">
+                        <div class="stat-card glass-card">
+                            <div class="stat-icon"><i class='bx bx-list-ul'></i></div>
+                            <div class="stat-info">
+                                <h4>Totale Requisiti</h4>
+                                <span class="stat-value" id="m360-stat-totale">0</span>
+                            </div>
+                        </div>
+                        <div class="stat-card glass-card" style="border-left: 3px solid #10b981;">
+                            <div class="stat-icon success"><i class='bx bx-check-shield'></i></div>
+                            <div class="stat-info">
+                                <h4>Conformi</h4>
+                                <span class="stat-value success" id="m360-stat-conforme">0</span>
+                            </div>
+                        </div>
+                        <div class="stat-card glass-card" style="border-left: 3px solid #f97316;">
+                            <div class="stat-icon warning" style="color:#f97316; background:rgba(249,115,22,0.1);"><i class='bx bx-wrench'></i></div>
+                            <div class="stat-info">
+                                <h4>In Adeguamento</h4>
+                                <span class="stat-value" id="m360-stat-adeguamento" style="color:#f97316;">0</span>
+                            </div>
+                        </div>
+                        <div class="stat-card glass-card" style="border-left: 3px solid #ef4444;">
+                            <div class="stat-icon danger"><i class='bx bx-error-circle'></i></div>
+                            <div class="stat-info">
+                                <h4>Non Conformi</h4>
+                                <span class="stat-value danger" id="m360-stat-nonconforme">0</span>
+                            </div>
+                        </div>
+                        <div class="stat-card glass-card" style="border-left: 3px solid #64748b;">
+                            <div class="stat-icon" style="color:#94a3b8; background:rgba(100,116,139,0.15);"><i class='bx bx-minus-circle'></i></div>
+                            <div class="stat-info">
+                                <h4>Non Applicabili</h4>
+                                <span class="stat-value" id="m360-stat-na" style="color:#94a3b8;">0</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- BARRA FILTRI MULTI-STANDARD -->
+                    <div class="glass-card" style="padding: 20px; margin-bottom: 24px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 12px;">
+                            <div style="font-size: 14px; font-weight: 700; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
+                                <i class='bx bx-filter-alt' style="color: var(--primary);"></i> Filtri Avanzati Matrice 360
+                            </div>
+                            <button class="btn btn-outline" style="padding: 4px 10px; font-size: 11px;" onclick="app.resetFiltriMatrice360()">
+                                <i class='bx bx-reset'></i> Reset Filtri
+                            </button>
+                        </div>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; align-items: end;">
+                            <!-- Ricerca Testuale -->
+                            <div class="form-group" style="margin:0;">
+                                <label style="font-size: 11px; text-transform: uppercase; font-weight: 600; color: var(--text-muted); margin-bottom: 6px; display:block;">Ricerca Requisito / Responsabile</label>
+                                <div style="position: relative;">
+                                    <input type="text" id="m360-search" class="input-box" placeholder="Cerca codice, norma, parola chiave..." style="width: 100%; padding-left: 32px; font-size: 12px;" oninput="app.filterMatrice360()">
+                                    <i class='bx bx-search' style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 16px;"></i>
+                                </div>
+                            </div>
+                            <!-- Filtro Standard Normativo -->
+                            <div class="form-group" style="margin:0;">
+                                <label style="font-size: 11px; text-transform: uppercase; font-weight: 600; color: var(--text-muted); margin-bottom: 6px; display:block;">Standard Normativo</label>
+                                <select id="m360-filter-standard" class="input-box" style="font-size: 12px;" onchange="app.filterMatrice360()">
+                                    <option value="all">Tutti gli Standard</option>
+                                    <option value="asp">Solo Autorizzazione ASP (D.A. 890/02)</option>
+                                    <option value="ota">Solo Accreditamento OTA (D.A. 20/24)</option>
+                                </select>
+                            </div>
+                            <!-- Filtro Clausola ISO 9001 -->
+                            <div class="form-group" style="margin:0;">
+                                <label style="font-size: 11px; text-transform: uppercase; font-weight: 600; color: var(--text-muted); margin-bottom: 6px; display:block;">Clausola ISO 9001:2015</label>
+                                <select id="m360-filter-iso" class="input-box" style="font-size: 12px;" onchange="app.filterMatrice360()">
+                                    <option value="all">Tutte le Clausole ISO</option>
+                                    <option value="§4">§4 - Contesto dell'Organizzazione</option>
+                                    <option value="§5">§5 - Leadership & Responsabilità</option>
+                                    <option value="§6">§6 - Pianificazione & Rischi</option>
+                                    <option value="§7">§7 - Supporto, HR, Risorse & Doc</option>
+                                    <option value="§7.2">§7.2 - Competenza & Formazione</option>
+                                    <option value="§7.1.3">§7.1.3 - Infrastrutture & Ambienti</option>
+                                    <option value="§7.1.5">§7.1.5 - Apparecchiature & Verifiche</option>
+                                    <option value="§7.5">§7.5 - Informazioni Documentate</option>
+                                    <option value="§8">§8 - Attività Operative Sanitarie</option>
+                                    <option value="§9">§9 - Valutazione Prestazioni & Audit</option>
+                                    <option value="§10">§10 - Miglioramento & CAPA</option>
+                                </select>
+                            </div>
+                            <!-- Filtro Processo Aziendale -->
+                            <div class="form-group" style="margin:0;">
+                                <label style="font-size: 11px; text-transform: uppercase; font-weight: 600; color: var(--text-muted); margin-bottom: 6px; display:block;">Processo Aziendale</label>
+                                <select id="m360-filter-processo" class="input-box" style="font-size: 12px;" onchange="app.filterMatrice360()">
+                                    <option value="all">Tutti i Processi</option>
+                                    <option value="Direzione & Strategia">Direzione & Strategia</option>
+                                    <option value="Attività Sanitaria & Clinica">Attività Sanitaria & Clinica</option>
+                                    <option value="Gestione Personale & Competenze">Gestione Personale & Competenze</option>
+                                    <option value="Tecnologie & Manutenzione">Tecnologie & Manutenzione</option>
+                                    <option value="Privacy & Sistemi Informativi">Privacy & Sistemi Informativi</option>
+                                    <option value="Igiene & Sanificazione">Igiene & Sanificazione</option>
+                                    <option value="Sicurezza & Ambiente">Sicurezza & Ambiente</option>
+                                    <option value="Qualità & Risk Management">Qualità & Risk Management</option>
+                                </select>
+                            </div>
+                            <!-- Filtro Stato Operativo (8 Stati) -->
+                            <div class="form-group" style="margin:0;">
+                                <label style="font-size: 11px; text-transform: uppercase; font-weight: 600; color: var(--text-muted); margin-bottom: 6px; display:block;">Stato Operativo (8 Livelli)</label>
+                                <select id="m360-filter-stato" class="input-box" style="font-size: 12px;" onchange="app.filterMatrice360()">
+                                    <option value="all">Tutti gli Stati</option>
+                                    <option value="conforme">🟢 Conforme</option>
+                                    <option value="parziale">🟡 Parzialmente Conforme</option>
+                                    <option value="non_conforme">🔴 Non Conforme</option>
+                                    <option value="in_adeguamento">🟠 In Adeguamento</option>
+                                    <option value="attesa_evidenza">🟣 In Attesa di Evidenza</option>
+                                    <option value="da_verificare">🔵 Da Verificare</option>
+                                    <option value="non_applicabile">⚪ Non Applicabile</option>
+                                </select>
+                            </div>
+                            <!-- Filtro Rischio -->
+                            <div class="form-group" style="margin:0;">
+                                <label style="font-size: 11px; text-transform: uppercase; font-weight: 600; color: var(--text-muted); margin-bottom: 6px; display:block;">Livello Rischio</label>
+                                <select id="m360-filter-rischio" class="input-box" style="font-size: 12px;" onchange="app.filterMatrice360()">
+                                    <option value="all">Tutti i Rischi</option>
+                                    <option value="critico">Critico</option>
+                                    <option value="alto">Alto</option>
+                                    <option value="medio">Medio</option>
+                                    <option value="basso">Basso</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TABELLA INTERATTIVA DELLA MATRICE 360 -->
+                    <div class="glass-card" style="padding: 0; overflow: hidden;">
+                        <div class="table-responsive" style="max-height: 700px; overflow-y: auto; overflow-x: auto;">
+                            <table class="checklist-table m360-table" style="width: 100%; border-collapse: collapse;">
+                                <thead>
+                                    <tr style="position: sticky; top: 0; background: #0f172a; z-index: 10; border-bottom: 2px solid rgba(255,255,255,0.1);">
+                                        <th style="width: 110px; padding: 14px 12px;">Codice &amp; Standard</th>
+                                        <th style="min-width: 220px; padding: 14px 12px;">Requisito &amp; Evidenza Richiesta</th>
+                                        <th style="width: 130px; padding: 14px 12px;">ISO 9001:2015</th>
+                                        <th style="width: 140px; padding: 14px 12px;">Processo</th>
+                                        <th style="width: 130px; padding: 14px 12px;">Responsabile</th>
+                                        <th style="width: 150px; padding: 14px 12px;">Evidenza Presente</th>
+                                        <th style="width: 90px; padding: 14px 12px;">Rischio</th>
+                                        <th style="width: 140px; padding: 14px 12px;">Stato 360</th>
+                                        <th style="width: 110px; padding: 14px 12px; text-align: center;">Azioni</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="m360-requirements-tbody">
+                                    <!-- Injected via app.renderMatrice360() -->
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 </div>
@@ -610,76 +796,281 @@
 
                 <!-- VIEW: Procedure OTA (Nuova Vista Dedicata) -->
                 <!-- VIEW: Procedure OTA (Consolidated below) -->
-                <!-- VIEW: Documents (Fascicolo) -->
+                <!-- VIEW: Documents (DMS & Fascicolo) -->
                 <div id="view-documents" class="view">
-                    <div class="gap-header">
-                        <h3>Fascicolo Autorizzativo &amp; Accreditamento</h3>
-                        <div style="display: flex; gap: 8px;">
-                            <button class="btn btn-primary" onclick="app.scaricaFascicoloCompleto('docx')"><i class='bx bx-archive-in'></i> Scarica Fascicolo (DOCX)</button>
-                            <button class="btn btn-primary" style="background: #ef4444; border-color: #ef4444;" onclick="app.scaricaFascicoloCompleto('pdf')"><i class='bx bxs-file-pdf'></i> Scarica Fascicolo (PDF)</button>
+                    <!-- HEADER GENERALE FASCICOLO & DMS -->
+                    <div class="gap-header" style="margin-bottom: 16px;">
+                        <div>
+                            <h3 style="margin: 0; font-size: 22px; font-weight: 700; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
+                                <i class='bx bx-folder-open' style="color: var(--primary);"></i> Sistema Documentale &amp; Fascicolo 360
+                            </h3>
+                            <p style="margin: 4px 0 0; font-size: 13px; color: var(--text-muted);">
+                                Gestione Informazioni Documentate (§7.5 ISO 9001:2015), Ciclo di Vita, Versioning e Fascicolo Istituzionale ASP / OTA.
+                            </p>
                         </div>
-                    </div>
-                    <div class="welcome-card glass-card" style="margin-bottom: 24px;">
-                        <p>Questo modulo aggrega tutti i documenti conformi caricati nella Gap Analysis e genera le Istanze pre-compilate da inviare all'ASP o all'Assessorato (OTA).</p>
                     </div>
 
-                    <!-- Elenco Documenti Validati -->
-                    <div class="checklist-container glass-card" style="margin-bottom: 24px;">
+                    <!-- TAB SWITCHER: DMS MASTER REGISTER vs FASCICOLO ISTITUZIONALE -->
+                    <div class="dms-tab-nav">
+                        <button class="dms-tab-btn active" id="tab-btn-dms-registro" onclick="app.switchDmsTab('registro')">
+                            <i class='bx bx-spreadsheet'></i>
+                            <span>Registro Documentale Controllato (§7.5 DMS)</span>
+                        </button>
+                        <button class="dms-tab-btn" id="tab-btn-dms-istanze" onclick="app.switchDmsTab('istanze')">
+                            <i class='bx bx-building-house'></i>
+                            <span>Fascicolo Istituzionale &amp; Istanze ASP / OTA</span>
+                        </button>
+                    </div>
+
+                    <!-- ============================================================
+                         TAB 1: REGISTRO DOCUMENTALE CONTROLLATO (DMS MASTER)
+                         ============================================================ -->
+                    <div id="dms-page-registro" class="dms-page">
+                        <!-- STAT SUMMARY CARDS DMS -->
+                        <div class="stats-grid" style="margin-bottom: 20px; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));">
+                            <div class="stat-card glass-card" style="border-left: 3px solid var(--primary);">
+                                <div class="stat-icon" style="color: var(--primary); background: rgba(59,130,246,0.15);"><i class='bx bx-file'></i></div>
+                                <div class="stat-info">
+                                    <h4>Totale Documenti</h4>
+                                    <span class="stat-value" id="dms-stat-total">0</span>
+                                </div>
+                            </div>
+                            <div class="stat-card glass-card" style="border-left: 3px solid #10b981;">
+                                <div class="stat-icon success"><i class='bx bx-check-double'></i></div>
+                                <div class="stat-info">
+                                    <h4>Approvati &amp; Vigenti</h4>
+                                    <span class="stat-value success" id="dms-stat-approved">0</span>
+                                </div>
+                            </div>
+                            <div class="stat-card glass-card" style="border-left: 3px solid #f59e0b;">
+                                <div class="stat-icon warning"><i class='bx bx-search-alt'></i></div>
+                                <div class="stat-info">
+                                    <h4>In Verifica</h4>
+                                    <span class="stat-value warning" id="dms-stat-review">0</span>
+                                </div>
+                            </div>
+                            <div class="stat-card glass-card" style="border-left: 3px solid #94a3b8;">
+                                <div class="stat-icon" style="color:#94a3b8; background:rgba(148,163,184,0.15);"><i class='bx bx-edit'></i></div>
+                                <div class="stat-info">
+                                    <h4>In Bozza</h4>
+                                    <span class="stat-value" id="dms-stat-draft" style="color:#94a3b8;">0</span>
+                                </div>
+                            </div>
+                            <div class="stat-card glass-card" style="border-left: 3px solid #ef4444;">
+                                <div class="stat-icon danger"><i class='bx bx-time-five'></i></div>
+                                <div class="stat-info">
+                                    <h4>Scaduti / In Scadenza</h4>
+                                    <span class="stat-value danger" id="dms-stat-expiring">0</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- BARRA AZIONI PRINCIPALI DMS -->
+                        <div class="glass-card" style="padding: 16px 20px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+                            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                                <button class="btn btn-primary" onclick="app.openDmsDocModal()" style="font-weight: 600;">
+                                    <i class='bx bx-plus-circle'></i> Nuovo Documento Controllato
+                                </button>
+                            </div>
+                            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                                <button class="btn btn-outline" onclick="app.esportaDmsCSV()" title="Esporta Registro Documenti in CSV">
+                                    <i class='bx bx-download'></i> Esporta CSV
+                                </button>
+                                <button class="btn btn-outline" onclick="app.esportaDmsPDF()" title="Esporta Elenco Documenti in PDF">
+                                    <i class='bx bxs-file-pdf' style="color:#ef4444;"></i> Esporta PDF
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- FILTRI AVANZATI DMS -->
+                        <div class="glass-card" style="padding: 18px 20px; margin-bottom: 20px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+                                <div style="font-size: 13px; font-weight: 700; color: var(--text-main); display: flex; align-items: center; gap: 6px;">
+                                    <i class='bx bx-filter-alt' style="color: var(--primary);"></i> Filtri Registro Documenti
+                                </div>
+                                <button class="btn btn-outline" style="padding: 3px 8px; font-size: 11px;" onclick="app.resetDmsFilters()">
+                                    <i class='bx bx-reset'></i> Reset Filtri
+                                </button>
+                            </div>
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; align-items: end;">
+                                <div class="form-group" style="margin:0;">
+                                    <label style="font-size: 11px; text-transform: uppercase; font-weight: 600; color: var(--text-muted); margin-bottom: 4px; display:block;">Cerca Documento / Codice</label>
+                                    <input type="text" id="dms-search" class="input-box" placeholder="Cerca titolo, codice, autore..." style="font-size: 12px;" oninput="app.filterDmsRegister()">
+                                </div>
+                                <div class="form-group" style="margin:0;">
+                                    <label style="font-size: 11px; text-transform: uppercase; font-weight: 600; color: var(--text-muted); margin-bottom: 4px; display:block;">Tipologia</label>
+                                    <select id="dms-filter-type" class="input-box" style="font-size: 12px;" onchange="app.filterDmsRegister()">
+                                        <option value="all">Tutte le Tipologie</option>
+                                        <option value="POL">POL - Politiche Qualità</option>
+                                        <option value="MAN">MAN - Manuale Qualità</option>
+                                        <option value="POS">POS - Procedure Operative</option>
+                                        <option value="IO">IO - Istruzioni Operative</option>
+                                        <option value="REG">REG - Regolamenti</option>
+                                        <option value="MOD">MOD - Modulistica</option>
+                                        <option value="DEL">DEL - Nomine &amp; Deleghe</option>
+                                        <option value="CERT">CERT - Certificati Impianti</option>
+                                        <option value="AUD">AUD - Report Audit</option>
+                                        <option value="ALL">ALL - Allegati Tecnici</option>
+                                    </select>
+                                </div>
+                                <div class="form-group" style="margin:0;">
+                                    <label style="font-size: 11px; text-transform: uppercase; font-weight: 600; color: var(--text-muted); margin-bottom: 4px; display:block;">Processo Aziendale</label>
+                                    <select id="dms-filter-process" class="input-box" style="font-size: 12px;" onchange="app.filterDmsRegister()">
+                                        <option value="all">Tutti i Processi</option>
+                                        <option value="Direzione & Strategia">Direzione &amp; Strategia</option>
+                                        <option value="Attività Sanitaria & Clinica">Attività Sanitaria &amp; Clinica</option>
+                                        <option value="Gestione Personale & Competenze">Gestione Personale &amp; Competenze</option>
+                                        <option value="Tecnologie & Manutenzione">Tecnologie &amp; Manutenzione</option>
+                                        <option value="Privacy & Sistemi Informativi">Privacy &amp; Sistemi Informativi</option>
+                                        <option value="Igiene & Sanificazione">Igiene &amp; Sanificazione</option>
+                                        <option value="Sicurezza & Ambiente">Sicurezza &amp; Ambiente</option>
+                                        <option value="Qualità & Risk Management">Qualità &amp; Risk Management</option>
+                                    </select>
+                                </div>
+                                <div class="form-group" style="margin:0;">
+                                    <label style="font-size: 11px; text-transform: uppercase; font-weight: 600; color: var(--text-muted); margin-bottom: 4px; display:block;">Stato Workflow</label>
+                                    <select id="dms-filter-status" class="input-box" style="font-size: 12px;" onchange="app.filterDmsRegister()">
+                                        <option value="all">Tutti gli Stati</option>
+                                        <option value="approvato">✅ Approvato &amp; Vigente</option>
+                                        <option value="in_verifica">🔍 In Verifica</option>
+                                        <option value="bozza">📝 In Bozza</option>
+                                        <option value="archiviato">📦 Archiviato</option>
+                                    </select>
+                                </div>
+                                <div class="form-group" style="margin:0;">
+                                    <label style="font-size: 11px; text-transform: uppercase; font-weight: 600; color: var(--text-muted); margin-bottom: 4px; display:block;">Validità &amp; Scadenza</label>
+                                    <select id="dms-filter-expiry" class="input-box" style="font-size: 12px;" onchange="app.filterDmsRegister()">
+                                        <option value="all">Tutte le Validità</option>
+                                        <option value="vigente">🟢 Vigente</option>
+                                        <option value="scadenza">🟡 In Scadenza (≤ 30 gg)</option>
+                                        <option value="scaduto">🔴 Scaduto</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- TABELLA REGISTRO DOCUMENTI CONTROLLATI DMS -->
+                        <div class="glass-card" style="padding: 0; overflow: hidden; margin-bottom: 24px;">
+                            <div class="table-responsive" style="max-height: 700px; overflow-y: auto; overflow-x: auto;">
+                                <table class="checklist-table" style="width: 100%; border-collapse: collapse;">
+                                    <thead>
+                                        <tr style="position: sticky; top: 0; background: #0f172a; z-index: 10; border-bottom: 2px solid rgba(255,255,255,0.1);">
+                                            <th style="width: 140px; padding: 14px 12px;">Codice &amp; Tipo</th>
+                                            <th style="min-width: 220px; padding: 14px 12px;">Titolo Documento &amp; Requisito</th>
+                                            <th style="width: 90px; padding: 14px 12px;">Versione</th>
+                                            <th style="width: 150px; padding: 14px 12px;">Processo</th>
+                                            <th style="width: 170px; padding: 14px 12px;">Workflow Approvazione</th>
+                                            <th style="width: 140px; padding: 14px 12px;">Validità &amp; Scadenza</th>
+                                            <th style="width: 130px; padding: 14px 12px;">File Allegato</th>
+                                            <th style="width: 130px; padding: 14px 12px; text-align: center;">Azioni</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="dms-documents-tbody">
+                                        <!-- Injected via app.renderDmsRegister() -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ============================================================
+                         TAB 2: FASCICOLO ISTITUZIONALE & ISTANZE (ASP / OTA)
+                         ============================================================ -->
+                    <div id="dms-page-istanze" class="dms-page" style="display: none;">
                         <div class="gap-header" style="margin-bottom: 16px;">
-                            <h4><i class='bx bx-check-double' style="color:var(--success);"></i> Elenco Documenti Conformi (Fascicolo)</h4>
-                            <span style="font-size:12px; color:var(--text-muted);">Documenti pronti per l'invio istituzionale</span>
+                            <h4><i class='bx bx-archive-in' style="color:var(--primary);"></i> Generazione Istanze &amp; Fascicolo Aggregato</h4>
+                            <div style="display: flex; gap: 8px;">
+                                <button class="btn btn-primary" onclick="app.scaricaFascicoloCompleto('docx')"><i class='bx bx-archive-in'></i> Scarica Fascicolo (DOCX)</button>
+                                <button class="btn btn-primary" style="background: #ef4444; border-color: #ef4444;" onclick="app.scaricaFascicoloCompleto('pdf')"><i class='bx bxs-file-pdf'></i> Scarica Fascicolo (PDF)</button>
+                            </div>
                         </div>
-                        <div class="checklist-table-wrapper">
-                            <table class="checklist-table">
-                                <thead>
-                                    <tr>
-                                        <th>Stato</th>
-                                        <th>Documento</th>
-                                        <th>Normativa</th>
-                                        <th>File / Validazione</th>
-                                        <th>Azioni</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="fascicolo-list">
-                                    <!-- Popolato dinamicamente da app.js -->
-                                </tbody>
-                            </table>
+                        <div class="welcome-card glass-card" style="margin-bottom: 24px;">
+                            <p>Questo modulo aggrega tutti i documenti conformi caricati nella Gap Analysis e genera le Istanze pre-compilate da inviare all'ASP o all'Assessorato (OTA).</p>
+                        </div>
+
+                        <!-- Elenco Documenti Validati -->
+                        <div class="checklist-container glass-card" style="margin-bottom: 24px;">
+                            <div class="gap-header" style="margin-bottom: 16px;">
+                                <h4><i class='bx bx-check-double' style="color:var(--success);"></i> Elenco Documenti Conformi (Fascicolo)</h4>
+                                <span style="font-size:12px; color:var(--text-muted);">Documenti pronti per l'invio istituzionale</span>
+                            </div>
+                            <div class="checklist-table-wrapper">
+                                <table class="checklist-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Stato</th>
+                                            <th>Documento</th>
+                                            <th>Normativa</th>
+                                            <th>File / Validazione</th>
+                                            <th>Azioni</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="fascicolo-list">
+                                        <!-- Popolato dinamicamente da app.js -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div class="stats-grid" style="margin-bottom:24px; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));">
+                            <div class="stat-card glass-card" style="flex-direction: column; align-items: flex-start; gap: 10px; border-left: 4px solid #0284c7;">
+                                <h4 style="color: #0284c7;"><i class='bx bx-file-find'></i> Relazione Autovalutazione</h4>
+                                <p style="font-size: 13px; color: var(--text-muted);">Relazione tecnica ufficiale ASP &amp; OTA (D.A. 20/2024 e D.A. 890/2002) con dichiarazione D.P.R. 445/2000.</p>
+                                <div style="display: flex; gap: 8px; width: 100%;">
+                                    <button class="btn btn-outline" style="flex: 1; padding: 8px 12px; font-size: 12px;" onclick="app.generaRelazioneAutovalutazione('docx')"><i class='bx bx-file'></i> DOCX</button>
+                                    <button class="btn btn-outline" style="flex: 1; padding: 8px 12px; font-size: 12px; border-color: rgba(2, 132, 199, 0.5); color: #0284c7;" onclick="app.generaRelazioneAutovalutazione('pdf')"><i class='bx bxs-file-pdf'></i> PDF</button>
+                                </div>
+                            </div>
+                            <div class="stat-card glass-card" style="flex-direction: column; align-items: flex-start; gap: 10px;">
+                                <h4 style="color: var(--primary);"><i class='bx bx-file-blank'></i> Istanza Autorizzazione ASP</h4>
+                                <p style="font-size: 13px; color: var(--text-muted);">Modulo standard generato in base al D.A. 890/2002.</p>
+                                <div style="display: flex; gap: 8px; width: 100%;">
+                                    <button class="btn btn-outline" style="flex: 1; padding: 8px 12px; font-size: 12px;" onclick="app.generaIstanzaASP('docx')"><i class='bx bx-file'></i> DOCX</button>
+                                    <button class="btn btn-outline" style="flex: 1; padding: 8px 12px; font-size: 12px; border-color: rgba(239, 68, 68, 0.4); color: #ef4444;" onclick="app.generaIstanzaASP('pdf')"><i class='bx bxs-file-pdf'></i> PDF</button>
+                                </div>
+                            </div>
+                            <div class="stat-card glass-card" style="flex-direction: column; align-items: flex-start; gap: 10px;">
+                                <h4 style="color: var(--success);"><i class='bx bx-file-blank'></i> Istanza Accreditamento OTA</h4>
+                                <p style="font-size: 13px; color: var(--text-muted);">Modulo precompilato D.A. 20/2024.</p>
+                                <div style="display: flex; gap: 8px; width: 100%;">
+                                    <button class="btn btn-outline" style="flex: 1; padding: 8px 12px; font-size: 12px;" onclick="app.generaIstanzaOTA('docx')"><i class='bx bx-file'></i> DOCX</button>
+                                    <button class="btn btn-outline" style="flex: 1; padding: 8px 12px; font-size: 12px; border-color: rgba(239, 68, 68, 0.4); color: #ef4444;" onclick="app.generaIstanzaOTA('pdf')"><i class='bx bxs-file-pdf'></i> PDF</button>
+                                </div>
+                            </div>
+                            <div class="stat-card glass-card" style="flex-direction: column; align-items: flex-start; gap: 10px;">
+                                <h4 style="color: var(--warning);"><i class='bx bx-file-blank'></i> Istanza Convenzionamento</h4>
+                                <p style="font-size: 13px; color: var(--text-muted);">Domanda accordo contrattuale SSN (D.P.Reg. n. 12/2019).</p>
+                                <div style="display: flex; gap: 8px; width: 100%;">
+                                    <button class="btn btn-outline" style="flex: 1; padding: 8px 12px; font-size: 12px;" onclick="app.generaIstanzaConvenzionamento('docx')"><i class='bx bx-file'></i> DOCX</button>
+                                    <button class="btn btn-outline" style="flex: 1; padding: 8px 12px; font-size: 12px; border-color: rgba(239, 68, 68, 0.4); color: #ef4444;" onclick="app.generaIstanzaConvenzionamento('pdf')"><i class='bx bxs-file-pdf'></i> PDF</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- SCHEDA ACCORDO CONTRATTUALE SSN (visibile solo se OTA attivo) -->
+                        <div id="accordo-contrattuale-card" class="glass-card" style="display:none; padding:0; overflow:hidden; border:1px solid rgba(16,185,129,0.3); margin-bottom:24px;">
+                            <div style="background:linear-gradient(135deg, rgba(16,185,129,0.15), rgba(59,130,246,0.08)); padding:20px 24px; border-bottom:1px solid rgba(16,185,129,0.2);">
+                                <div style="display:flex; align-items:center; gap:14px;">
+                                    <div style="width:44px; height:44px; border-radius:12px; background:linear-gradient(135deg,#10b981,#3b82f6); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                                        <i class='bx bx-briefcase-alt-2' style="font-size:24px; color:#fff;"></i>
+                                    </div>
+                                    <div>
+                                        <h4 style="margin:0; font-size:16px; font-weight:700; color:var(--text-main);">Accordo Contrattuale SSN (D.P.Reg. n. 12/2019)</h4>
+                                        <div style="font-size:12px; color:var(--text-muted); margin-top:2px;">Candidatura all'assegnazione del budget sanitario regionale</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div style="padding:20px 24px;">
+                                <div style="font-size:13px; color:var(--text-muted); line-height:1.6; margin-bottom:16px;">
+                                    Dopo l'ottenimento dell'Accreditamento Istituzionale OTA, la struttura può procedere con la stipula del Contratto con l'ASP per l'erogazione delle prestazioni a carico del Servizio Sanitario Nazionale.
+                                </div>
+                                <button class="btn btn-outline" style="border-color:rgba(16,185,129,0.4); color:#10b981;" onclick="app.generaIstanzaConvenzionamento('docx')">
+                                    <i class='bx bx-file'></i> Genera Istanza di Accordo Contrattuale
+                                </button>
+                            </div>
                         </div>
                     </div>
-                    <div class="stats-grid" style="margin-bottom:24px; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));">
-                        <div class="stat-card glass-card" style="flex-direction: column; align-items: flex-start; gap: 10px; border-left: 4px solid #0284c7;">
-                            <h4 style="color: #0284c7;"><i class='bx bx-file-find'></i> Relazione Autovalutazione</h4>
-                            <p style="font-size: 13px; color: var(--text-muted);">Relazione tecnica ufficiale ASP &amp; OTA (D.A. 20/2024 e D.A. 890/2002) con dichiarazione D.P.R. 445/2000.</p>
-                            <div style="display: flex; gap: 8px; width: 100%;">
-                                <button class="btn btn-outline" style="flex: 1; padding: 8px 12px; font-size: 12px;" onclick="app.generaRelazioneAutovalutazione('docx')"><i class='bx bx-file'></i> DOCX</button>
-                                <button class="btn btn-outline" style="flex: 1; padding: 8px 12px; font-size: 12px; border-color: rgba(2, 132, 199, 0.5); color: #0284c7;" onclick="app.generaRelazioneAutovalutazione('pdf')"><i class='bx bxs-file-pdf'></i> PDF</button>
-                            </div>
-                        </div>
-                        <div class="stat-card glass-card" style="flex-direction: column; align-items: flex-start; gap: 10px;">
-                            <h4 style="color: var(--primary);"><i class='bx bx-file-blank'></i> Istanza Autorizzazione ASP</h4>
-                            <p style="font-size: 13px; color: var(--text-muted);">Modulo standard generato in base al D.A. 890/2002.</p>
-                            <div style="display: flex; gap: 8px; width: 100%;">
-                                <button class="btn btn-outline" style="flex: 1; padding: 8px 12px; font-size: 12px;" onclick="app.generaIstanzaASP('docx')"><i class='bx bx-file'></i> DOCX</button>
-                                <button class="btn btn-outline" style="flex: 1; padding: 8px 12px; font-size: 12px; border-color: rgba(239, 68, 68, 0.4); color: #ef4444;" onclick="app.generaIstanzaASP('pdf')"><i class='bx bxs-file-pdf'></i> PDF</button>
-                            </div>
-                        </div>
-                        <div class="stat-card glass-card" style="flex-direction: column; align-items: flex-start; gap: 10px;">
-                            <h4 style="color: var(--success);"><i class='bx bx-file-blank'></i> Istanza Accreditamento OTA</h4>
-                            <p style="font-size: 13px; color: var(--text-muted);">Modulo precompilato D.A. 20/2024.</p>
-                            <div style="display: flex; gap: 8px; width: 100%;">
-                                <button class="btn btn-outline" style="flex: 1; padding: 8px 12px; font-size: 12px;" onclick="app.generaIstanzaOTA('docx')"><i class='bx bx-file'></i> DOCX</button>
-                                <button class="btn btn-outline" style="flex: 1; padding: 8px 12px; font-size: 12px; border-color: rgba(239, 68, 68, 0.4); color: #ef4444;" onclick="app.generaIstanzaOTA('pdf')"><i class='bx bxs-file-pdf'></i> PDF</button>
-                            </div>
-                        </div>
-                        <div class="stat-card glass-card" style="flex-direction: column; align-items: flex-start; gap: 10px;">
-                            <h4 style="color: var(--warning);"><i class='bx bx-file-blank'></i> Istanza Convenzionamento</h4>
-                            <p style="font-size: 13px; color: var(--text-muted);">Domanda accordo contrattuale SSN (D.P.Reg. n. 12/2019).</p>
-                            <div style="display: flex; gap: 8px; width: 100%;">
-                                <button class="btn btn-outline" style="flex: 1; padding: 8px 12px; font-size: 12px;" onclick="app.generaIstanzaConvenzionamento('docx')"><i class='bx bx-file'></i> DOCX</button>
-                                <button class="btn btn-outline" style="flex: 1; padding: 8px 12px; font-size: 12px; border-color: rgba(239, 68, 68, 0.4); color: #ef4444;" onclick="app.generaIstanzaConvenzionamento('pdf')"><i class='bx bxs-file-pdf'></i> PDF</button>
-                            </div>
-                        </div>
-                    </div>
+                </div>
 
                     <!-- SCHEDA ACCORDO CONTRATTUALE SSN (visibile solo se OTA attivo) -->
                     <div id="accordo-contrattuale-card" class="glass-card" style="display:none; padding:0; overflow:hidden; border:1px solid rgba(16,185,129,0.3); margin-bottom:24px;">
@@ -736,161 +1127,1148 @@
                     </div>
                 </div>
 
-                <!-- VIEW: Maintenance -->
-                <div id="view-maintenance" class="view">
-                    <div class="gap-header">
-                        <h3>Monitoraggio Mantenimento Requisiti</h3>
-                        <span style="font-size:12px; color:var(--text-muted);"><i class='bx bx-info-circle'></i> Le scadenze sono generate automaticamente dai requisiti validati nella Gap Analysis</span>
-                    </div>
-
-                    <!-- Stats Mantenimento -->
-                    <div class="stats-grid" style="margin-bottom:20px;">
-                        <div class="stat-card glass-card">
-                            <div class="stat-icon danger"><i class='bx bx-alarm-exclamation'></i></div>
-                            <div class="stat-info"><h4>Scaduti</h4><span class="stat-value danger" id="maint-stat-scaduti">0</span></div>
-                        </div>
-                        <div class="stat-card glass-card">
-                            <div class="stat-icon warning"><i class='bx bx-time-five'></i></div>
-                            <div class="stat-info"><h4>In Scadenza (30gg)</h4><span class="stat-value warning" id="maint-stat-inscadenza">0</span></div>
-                        </div>
-                        <div class="stat-card glass-card">
-                            <div class="stat-icon success"><i class='bx bx-check-shield'></i></div>
-                            <div class="stat-info"><h4>Validi</h4><span class="stat-value success" id="maint-stat-validi">0</span></div>
+                <!-- VIEW: Audit Interni & CAPA (§9.2 & §10.2 ISO 9001) -->
+                <div id="view-audit-capa" class="view">
+                    <!-- HEADER GENERALE AUDIT & CAPA -->
+                    <div class="gap-header" style="margin-bottom: 16px;">
+                        <div>
+                            <h3 style="margin: 0; font-size: 22px; font-weight: 700; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
+                                <i class='bx bx-clipboard-check' style="color: var(--primary);"></i> Audit Interni, Pre-Audit OTA &amp; CAPA
+                            </h3>
+                            <p style="margin: 4px 0 0; font-size: 13px; color: var(--text-muted);">
+                                Valutazione delle Prestazioni (§9.2 ISO 9001:2015), Pre-Audit Ispettivi OTA (MAMB 1-7) e Gestione Non Conformità &amp; Piani CAPA (§10.2).
+                            </p>
                         </div>
                     </div>
 
-                    <!-- Tabella Dinamica -->
-                    <div class="checklist-container glass-card">
-                        <div class="checklist-table-wrapper">
-                            <table class="checklist-table">
-                                <thead>
-                                    <tr>
-                                        <th>Stato</th>
-                                        <th>Requisito</th>
-                                        <th>Cadenza</th>
-                                        <th>Scade il</th>
-                                        <th>Azione</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="maintenance-list">
-                                    <!-- Popolato dinamicamente da app.js -->
-                                </tbody>
-                            </table>
-                        </div>
+                    <!-- TAB SWITCHER: AUDIT SESSIONS vs REGISTRO CAPA -->
+                    <div class="dms-tab-nav">
+                        <button class="dms-tab-btn active" id="tab-btn-audit-sessions" onclick="app.switchAuditTab('sessions')">
+                            <i class='bx bx-list-check'></i>
+                            <span>Programma &amp; Sessioni di Audit (§9.2)</span>
+                        </button>
+                        <button class="dms-tab-btn" id="tab-btn-capa-register" onclick="app.switchAuditTab('capas')">
+                            <i class='bx bx-wrench'></i>
+                            <span>Registro Non Conformità &amp; CAPA (§10.2)</span>
+                        </button>
                     </div>
-                </div>
 
-                <!-- VIEW: Consulenti (Area Consulenti) -->
-                <div id="view-consultants" class="view">
-                    <div class="gap-header" style="margin-bottom:24px;">
-                        <h3>Area Consulenti</h3>
-                        <span style="font-size:12px;color:var(--text-muted);">Documenti in attesa di validazione professionale</span>
-                    </div>
-                    <div id="consultants-container">
-                        <!-- Popolato da renderConsultantsData() -->
-                        <div class="glass-card" style="padding:40px;text-align:center;color:var(--text-muted);">
-                            <i class='bx bx-user-check' style="font-size:48px;display:block;margin-bottom:12px;opacity:0.4;"></i>
-                            <strong>Nessun documento in attesa di validazione.</strong><br>
-                            <span style="font-size:13px;">I documenti caricati nella Gap Analysis appariranno qui per la revisione del consulente.</span>
+                    <!-- ============================================================
+                         TAB 1: SESSIONI DI AUDIT & PRE-AUDIT OTA (§9.2)
+                         ============================================================ -->
+                    <div id="audit-page-sessions" class="dms-page">
+                        <!-- STAT SUMMARY CARDS AUDIT -->
+                        <div class="stats-grid" style="margin-bottom: 20px; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));">
+                            <div class="stat-card glass-card" style="border-left: 3px solid var(--primary);">
+                                <div class="stat-icon" style="color: var(--primary); background: rgba(59,130,246,0.15);"><i class='bx bx-calendar-check'></i></div>
+                                <div class="stat-info">
+                                    <h4>Totale Audit</h4>
+                                    <span class="stat-value" id="audit-stat-total">0</span>
+                                </div>
+                            </div>
+                            <div class="stat-card glass-card" style="border-left: 3px solid #10b981;">
+                                <div class="stat-icon success"><i class='bx bx-check-circle'></i></div>
+                                <div class="stat-info">
+                                    <h4>Completati</h4>
+                                    <span class="stat-value success" id="audit-stat-completed">0</span>
+                                </div>
+                            </div>
+                            <div class="stat-card glass-card" style="border-left: 3px solid #f59e0b;">
+                                <div class="stat-icon warning"><i class='bx bx-time'></i></div>
+                                <div class="stat-info">
+                                    <h4>Pianificati</h4>
+                                    <span class="stat-value warning" id="audit-stat-planned">0</span>
+                                </div>
+                            </div>
+                            <div class="stat-card glass-card" style="border-left: 3px solid #06b6d4;">
+                                <div class="stat-icon" style="color: #06b6d4; background: rgba(6,182,212,0.15);"><i class='bx bx-line-chart'></i></div>
+                                <div class="stat-info">
+                                    <h4>Score Medio OTA</h4>
+                                    <span class="stat-value" id="audit-stat-avg-score" style="color: #06b6d4;">0%</span>
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                    <!-- Tabella documenti da validare -->
-                    <div class="checklist-container glass-card" style="margin-top:24px;display:none;" id="admin-docs-container">
-                        <div style="padding:16px;border-bottom:1px solid rgba(255,255,255,0.08);display:flex;gap:12px;align-items:center;">
-                            <input type="text" class="input-box" id="admin-search" placeholder="Cerca documento..." style="flex:1;padding:8px 12px;" oninput="app.filterAdminDocs()">
-                        </div>
-                        <div class="checklist-table-wrapper">
-                            <table class="checklist-table">
-                                <thead>
-                                    <tr><th>Struttura</th><th>Requisito</th><th>File</th><th>Stato AI</th><th>Azioni Consulente</th></tr>
-                                </thead>
-                                <tbody id="admin-docs-table">
-                                    <tr><td colspan="5" style="text-align:center;padding:32px;color:var(--text-muted);">Nessun documento.</td></tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
 
-                <!-- VIEW: Normativa (Quadro Normativo) -->
-                <div id="view-normativa" class="view">
-                    <div class="gap-header" style="margin-bottom:24px;">
-                        <h3>Quadro Normativo</h3>
-                        <span style="font-size:12px;color:var(--text-muted);">Coerenza con la normativa vigente siciliana</span>
-                    </div>
-                    <!-- Tab Navigation -->
-                    <div class="tab-nav" style="display:flex;gap:8px;margin-bottom:20px;justify-content:center;">
-                        <button id="norm-tab-coerenza"     class="filter-btn active" onclick="app.switchNormTab('coerenza')">Analisi Coerenza OTA</button>
-                    </div>
-                    <!-- Tab Coerenza -->
-                    <div id="norm-page-coerenza">
-                        <div id="norm-coerenza-container">
-                            <!-- Popolato da renderStoricoNormativa() -->
+                        <!-- BARRA AZIONI AUDIT -->
+                        <div class="glass-card" style="padding: 16px 20px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+                            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                                <button class="btn btn-primary" onclick="app.openAuditModal()" style="font-weight: 600;">
+                                    <i class='bx bx-plus-circle'></i> Nuova Sessione di Audit
+                                </button>
+                                <button class="btn btn-outline" onclick="app.avviaPreAuditOTAAutomatico()" style="font-weight: 600; color: #34d399; border-color: rgba(16,185,129,0.3);">
+                                    <i class='bx bx-play-circle'></i> Genera Pre-Audit OTA (7 Schede MAMB)
+                                </button>
+                            </div>
+                            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                                <button class="btn btn-outline" onclick="app.esportaProgrammaAuditCSV()" title="Esporta Programma Audit in CSV">
+                                    <i class='bx bx-download'></i> Esporta CSV
+                                </button>
+                            </div>
                         </div>
-                    </div>
-                </div>
 
-                <!-- VIEW: Panoramica -->
-                <div id="view-panoramica" class="view">
-                    <div class="gap-header" style="margin-bottom:24px;">
-                        <h3>Panoramica Iter Accreditamento</h3>
-                        <span style="font-size:12px;color:var(--text-muted);">Visualizza l'avanzamento dell'iter e lo storico conformità</span>
-                    </div>
-                    <!-- Tab Navigation -->
-                    <div class="tab-nav" style="display:flex;gap:8px;margin-bottom:20px;">
-                        <button id="pan-tab-iter"    class="filter-btn active" onclick="app.switchPanTab('iter')">Iter Procedurale</button>
-                        <button id="pan-tab-storico" class="filter-btn"        onclick="app.switchPanTab('storico')">Storico Conformità</button>
-                    </div>
-                    <!-- Tab Iter -->
-                    <div id="pan-page-iter">
-                        <div id="pan-iter-timeline" class="glass-card" style="padding:32px;">
-                            <!-- Popolato da renderPanIterTimeline() -->
-                            <div style="text-align:center;color:var(--text-muted);padding:40px;">
-                                <i class='bx bx-sitemap' style="font-size:48px;display:block;margin-bottom:12px;opacity:0.4;"></i>
-                                <strong>Nessun iter attivo.</strong><br>
-                                <span style="font-size:13px;">Completa il profilo struttura per avviare l'iter di accreditamento.</span>
+                        <!-- TABELLA SESSIONI AUDIT -->
+                        <div class="glass-card" style="padding: 0; overflow: hidden; margin-bottom: 24px;">
+                            <div class="table-responsive" style="max-height: 700px; overflow-y: auto; overflow-x: auto;">
+                                <table class="checklist-table" style="width: 100%; border-collapse: collapse;">
+                                    <thead>
+                                        <tr style="position: sticky; top: 0; background: #0f172a; z-index: 10; border-bottom: 2px solid rgba(255,255,255,0.1);">
+                                            <th style="width: 140px; padding: 14px 12px;">Codice &amp; Tipo</th>
+                                            <th style="min-width: 220px; padding: 14px 12px;">Titolo &amp; Campo di Applicazione</th>
+                                            <th style="width: 140px; padding: 14px 12px;">Lead Auditor</th>
+                                            <th style="width: 120px; padding: 14px 12px;">Data Sessione</th>
+                                            <th style="width: 160px; padding: 14px 12px;">Conformità Riscontrata</th>
+                                            <th style="width: 110px; padding: 14px 12px;">Stato</th>
+                                            <th style="width: 150px; padding: 14px 12px; text-align: center;">Azioni</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="audit-sessions-tbody">
+                                        <!-- Injected via app.renderAuditsList() -->
+                                    </tbody>
+                                </table>
                             </div>
                         </div>
                     </div>
-                    <!-- Tab Storico -->
-                    <div id="pan-page-storico" style="display:none;">
-                        <div class="glass-card" style="padding:32px;">
-                            <h4 style="color:var(--primary);margin-bottom:16px;"><i class='bx bx-history'></i> Storico Conformità</h4>
-                            <p style="color:var(--text-muted);font-size:13px;">Lo storico delle validazioni e degli aggiornamenti di conformità appare qui.</p>
+
+                    <!-- ============================================================
+                         TAB 2: REGISTRO NON CONFORMITÀ & CAPA (§10.2)
+                         ============================================================ -->
+                    <div id="audit-page-capas" class="dms-page" style="display: none;">
+                        <!-- STAT SUMMARY CARDS CAPA -->
+                        <div class="stats-grid" style="margin-bottom: 20px; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));">
+                            <div class="stat-card glass-card" style="border-left: 3px solid var(--primary);">
+                                <div class="stat-icon" style="color: var(--primary); background: rgba(59,130,246,0.15);"><i class='bx bx-error-circle'></i></div>
+                                <div class="stat-info">
+                                    <h4>Totale NC Rilevate</h4>
+                                    <span class="stat-value" id="capa-stat-total">0</span>
+                                </div>
+                            </div>
+                            <div class="stat-card glass-card" style="border-left: 3px solid #ef4444;">
+                                <div class="stat-icon danger"><i class='bx bx-alarm-exclamation'></i></div>
+                                <div class="stat-info">
+                                    <h4>NC Aperte</h4>
+                                    <span class="stat-value danger" id="capa-stat-open">0</span>
+                                </div>
+                            </div>
+                            <div class="stat-card glass-card" style="border-left: 3px solid #f59e0b;">
+                                <div class="stat-icon warning"><i class='bx bx-wrench'></i></div>
+                                <div class="stat-info">
+                                    <h4>In Azione / Verifica</h4>
+                                    <span class="stat-value warning" id="capa-stat-progress">0</span>
+                                </div>
+                            </div>
+                            <div class="stat-card glass-card" style="border-left: 3px solid #10b981;">
+                                <div class="stat-icon success"><i class='bx bx-check-double'></i></div>
+                                <div class="stat-info">
+                                    <h4>Risolte &amp; Chiuse</h4>
+                                    <span class="stat-value success" id="capa-stat-closed">0</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- BARRA AZIONI CAPA -->
+                        <div class="glass-card" style="padding: 16px 20px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+                            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                                <button class="btn btn-primary" onclick="app.openCapaModal()" style="font-weight: 600;">
+                                    <i class='bx bx-plus-circle'></i> Nuova Non Conformità (CAPA)
+                                </button>
+                            </div>
+                            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                                <button class="btn btn-outline" onclick="app.esportaCapaCSV()" title="Esporta Registro CAPA in CSV">
+                                    <i class='bx bx-download'></i> Esporta CSV
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- FILTRI CAPA -->
+                        <div class="glass-card" style="padding: 16px 20px; margin-bottom: 20px;">
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; align-items: end;">
+                                <div class="form-group" style="margin:0;">
+                                    <label style="font-size: 11px; text-transform: uppercase; font-weight: 600; color: var(--text-muted); margin-bottom: 4px; display:block;">Cerca NC</label>
+                                    <input type="text" id="capa-search" class="input-box" placeholder="Cerca titolo, codice, processo..." style="font-size: 12px;" oninput="app.filterCapaRegister()">
+                                </div>
+                                <div class="form-group" style="margin:0;">
+                                    <label style="font-size: 11px; text-transform: uppercase; font-weight: 600; color: var(--text-muted); margin-bottom: 4px; display:block;">Gravità Rilievo</label>
+                                    <select id="capa-filter-severity" class="input-box" style="font-size: 12px;" onchange="app.filterCapaRegister()">
+                                        <option value="all">Tutte le Gravità</option>
+                                        <option value="NC_MAJ">NC Maggiore (Critica)</option>
+                                        <option value="NC_MIN">NC Minore</option>
+                                        <option value="OSS">Osservazione</option>
+                                        <option value="OFI">Opportunità Miglioramento</option>
+                                    </select>
+                                </div>
+                                <div class="form-group" style="margin:0;">
+                                    <label style="font-size: 11px; text-transform: uppercase; font-weight: 600; color: var(--text-muted); margin-bottom: 4px; display:block;">Stato CAPA</label>
+                                    <select id="capa-filter-status" class="input-box" style="font-size: 12px;" onchange="app.filterCapaRegister()">
+                                        <option value="all">Tutti gli Stati</option>
+                                        <option value="aperta">🔴 Aperta</option>
+                                        <option value="in_corso">🟡 In Corso</option>
+                                        <option value="in_verifica">🔵 In Verifica Efficacia</option>
+                                        <option value="chiusa">🟢 Risolta &amp; Chiusa</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- TABELLA REGISTRO NON CONFORMITÀ -->
+                        <div class="glass-card" style="padding: 0; overflow: hidden; margin-bottom: 24px;">
+                            <div class="table-responsive" style="max-height: 700px; overflow-y: auto; overflow-x: auto;">
+                                <table class="checklist-table" style="width: 100%; border-collapse: collapse;">
+                                    <thead>
+                                        <tr style="position: sticky; top: 0; background: #0f172a; z-index: 10; border-bottom: 2px solid rgba(255,255,255,0.1);">
+                                            <th style="width: 140px; padding: 14px 12px;">Codice &amp; Gravità</th>
+                                            <th style="min-width: 240px; padding: 14px 12px;">Descrizione Non Conformità &amp; Origine</th>
+                                            <th style="width: 140px; padding: 14px 12px;">Processo &amp; ISO</th>
+                                            <th style="width: 140px; padding: 14px 12px;">Responsabile</th>
+                                            <th style="width: 120px; padding: 14px 12px;">Data Target</th>
+                                            <th style="width: 120px; padding: 14px 12px;">Stato CAPA</th>
+                                            <th style="width: 140px; padding: 14px 12px; text-align: center;">Azioni</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="capa-documents-tbody">
+                                        <!-- Injected via app.renderNonConformitiesList() -->
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- VIEW: Procedure OTA -->
+                <!-- ============================================================
+                     VIEW: RISK MANAGEMENT SANITARIO & INCIDENT REPORTING (§6.1 & LEGGE 24/2017)
+                     ============================================================ -->
+                <div id="view-risk-management" class="view">
+                    <div class="gap-header">
+                        <div>
+                            <h3 style="margin: 0;">Risk Management Sanitario &amp; Sicurezza delle Cure</h3>
+                            <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">
+                                <i class='bx bx-shield-plus'></i> Valutazione del Rischio (§6.1 ISO 9001 / ISO 31000) &amp; Incident Reporting (Legge 24/2017 - D.A. 20/2024 MAMB 5-6)
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TAB NAVIGATION RISK MANAGEMENT -->
+                    <div class="dms-tab-nav glass-card" style="margin-bottom: 20px;">
+                        <button class="dms-tab-btn active" id="tab-btn-risk-register" onclick="app.switchRiskTab('register')">
+                            <i class='bx bx-grid-alt'></i>
+                            <span>Registro &amp; Mappa dei Rischi (Heatmap 5x5)</span>
+                        </button>
+                        <button class="dms-tab-btn" id="tab-btn-incident-reporting" onclick="app.switchRiskTab('incidents')">
+                            <i class='bx bx-alarm-exclamation'></i>
+                            <span>Incident Reporting &amp; Eventi Sentinella</span>
+                        </button>
+                    </div>
+
+                    <!-- ============================================================
+                         TAB 1: REGISTRO DEI RISCHI & HEATMAP 5x5
+                         ============================================================ -->
+                    <div id="risk-page-register" class="dms-page">
+                        <!-- STAT SUMMARY CARDS RISCHI -->
+                        <div class="stats-grid" style="margin-bottom: 20px; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));">
+                            <div class="stat-card glass-card" style="border-left: 3px solid var(--primary);">
+                                <div class="stat-icon" style="color: var(--primary); background: rgba(59,130,246,0.15);"><i class='bx bx-list-check'></i></div>
+                                <div class="stat-info">
+                                    <h4>Totale Rischi</h4>
+                                    <span class="stat-value" id="risk-stat-total-count">0</span>
+                                </div>
+                            </div>
+                            <div class="stat-card glass-card" style="border-left: 3px solid #ef4444;">
+                                <div class="stat-icon danger"><i class='bx bx-alarm-exclamation'></i></div>
+                                <div class="stat-info">
+                                    <h4>Rischi Critici (R≥20)</h4>
+                                    <span class="stat-value danger" id="risk-stat-crit-count">0</span>
+                                </div>
+                            </div>
+                            <div class="stat-card glass-card" style="border-left: 3px solid #f97316;">
+                                <div class="stat-icon warning"><i class='bx bx-error'></i></div>
+                                <div class="stat-info">
+                                    <h4>Rischi Alti (R 15-16)</h4>
+                                    <span class="stat-value warning" id="risk-stat-high-count">0</span>
+                                </div>
+                            </div>
+                            <div class="stat-card glass-card" style="border-left: 3px solid #10b981;">
+                                <div class="stat-icon success"><i class='bx bx-shield-quarter'></i></div>
+                                <div class="stat-info">
+                                    <h4>Mitigati (Residuo ≤6)</h4>
+                                    <span class="stat-value success" id="risk-stat-mitigated-count">0</span>
+                                </div>
+                            </div>
+                            <div class="stat-card glass-card" style="border-left: 3px solid #8b5cf6;">
+                                <div class="stat-icon" style="color: #8b5cf6; background: rgba(139,92,246,0.15);"><i class='bx bx-trending-down'></i></div>
+                                <div class="stat-info">
+                                    <h4>Rischio Medio Inerente</h4>
+                                    <span class="stat-value" id="risk-stat-avg-inherent" style="color: #a78bfa;">—</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- SEZIONE HEATMAP 5x5 INTERATTIVA -->
+                        <div class="glass-card" style="padding: 20px; margin-bottom: 20px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 10px;">
+                                <div>
+                                    <h4 style="margin: 0; font-size: 15px; font-weight: 700; color: var(--text-main); display: flex; align-items: center; gap: 6px;">
+                                        <i class='bx bx-grid-alt' style="color: var(--primary);"></i> Mappa dei Rischi Sanitari (Matrice di Rischio 5x5)
+                                    </h4>
+                                    <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">
+                                        Clicca su un quadrante per filtrare istantaneamente i rischi associati nella tabella
+                                    </div>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <button id="btn-reset-heatmap" class="btn btn-outline" style="font-size: 11px; padding: 4px 10px; display: none;" onclick="app.resetHeatmapFilter()">
+                                        <i class='bx bx-reset'></i> Mostra Tutti i Rischi
+                                    </button>
+                                    <div style="display: flex; gap: 6px; font-size: 10px; font-weight: 700;">
+                                        <span class="risk-level-badge badge-risk-low">Basso (1-6)</span>
+                                        <span class="risk-level-badge badge-risk-med">Medio (8-12)</span>
+                                        <span class="risk-level-badge badge-risk-high">Alto (15-16)</span>
+                                        <span class="risk-level-badge badge-risk-crit">Critico (20-25)</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div id="heatmap-container" class="heatmap-container">
+                                <div id="heatmap-wrapper" class="heatmap-wrapper">
+                                    <!-- Injected dynamically via app.renderHeatmapGrid() -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- BARRA AZIONI RISCHI -->
+                        <div class="glass-card" style="padding: 16px 20px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+                            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                                <button class="btn btn-primary" onclick="app.openRiskModal()" style="font-weight: 600;">
+                                    <i class='bx bx-plus-circle'></i> Mappa Nuovo Rischio
+                                </button>
+                                <button class="btn btn-outline" onclick="app.generaPianoRischiStruttura()" style="font-weight: 600; color: #60a5fa; border-color: rgba(59,130,246,0.3);">
+                                    <i class='bx bx-refresh'></i> Ripristina Template Rischi Standard
+                                </button>
+                            </div>
+                            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                                <button class="btn btn-outline" onclick="app.esportaRischiCSV()" title="Esporta Registro Rischi in CSV">
+                                    <i class='bx bx-download'></i> Esporta CSV
+                                </button>
+                                <button class="btn btn-outline" onclick="app.esportaPianoRiskManagementPDF()" title="Genera Piano Ufficiale Gestione Rischio Sanitario (PDF)">
+                                    <i class='bx bx-printer'></i> Piano Rischio Clinico (PDF)
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- FILTRI REGISTRO RISCHI -->
+                        <div class="glass-card" style="padding: 16px 20px; margin-bottom: 20px;">
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; align-items: end;">
+                                <div class="form-group" style="margin:0;">
+                                    <label style="font-size: 11px; text-transform: uppercase; font-weight: 600; color: var(--text-muted); margin-bottom: 4px; display:block;">Cerca Rischio</label>
+                                    <input type="text" id="risk-search" class="input-box" placeholder="Cerca titolo, barriere, codice..." style="font-size: 12px;" oninput="app.filterRisksRegister()">
+                                </div>
+                                <div class="form-group" style="margin:0;">
+                                    <label style="font-size: 11px; text-transform: uppercase; font-weight: 600; color: var(--text-muted); margin-bottom: 4px; display:block;">Categoria di Rischio</label>
+                                    <select id="risk-filter-category" class="input-box" style="font-size: 12px;" onchange="app.filterRisksRegister()">
+                                        <option value="all">Tutte le Categorie</option>
+                                        <option value="CLIN">Rischio Clinico &amp; Paziente</option>
+                                        <option value="TECH">Tecnologie &amp; Impianti</option>
+                                        <option value="CYBER">Privacy, Dati &amp; Cyber</option>
+                                        <option value="SAFE">Salute &amp; Sicurezza (81/08)</option>
+                                        <option value="LEGAL">Compliance &amp; Autorizzativo</option>
+                                    </select>
+                                </div>
+                                <div class="form-group" style="margin:0;">
+                                    <label style="font-size: 11px; text-transform: uppercase; font-weight: 600; color: var(--text-muted); margin-bottom: 4px; display:block;">Fascia di Rischio</label>
+                                    <select id="risk-filter-level" class="input-box" style="font-size: 12px;" onchange="app.filterRisksRegister()">
+                                        <option value="all">Tutti i Livelli</option>
+                                        <option value="CRIT">🔴 Critico (20-25)</option>
+                                        <option value="HIGH">🟠 Alto (15-16)</option>
+                                        <option value="MED">🟡 Medio (8-12)</option>
+                                        <option value="LOW">🟢 Basso (1-6)</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- TABELLA REGISTRO RISCHI SANITARI -->
+                        <div class="glass-card" style="padding: 0; overflow: hidden; margin-bottom: 24px;">
+                            <div class="table-responsive" style="max-height: 700px; overflow-y: auto; overflow-x: auto;">
+                                <table class="checklist-table" style="width: 100%; border-collapse: collapse;">
+                                    <thead>
+                                        <tr style="position: sticky; top: 0; background: #0f172a; z-index: 10; border-bottom: 2px solid rgba(255,255,255,0.1);">
+                                            <th style="width: 140px; padding: 14px 12px;">Codice &amp; Categoria</th>
+                                            <th style="min-width: 230px; padding: 14px 12px;">Evento di Rischio &amp; Descrizione</th>
+                                            <th style="width: 130px; padding: 14px 12px;">Rischio Inerente</th>
+                                            <th style="min-width: 200px; padding: 14px 12px;">Misure di Prevenzione &amp; Barriere</th>
+                                            <th style="width: 130px; padding: 14px 12px;">Rischio Residuo</th>
+                                            <th style="width: 140px; padding: 14px 12px;">Responsabile</th>
+                                            <th style="width: 110px; padding: 14px 12px; text-align: center;">Azioni</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="risks-register-tbody">
+                                        <!-- Injected via app.renderRisksList() -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ============================================================
+                         TAB 2: INCIDENT REPORTING & EVENTI SENTINELLA
+                         ============================================================ -->
+                    <div id="risk-page-incidents" class="dms-page" style="display: none;">
+                        <!-- STAT SUMMARY CARDS INCIDENT -->
+                        <div class="stats-grid" style="margin-bottom: 20px; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));">
+                            <div class="stat-card glass-card" style="border-left: 3px solid var(--primary);">
+                                <div class="stat-icon" style="color: var(--primary); background: rgba(59,130,246,0.15);"><i class='bx bx-bell'></i></div>
+                                <div class="stat-info">
+                                    <h4>Totale Segnalazioni</h4>
+                                    <span class="stat-value" id="incident-stat-total">0</span>
+                                </div>
+                            </div>
+                            <div class="stat-card glass-card" style="border-left: 3px solid #06b6d4;">
+                                <div class="stat-icon" style="color: #06b6d4; background: rgba(6,182,212,0.15);"><i class='bx bx-info-circle'></i></div>
+                                <div class="stat-info">
+                                    <h4>Near Miss</h4>
+                                    <span class="stat-value" id="incident-stat-nearmiss" style="color: #06b6d4;">0</span>
+                                </div>
+                            </div>
+                            <div class="stat-card glass-card" style="border-left: 3px solid #f59e0b;">
+                                <div class="stat-icon warning"><i class='bx bx-error'></i></div>
+                                <div class="stat-info">
+                                    <h4>Eventi Avversi</h4>
+                                    <span class="stat-value warning" id="incident-stat-adverse">0</span>
+                                </div>
+                            </div>
+                            <div class="stat-card glass-card" style="border-left: 3px solid #ef4444;">
+                                <div class="stat-icon danger"><i class='bx bx-alarm-exclamation'></i></div>
+                                <div class="stat-info">
+                                    <h4>Eventi Sentinella</h4>
+                                    <span class="stat-value danger" id="incident-stat-sentinel">0</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- BARRA AZIONI INCIDENT -->
+                        <div class="glass-card" style="padding: 16px 20px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+                            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                                <button class="btn btn-primary" onclick="app.openIncidentModal()" style="font-weight: 600;">
+                                    <i class='bx bx-plus-circle'></i> Nuova Segnalazione Evento (Incident)
+                                </button>
+                            </div>
+                            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                                <button class="btn btn-outline" onclick="app.esportaIncidentCSV()" title="Esporta Registro Incident in CSV">
+                                    <i class='bx bx-download'></i> Esporta CSV
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- FILTRI INCIDENT -->
+                        <div class="glass-card" style="padding: 16px 20px; margin-bottom: 20px;">
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; align-items: end;">
+                                <div class="form-group" style="margin:0;">
+                                    <label style="font-size: 11px; text-transform: uppercase; font-weight: 600; color: var(--text-muted); margin-bottom: 4px; display:block;">Cerca Segnalazione</label>
+                                    <input type="text" id="incident-search" class="input-box" placeholder="Cerca titolo, luogo, segnalante..." style="font-size: 12px;" oninput="app.filterIncidentsRegister()">
+                                </div>
+                                <div class="form-group" style="margin:0;">
+                                    <label style="font-size: 11px; text-transform: uppercase; font-weight: 600; color: var(--text-muted); margin-bottom: 4px; display:block;">Tipologia Evento</label>
+                                    <select id="incident-filter-type" class="input-box" style="font-size: 12px;" onchange="app.filterIncidentsRegister()">
+                                        <option value="all">Tutte le Tipologie</option>
+                                        <option value="NEAR_MISS">Near Miss (Quasi Incidente)</option>
+                                        <option value="ADVERSE_EVENT">Evento Avverso</option>
+                                        <option value="SENTINEL_EVENT">Evento Sentinella (Grave)</option>
+                                    </select>
+                                </div>
+                                <div class="form-group" style="margin:0;">
+                                    <label style="font-size: 11px; text-transform: uppercase; font-weight: 600; color: var(--text-muted); margin-bottom: 4px; display:block;">Stato Workflow</label>
+                                    <select id="incident-filter-status" class="input-box" style="font-size: 12px;" onchange="app.filterIncidentsRegister()">
+                                        <option value="all">Tutti gli Stati</option>
+                                        <option value="aperto">🔴 Aperto</option>
+                                        <option value="in_analisi">🟡 In Analisi RCA</option>
+                                        <option value="in_trattamento">🔵 In Trattamento</option>
+                                        <option value="chiuso">🟢 Chiuso</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- TABELLA REGISTRO INCIDENT REPORTING -->
+                        <div class="glass-card" style="padding: 0; overflow: hidden; margin-bottom: 24px;">
+                            <div class="table-responsive" style="max-height: 700px; overflow-y: auto; overflow-x: auto;">
+                                <table class="checklist-table" style="width: 100%; border-collapse: collapse;">
+                                    <thead>
+                                        <tr style="position: sticky; top: 0; background: #0f172a; z-index: 10; border-bottom: 2px solid rgba(255,255,255,0.1);">
+                                            <th style="width: 140px; padding: 14px 12px;">Codice &amp; Tipo</th>
+                                            <th style="min-width: 230px; padding: 14px 12px;">Descrizione Evento &amp; Luogo</th>
+                                            <th style="width: 120px; padding: 14px 12px;">Data Evento</th>
+                                            <th style="width: 140px; padding: 14px 12px;">Segnalante / Ruolo</th>
+                                            <th style="width: 130px; padding: 14px 12px;">Stato Workflow</th>
+                                            <th style="width: 120px; padding: 14px 12px; text-align: center;">Azioni</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="incidents-register-tbody">
+                                        <!-- Injected via app.renderIncidentsList() -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ============================================================
+                     VIEW: RIESAME DELLA DIREZIONE & CRUSCOTTO KPI (§9.3 & §6.2 ISO 9001:2015)
+                     ============================================================ -->
+                <div id="view-management-review" class="view">
+                    <div class="gap-header">
+                        <div>
+                            <h3 style="margin: 0;">Riesame della Direzione &amp; Monitoraggio Prestazioni</h3>
+                            <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">
+                                <i class='bx bx-pie-chart-alt-2'></i> Valutazione Esecutiva SGQ (§9.3 ISO 9001:2015), Obiettivi della Qualità (§6.2) &amp; Cruscotto KPI Sanitari (D.A. 20/2024 &amp; D.A. 741/2023)
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TAB NAVIGATION RIESAME & KPI -->
+                    <div class="dms-tab-nav glass-card" style="margin-bottom: 20px;">
+                        <button class="dms-tab-btn active" id="tab-btn-review-verbale" onclick="app.switchReviewTab('verbale')">
+                            <i class='bx bx-file-blank'></i>
+                            <span>Riesame della Direzione (§9.3)</span>
+                        </button>
+                        <button class="dms-tab-btn" id="tab-btn-review-kpi" onclick="app.switchReviewTab('kpi')">
+                            <i class='bx bx-target-lock'></i>
+                            <span>Obiettivi Qualità &amp; Cruscotto KPI (§6.2 &amp; §9.1)</span>
+                        </button>
+                    </div>
+
+                    <!-- ============================================================
+                         TAB 1: RIESAME DELLA DIREZIONE (§9.3) & SINTESI ESECUTIVA
+                         ============================================================ -->
+                    <div id="review-page-verbale" class="dms-page">
+                        <!-- STAT SUMMARY CARDS RIESAMI -->
+                        <div class="stats-grid" style="margin-bottom: 20px; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));">
+                            <div class="stat-card glass-card" style="border-left: 3px solid var(--primary);">
+                                <div class="stat-icon" style="color: var(--primary); background: rgba(59,130,246,0.15);"><i class='bx bx-folder-open'></i></div>
+                                <div class="stat-info">
+                                    <h4>Verbali di Riesame</h4>
+                                    <span class="stat-value" id="review-stat-total">0</span>
+                                </div>
+                            </div>
+                            <div class="stat-card glass-card" style="border-left: 3px solid #10b981;">
+                                <div class="stat-icon success"><i class='bx bx-calendar-check'></i></div>
+                                <div class="stat-info">
+                                    <h4>Ultimo Riesame Eseguito</h4>
+                                    <span class="stat-value success" id="review-stat-last-date" style="font-size: 16px;">—</span>
+                                </div>
+                            </div>
+                            <div class="stat-card glass-card" style="border-left: 3px solid #8b5cf6;">
+                                <div class="stat-icon" style="color: #8b5cf6; background: rgba(139,92,246,0.15);"><i class='bx bx-check-shield'></i></div>
+                                <div class="stat-info">
+                                    <h4>Stato Idoneità SGQ</h4>
+                                    <span class="stat-value" id="review-stat-status-badge" style="color: #a78bfa; font-size: 15px;">Conforme</span>
+                                </div>
+                            </div>
+                            <div class="stat-card glass-card" style="border-left: 3px solid #f59e0b;">
+                                <div class="stat-icon warning"><i class='bx bx-coin-stack'></i></div>
+                                <div class="stat-info">
+                                    <h4>Budget Stanziato (€)</h4>
+                                    <span class="stat-value warning" id="review-stat-budget">€ 0</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- SINTESI ESECUTIVA AUTOMATICA DELLE FASI 1-4 -->
+                        <div class="review-synthesis-card">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
+                                <div>
+                                    <h4 style="margin: 0; font-size: 16px; font-weight: 700; color: #60a5fa; display: flex; align-items: center; gap: 8px;">
+                                        <i class='bx bx-analyse'></i> Sintesi Dati Esecutivi di Sistema (Fasi 1 – 4)
+                                    </h4>
+                                    <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">
+                                        Evidenze e metriche aggregate in tempo reale per la compilazione del Verbale §9.3 ISO 9001
+                                    </div>
+                                </div>
+                                <button class="btn btn-primary" onclick="app.generaVerbaleAutomaticoDirezione()" style="font-size: 12px; font-weight: 700; background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);">
+                                    <i class='bx bx-magic-wand'></i> Genera Verbale Automatico dai Dati di Sistema
+                                </button>
+                            </div>
+
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px;">
+                                <div style="background: rgba(15,23,42,0.6); padding: 12px 14px; border-radius: 10px; border-left: 3px solid #10b981;">
+                                    <div style="font-size: 11px; color: var(--text-muted); text-transform: uppercase; font-weight: 600;">FASE 1: Matrice 360 Score</div>
+                                    <div style="font-size: 18px; font-weight: 800; color: #34d399; margin-top: 4px;" id="synthesis-f1-score">—</div>
+                                    <div style="font-size: 10px; color: var(--text-muted);" id="synthesis-f1-sub">Requisiti conformi</div>
+                                </div>
+                                <div style="background: rgba(15,23,42,0.6); padding: 12px 14px; border-radius: 10px; border-left: 3px solid #3b82f6;">
+                                    <div style="font-size: 11px; color: var(--text-muted); text-transform: uppercase; font-weight: 600;">FASE 2: Documenti DMS Vigenti</div>
+                                    <div style="font-size: 18px; font-weight: 800; color: #60a5fa; margin-top: 4px;" id="synthesis-f2-docs">—</div>
+                                    <div style="font-size: 10px; color: var(--text-muted);" id="synthesis-f2-sub">Procedure &amp; Protocolli</div>
+                                </div>
+                                <div style="background: rgba(15,23,42,0.6); padding: 12px 14px; border-radius: 10px; border-left: 3px solid #f59e0b;">
+                                    <div style="font-size: 11px; color: var(--text-muted); text-transform: uppercase; font-weight: 600;">FASE 3: Risoluzione CAPA &amp; Audit</div>
+                                    <div style="font-size: 18px; font-weight: 800; color: #fbbf24; margin-top: 4px;" id="synthesis-f3-capa">—</div>
+                                    <div style="font-size: 10px; color: var(--text-muted);" id="synthesis-f3-sub">Tasso chiusura efficace</div>
+                                </div>
+                                <div style="background: rgba(15,23,42,0.6); padding: 12px 14px; border-radius: 10px; border-left: 3px solid #ec4899;">
+                                    <div style="font-size: 11px; color: var(--text-muted); text-transform: uppercase; font-weight: 600;">FASE 4: Rischio Residuo Medio</div>
+                                    <div style="font-size: 18px; font-weight: 800; color: #f472b6; margin-top: 4px;" id="synthesis-f4-risk">—</div>
+                                    <div style="font-size: 10px; color: var(--text-muted);" id="synthesis-f4-sub">Incidenti gestiti</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- BARRA AZIONI RIESAMI -->
+                        <div class="glass-card" style="padding: 16px 20px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+                            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                                <button class="btn btn-primary" onclick="app.openReviewModal()" style="font-weight: 600;">
+                                    <i class='bx bx-plus-circle'></i> Nuovo Verbale di Riesame (§9.3)
+                                </button>
+                            </div>
+                            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                                <button class="btn btn-outline" onclick="app.esportaReviewCSV()" title="Esporta Registro Verbali in CSV">
+                                    <i class='bx bx-download'></i> Esporta CSV
+                                </button>
+                                <button class="btn btn-outline" onclick="app.esportaVerbaleRiesamePDF()" title="Genera Verbale Ufficiale del Riesame della Direzione (PDF)">
+                                    <i class='bx bx-printer'></i> Verbale Ufficiale (§9.3 PDF)
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- TABELLA REGISTRO VERBALI DI RIESAME -->
+                        <div class="glass-card" style="padding: 0; overflow: hidden; margin-bottom: 24px;">
+                            <div class="table-responsive" style="max-height: 700px; overflow-y: auto; overflow-x: auto;">
+                                <table class="checklist-table" style="width: 100%; border-collapse: collapse;">
+                                    <thead>
+                                        <tr style="position: sticky; top: 0; background: #0f172a; z-index: 10; border-bottom: 2px solid rgba(255,255,255,0.1);">
+                                            <th style="width: 130px; padding: 14px 12px;">Codice Verbale</th>
+                                            <th style="width: 120px; padding: 14px 12px;">Data Riunione</th>
+                                            <th style="min-width: 220px; padding: 14px 12px;">Partecipanti Direzione</th>
+                                            <th style="min-width: 260px; padding: 14px 12px;">Valutazione Efficacia SGQ &amp; Decisioni</th>
+                                            <th style="width: 130px; padding: 14px 12px;">Stato Verbale</th>
+                                            <th style="width: 140px; padding: 14px 12px; text-align: center;">Azioni</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="reviews-register-tbody">
+                                        <!-- Injected via app.renderManagementReviewsList() -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ============================================================
+                         TAB 2: OBIETTIVI QUALITÀ (§6.2) & CRUSCOTTO KPI (§9.1)
+                         ============================================================ -->
+                    <div id="review-page-kpi" class="dms-page" style="display: none;">
+                        <!-- STAT SUMMARY CARDS KPI & OBIETTIVI -->
+                        <div class="stats-grid" style="margin-bottom: 20px; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));">
+                            <div class="stat-card glass-card" style="border-left: 3px solid #10b981;">
+                                <div class="stat-icon success"><i class='bx bx-check-circle'></i></div>
+                                <div class="stat-info">
+                                    <h4>Obiettivi Raggiunti</h4>
+                                    <span class="stat-value success" id="obj-stat-raggiunti">0</span>
+                                </div>
+                            </div>
+                            <div class="stat-card glass-card" style="border-left: 3px solid var(--primary);">
+                                <div class="stat-icon" style="color: var(--primary); background: rgba(59,130,246,0.15);"><i class='bx bx-loader-circle'></i></div>
+                                <div class="stat-info">
+                                    <h4>Obiettivi In Corso</h4>
+                                    <span class="stat-value" id="obj-stat-incorso" style="color: #60a5fa;">0</span>
+                                </div>
+                            </div>
+                            <div class="stat-card glass-card" style="border-left: 3px solid #8b5cf6;">
+                                <div class="stat-icon" style="color: #8b5cf6; background: rgba(139,92,246,0.15);"><i class='bx bx-line-chart'></i></div>
+                                <div class="stat-info">
+                                    <h4>Media Avanzamento</h4>
+                                    <span class="stat-value" id="obj-stat-avg-progress" style="color: #a78bfa;">0%</span>
+                                </div>
+                            </div>
+                            <div class="stat-card glass-card" style="border-left: 3px solid #06b6d4;">
+                                <div class="stat-icon" style="color: #06b6d4; background: rgba(6,182,212,0.15);"><i class='bx bx-tachometer'></i></div>
+                                <div class="stat-info">
+                                    <h4>KPI in Target (Verde)</h4>
+                                    <span class="stat-value" id="kpi-stat-in-target" style="color: #22d3ee;">100%</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- BARRA AZIONI OBIETTIVI & KPI -->
+                        <div class="glass-card" style="padding: 16px 20px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+                            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                                <button class="btn btn-primary" onclick="app.openObjectiveModal()" style="font-weight: 600;">
+                                    <i class='bx bx-plus-circle'></i> Nuovo Obiettivo della Qualità (§6.2)
+                                </button>
+                                <button class="btn btn-outline" onclick="app.openKpiModal()" style="font-weight: 600; color: #60a5fa; border-color: rgba(59,130,246,0.3);">
+                                    <i class='bx bx-plus-circle'></i> Nuovo Indicatore KPI (§9.1)
+                                </button>
+                            </div>
+                            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                                <button class="btn btn-outline" onclick="app.esportaKpiCSV()" title="Esporta Obiettivi & KPI in CSV">
+                                    <i class='bx bx-download'></i> Esporta CSV
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- SEZIONE A: OBIETTIVI DELLA QUALITÀ SMART (§6.2) -->
+                        <div style="margin-bottom: 30px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+                                <h4 style="margin: 0; font-size: 16px; font-weight: 700; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
+                                    <i class='bx bx-target-lock' style="color: var(--primary);"></i> Obiettivi della Qualità Annuali (§6.2 ISO 9001:2015)
+                                </h4>
+                                <span style="font-size: 11px; color: var(--text-muted);">Tracciamento target misurabili, progressi e scadenze</span>
+                            </div>
+                            <div id="objectives-container">
+                                <!-- Injected via app.renderQualityObjectivesList() -->
+                            </div>
+                        </div>
+
+                        <!-- SEZIONE B: CRUSCOTTO INDICATORI KPI SANITARI (§9.1) -->
+                        <div>
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+                                <h4 style="margin: 0; font-size: 16px; font-weight: 700; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
+                                    <i class='bx bx-pulse' style="color: #10b981;"></i> Cruscotto KPI Sanitari &amp; Monitoraggio Prestazioni (D.A. 20/2024)
+                                </h4>
+                                <span style="font-size: 11px; color: var(--text-muted);">Indicatori clinico-assistenziali, operativi, customer care e qualità</span>
+                            </div>
+                            <div id="kpis-container" class="kpi-grid">
+                                <!-- Injected via app.renderKpiDashboard() -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- VIEW: Maintenance (FASE 6: Mantenimento, Scadenziario & Attrezzature Elettromedicali) -->
+                <div id="view-maintenance" class="view">
+                    <div class="gap-header" style="margin-bottom: 24px;">
+                        <h3 style="margin: 0 0 6px 0; font-size: 20px; font-weight: 800; color: var(--text-main); display: flex; align-items: center; gap: 10px;">
+                            <i class='bx bx-calendar-event' style="color: var(--primary);"></i> Mantenimento &amp; Scadenziario Verifiche Periodiche
+                        </h3>
+                        <span style="font-size: 13px; color: var(--text-muted);">
+                            Controllo continuo attrezzature elettromedicali (<strong>CEI 62-5 / CEI EN 60601-1</strong>), tarature metrologiche (<strong>§7.1.5 ISO 9001</strong>), sicurezza impianti e sorveglianza accreditamento (<strong>D.A. 20/2024</strong>).
+                        </span>
+                    </div>
+
+                    <!-- STATS CARDS MANTENIMENTO & PARCO ATTREZZATURE -->
+                    <div class="stats-grid" style="margin-bottom: 24px; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
+                        <div class="stat-card glass-card" style="border-left: 3px solid #ef4444;">
+                            <div class="stat-icon danger"><i class='bx bx-alarm-exclamation'></i></div>
+                            <div class="stat-info">
+                                <h4>Scaduti / Urgente</h4>
+                                <span class="stat-value danger" id="maint-stat-scaduti">0</span>
+                            </div>
+                        </div>
+                        <div class="stat-card glass-card" style="border-left: 3px solid #f59e0b;">
+                            <div class="stat-icon warning"><i class='bx bx-time-five'></i></div>
+                            <div class="stat-info">
+                                <h4>In Scadenza (60gg)</h4>
+                                <span class="stat-value warning" id="maint-stat-inscadenza">0</span>
+                            </div>
+                        </div>
+                        <div class="stat-card glass-card" style="border-left: 3px solid #10b981;">
+                            <div class="stat-icon success"><i class='bx bx-check-shield'></i></div>
+                            <div class="stat-info">
+                                <h4>Regolari / Validi</h4>
+                                <span class="stat-value success" id="maint-stat-validi">0</span>
+                            </div>
+                        </div>
+                        <div class="stat-card glass-card" style="border-left: 3px solid #3b82f6;">
+                            <div class="stat-icon" style="color: #3b82f6; background: rgba(59,130,246,0.15);"><i class='bx bx-tachometer'></i></div>
+                            <div class="stat-info">
+                                <h4>Conformità Parco</h4>
+                                <span class="stat-value" id="maint-stat-compliance-rate" style="color: #60a5fa;">100%</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- BARRA AZIONI & FILTRI MULTI-DIMENSIONALI -->
+                    <div class="glass-card" style="padding: 18px 20px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px;">
+                        <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
+                            <button class="btn btn-primary" onclick="app.openMaintenanceModal()" style="font-weight: 600;">
+                                <i class='bx bx-plus-circle'></i> Nuova Attrezzatura / Scadenza
+                            </button>
+                            <button class="btn btn-outline" onclick="app.esportaMaintenanceCSV()" title="Esporta Registro Scadenze in CSV">
+                                <i class='bx bx-download'></i> Esporta CSV
+                            </button>
+                            <button class="btn btn-outline" onclick="app.esportaPianoManutenzioniPDF()" style="color: #38bdf8; border-color: rgba(56,189,248,0.3);" title="Piano Annuale Manutenzioni e Verifiche PDF">
+                                <i class='bx bx-printer'></i> Piano Annuale (PDF)
+                            </button>
+                        </div>
+                        <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
+                            <select id="maint-filter-category" class="input-box" style="padding: 8px 12px; font-size: 12px; min-width: 180px;" onchange="app.renderMaintenanceList()">
+                                <option value="ALL">Tutte le Categorie</option>
+                                <option value="ELETTRO">Elettromedicali CEI 62-5</option>
+                                <option value="TARATURE">Tarature &amp; Metrologia §7.1.5</option>
+                                <option value="IMPIANTI">Impianti &amp; Sicurezza</option>
+                                <option value="FORMAZIONE">Formazione Sanitaria &amp; ECM</option>
+                                <option value="AUTORIZZATIVO">Rinnovo &amp; Sorveglianza OTA</option>
+                            </select>
+                            <select id="maint-filter-status" class="input-box" style="padding: 8px 12px; font-size: 12px; min-width: 140px;" onchange="app.renderMaintenanceList()">
+                                <option value="ALL">Tutti gli Stati</option>
+                                <option value="scaduto">Scaduti</option>
+                                <option value="in_scadenza">In Scadenza (60gg)</option>
+                                <option value="valido">Validi / Regolari</option>
+                            </select>
+                            <input type="text" id="maint-search-box" class="input-box" placeholder="Cerca matricola, modello, reparto..." style="padding: 8px 12px; font-size: 12px; min-width: 200px;" oninput="app.renderMaintenanceList()">
+                        </div>
+                    </div>
+
+                    <!-- TABELLA REGISTRO ATTREZZATURE & SCADENZE -->
+                    <div class="glass-card" style="padding: 0; overflow: hidden; margin-bottom: 24px;">
+                        <div class="table-responsive" style="max-height: 750px; overflow-y: auto; overflow-x: auto;">
+                            <table class="checklist-table" style="width: 100%; border-collapse: collapse;">
+                                <thead>
+                                    <tr style="position: sticky; top: 0; background: #0f172a; z-index: 10; border-bottom: 2px solid rgba(255,255,255,0.1);">
+                                        <th style="width: 130px; padding: 14px 12px;">Stato &amp; Scadenza</th>
+                                        <th style="min-width: 220px; padding: 14px 12px;">Codice &amp; Attrezzatura / Attività</th>
+                                        <th style="width: 160px; padding: 14px 12px;">Categoria / Norma</th>
+                                        <th style="min-width: 160px; padding: 14px 12px;">Ubicazione &amp; Modello/Matricola</th>
+                                        <th style="min-width: 190px; padding: 14px 12px;">Ultima Verifica &amp; Manutentore</th>
+                                        <th style="width: 120px; padding: 14px 12px;">Prossima Data</th>
+                                        <th style="width: 150px; padding: 14px 12px; text-align: center;">Azioni</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="maintenance-list">
+                                    <!-- Injected via app.renderMaintenanceList() -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- VIEW: Consulenti (FASE 8: Area Consulenti & Portale Revisore Sanitario Multi-Struttura) -->
+                <div id="view-consultants" class="view">
+                    <div class="gap-header" style="margin-bottom: 24px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;">
+                        <div>
+                            <h3 style="margin: 0; font-size: 20px; font-weight: 800; color: var(--text-main); display: flex; align-items: center; gap: 10px;">
+                                <i class='bx bx-user-check' style="color: var(--primary);"></i> Portale Consulenti &amp; Revisore Sanitario Multi-Struttura
+                            </h3>
+                            <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">
+                                Console di revisione documentale, validazione requisiti regionali (<strong>D.A. 20/2024</strong>) ed emissione prescrizioni tecniche (<strong>ISO 9001:2015</strong>).
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                            <button class="btn btn-outline" onclick="app.esportaConsultantLogCSV()" style="font-size: 12px; padding: 8px 14px;">
+                                <i class='bx bx-download'></i> Esporta Log Attività (CSV)
+                            </button>
+                            <button class="btn btn-primary" onclick="app.esportaConsultantReportPDF()" style="font-size: 12px; padding: 8px 14px;">
+                                <i class='bx bxs-file-pdf'></i> Report Supervisione (PDF)
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- STATS CARDS CONSULENTE MULTI-STRUTTURA -->
+                    <div class="stats-grid" style="margin-bottom: 24px; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));">
+                        <div class="stat-card glass-card" style="border-left: 3px solid var(--primary);">
+                            <div class="stat-icon" style="color: var(--primary); background: rgba(59,130,246,0.15);"><i class='bx bx-buildings'></i></div>
+                            <div class="stat-info">
+                                <h4>Strutture Assegnate</h4>
+                                <span class="stat-value" id="cons-stat-structures" style="color: #60a5fa;">3</span>
+                            </div>
+                        </div>
+                        <div class="stat-card glass-card" style="border-left: 3px solid #f59e0b;">
+                            <div class="stat-icon warning"><i class='bx bx-time-five'></i></div>
+                            <div class="stat-info">
+                                <h4>In Attesa Revisione</h4>
+                                <span class="stat-value warning" id="cons-stat-pending">0</span>
+                            </div>
+                        </div>
+                        <div class="stat-card glass-card" style="border-left: 3px solid #10b981;">
+                            <div class="stat-icon success"><i class='bx bx-check-shield'></i></div>
+                            <div class="stat-info">
+                                <h4>Requisiti Validati</h4>
+                                <span class="stat-value success" id="cons-stat-validated">0</span>
+                            </div>
+                        </div>
+                        <div class="stat-card glass-card" style="border-left: 3px solid #ef4444;">
+                            <div class="stat-icon danger"><i class='bx bx-error'></i></div>
+                            <div class="stat-info">
+                                <h4>Prescrizioni / Rifiuti</h4>
+                                <span class="stat-value danger" id="cons-stat-prescriptions">0</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- BARRA FILTRI MULTI-STRUTTURA & RICERCA -->
+                    <div class="glass-card" style="padding: 16px 20px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+                        <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
+                            <select id="cons-filter-structure" class="input-box" style="padding: 8px 12px; font-size: 12px; min-width: 200px;" onchange="app.renderConsultantsView()">
+                                <option value="ALL">Tutte le Strutture</option>
+                            </select>
+                            <select id="cons-filter-status" class="input-box" style="padding: 8px 12px; font-size: 12px; min-width: 150px;" onchange="app.renderConsultantsView()">
+                                <option value="ALL">Tutti gli Stati</option>
+                                <option value="pending">In Attesa (Giallo / File)</option>
+                                <option value="validated">Validati (Verde)</option>
+                                <option value="prescriptions">Prescrizioni / Rifiuti (Rosso)</option>
+                            </select>
+                            <input type="text" id="cons-search-box" class="input-box" placeholder="Cerca requisito, file, norma..." style="padding: 8px 12px; font-size: 12px; min-width: 200px;" oninput="app.renderConsultantsView()">
+                        </div>
+                        <div>
+                            <button class="btn btn-outline" style="font-size: 12px;" onclick="app.refreshConsultantsView()">
+                                <i class='bx bx-refresh'></i> Aggiorna Coda
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- TABELLA CODA DI REVISIONE DOCUMENTALE MULTI-STRUTTURA -->
+                    <div class="glass-card" style="padding: 0; overflow: hidden; margin-bottom: 24px;">
+                        <div class="table-responsive" style="max-height: 750px; overflow-y: auto; overflow-x: auto;">
+                            <table class="checklist-table" style="width: 100%; border-collapse: collapse;">
+                                <thead>
+                                    <tr style="position: sticky; top: 0; background: #0f172a; z-index: 10; border-bottom: 2px solid rgba(255,255,255,0.1);">
+                                        <th style="min-width: 180px; padding: 14px 12px;">Struttura Sanitaria</th>
+                                        <th style="min-width: 240px; padding: 14px 12px;">Requisito &amp; Norma Riferimento</th>
+                                        <th style="min-width: 170px; padding: 14px 12px;">Evidenza Documentale</th>
+                                        <th style="width: 120px; padding: 14px 12px;">Score AI MAMB</th>
+                                        <th style="width: 130px; padding: 14px 12px;">Stato Attuale</th>
+                                        <th style="width: 160px; padding: 14px 12px; text-align: center;">Azioni Revisore</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="cons-queue-tbody">
+                                    <!-- Injected via app.renderConsultantsView() -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- SEZIONE STORICO ATTIVITÀ & PRESCRIZIONI RECENTI -->
+                    <div class="glass-card" style="padding: 20px; margin-bottom: 24px;">
+                        <h4 style="margin: 0 0 14px 0; font-size: 15px; font-weight: 700; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
+                            <i class='bx bx-history' style="color: #60a5fa;"></i> Registro Decisioni &amp; Prescrizioni Emesse dal Consulente
+                        </h4>
+                        <div id="cons-activity-container">
+                            <!-- Injected via app.renderConsultantsActivityLog() -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- VIEW: Normativa (Quadro Normativo Sanitario) -->
+                <div id="view-normativa" class="view">
+                    <div class="gap-header" style="margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+                        <div>
+                            <h3 style="margin: 0 0 6px 0; font-size: 20px; font-weight: 800; color: var(--text-main); display: flex; align-items: center; gap: 10px;">
+                                <i class='bx bx-book-open' style="color: var(--primary);"></i> Quadro Normativo Sanitario &amp; Standard di Qualità
+                            </h3>
+                            <span style="font-size: 13px; color: var(--text-muted);">
+                                Riferimenti legislativi della Regione Siciliana (<strong>D.A. 20/2024</strong>, <strong>D.A. 741/2023</strong>, <strong>D.A. 890/2002</strong>), Legge Nazionale <strong>L. 24/2017 (Gelli-Bianco)</strong> e Standard <strong>UNI EN ISO 9001:2015</strong>.
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- BARRA DI RICERCA NORMATIVA -->
+                    <div class="glass-card" style="padding: 16px 20px; margin-bottom: 24px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px;">
+                        <div style="position: relative; flex: 1; min-width: 260px;">
+                            <input type="text" id="normativa-search-input" class="input-box" placeholder="Cerca decreto, articolo, norma o parola chiave..." style="width: 100%; padding-left: 36px; font-size: 13px;" oninput="app.filterNormativa()">
+                            <i class='bx bx-search' style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 18px;"></i>
+                        </div>
+                        <button class="btn btn-outline" onclick="document.getElementById('normativa-search-input').value=''; app.filterNormativa();" style="font-size: 12px;">
+                            <i class='bx bx-reset'></i> Reset
+                        </button>
+                    </div>
+
+                    <!-- GRID DELLE SCHEDE NORMATIVE -->
+                    <div id="normativa-cards-grid" class="normativa-grid">
+                        <!-- Injected via app.renderNormativaCards() -->
+                    </div>
+                </div>
+
+                <!-- VIEW: Panoramica (FASE 7: Iter di Accreditamento Istituzionale OTA & Fascicolo Istanza) -->
+                <div id="view-panoramica" class="view">
+                    <div class="gap-header" style="margin-bottom: 24px;">
+                        <h3 style="margin: 0 0 6px 0; font-size: 20px; font-weight: 800; color: var(--text-main); display: flex; align-items: center; gap: 10px;">
+                            <i class='bx bx-sitemap' style="color: var(--primary);"></i> Iter di Accreditamento Istituzionale OTA &amp; Fascicolo Istanza
+                        </h3>
+                        <span style="font-size: 13px; color: var(--text-muted);">
+                            Cronoprogramma procedurale delle 6 tappe normative (<strong>D.A. 20/2024</strong>), calcolo durata accreditamento (<strong>D.A. 741/2023</strong>) e generazione automatica del Dossier con i 6 Allegati Ufficiali.
+                        </span>
+                    </div>
+
+                    <!-- STATS CARDS ITER DI ACCREDITAMENTO -->
+                    <div class="stats-grid" style="margin-bottom: 24px; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
+                        <div class="stat-card glass-card" style="border-left: 3px solid var(--primary);">
+                            <div class="stat-icon" style="color: var(--primary); background: rgba(59,130,246,0.15);"><i class='bx bx-pie-chart-alt-2'></i></div>
+                            <div class="stat-info">
+                                <h4>Avanzamento Iter</h4>
+                                <span class="stat-value" id="iter-stat-progress" style="color: #60a5fa;">0%</span>
+                            </div>
+                        </div>
+                        <div class="stat-card glass-card" style="border-left: 3px solid #8b5cf6;">
+                            <div class="stat-icon" style="color: #8b5cf6; background: rgba(139,92,246,0.15);"><i class='bx bx-trending-up'></i></div>
+                            <div class="stat-info">
+                                <h4>Step Attuale</h4>
+                                <span class="stat-value" id="iter-stat-current-step" style="color: #a78bfa; font-size: 16px;">Step 3 di 6</span>
+                            </div>
+                        </div>
+                        <div class="stat-card glass-card" style="border-left: 3px solid #10b981;">
+                            <div class="stat-icon success"><i class='bx bx-time-five'></i></div>
+                            <div class="stat-info">
+                                <h4>Durata Stimata OTA</h4>
+                                <span class="stat-value success" id="iter-stat-duration" style="font-size: 15px;">5 ANNI</span>
+                            </div>
+                        </div>
+                        <div class="stat-card glass-card" style="border-left: 3px solid #06b6d4;">
+                            <div class="stat-icon" style="color: #06b6d4; background: rgba(6,182,212,0.15);"><i class='bx bx-check-double'></i></div>
+                            <div class="stat-info">
+                                <h4>Conformità 360</h4>
+                                <span class="stat-value" id="iter-stat-score" style="color: #22d3ee;">92%</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TAB NAVIGATION -->
+                    <div class="dms-tabs-header" style="margin-bottom: 20px; display: flex; gap: 8px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 12px;">
+                        <button id="pan-tab-iter" class="btn btn-primary" onclick="app.switchPanTab('iter')" style="font-weight: 600;">
+                            <i class='bx bx-sitemap'></i> 1. Cronoprogramma &amp; 6 Step Normativi
+                        </button>
+                        <button id="pan-tab-dossier" class="btn btn-outline" onclick="app.switchPanTab('dossier')" style="font-weight: 600;">
+                            <i class='bx bx-folder-open'></i> 2. Dossier Istanza &amp; 6 Allegati Ufficiali
+                        </button>
+                    </div>
+
+                    <!-- ============================================================
+                         TAB 1: CRONOPROGRAMMA & TIMELINE A 6 STEP (D.A. 20/2024)
+                         ============================================================ -->
+                    <div id="pan-page-iter">
+                        <div class="glass-card" style="padding: 16px 20px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+                            <div>
+                                <span style="font-size: 13px; font-weight: 700; color: var(--text-main);">Cronoprogramma Procedurale Regionale</span>
+                                <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">Clicca su uno step per aggiornare protocolli, date e stato di avanzamento</div>
+                            </div>
+                            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                                <button class="btn btn-outline" onclick="app.esportaIterCSV()" title="Esporta Cronoprogramma in CSV">
+                                    <i class='bx bx-download'></i> Esporta CSV
+                                </button>
+                                <button class="btn btn-outline" onclick="app.esportaDomandaAccreditamentoPDF()" style="color: #38bdf8; border-color: rgba(56,189,248,0.3);" title="Domanda di Accreditamento Istituzionale in Bollo PDF">
+                                    <i class='bx bx-printer'></i> Domanda Istanza (PDF)
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- GRID DEGLI STEP PROCEDURALI -->
+                        <div id="pan-iter-timeline" class="iter-stepper-grid">
+                            <!-- Injected via app.renderPanIterTimeline() -->
+                        </div>
+                    </div>
+
+                    <!-- ============================================================
+                         TAB 2: DOSSIER ISTANZA & ALLEGATI UFFICIALI (ALL. 1 - ALL. 6)
+                         ============================================================ -->
+                    <div id="pan-page-dossier" style="display: none;">
+                        <!-- BARRA CHECK AMMISSIBILITA & AZIONI DOSSIER -->
+                        <div class="glass-card" style="padding: 18px 20px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px;">
+                            <div>
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <span style="font-size: 14px; font-weight: 800; color: var(--text-main);">Fascicolo Dossier Istanza OTA</span>
+                                    <span id="dossier-readiness-badge" class="iter-status-badge completato"><i class='bx bx-check-circle'></i> Pronto per Invio</span>
+                                </div>
+                                <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">Aggregazione integrata automatica di tutte le evidenze conformi dalle Fasi 1–6</div>
+                            </div>
+                            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                                <button class="btn btn-primary" onclick="app.esportaDomandaAccreditamentoPDF()" style="font-weight: 600;">
+                                    <i class='bx bx-file'></i> Domanda in Bollo (PDF)
+                                </button>
+                                <button class="btn btn-outline" onclick="app.esportaDossierCompletoPDF()" style="color: #34d399; border-color: rgba(16,185,129,0.3);" title="Genera Fascicolo Completo con tutti gli Allegati">
+                                    <i class='bx bx-archive'></i> Dossier Completo (PDF)
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- CHECKLIST DI AMMISSIBILITA FORMALE (READY TO SUBMIT) -->
+                        <div class="glass-card" style="padding: 20px; margin-bottom: 24px;">
+                            <h4 style="margin: 0 0 14px 0; font-size: 14px; font-weight: 700; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
+                                <i class='bx bx-task' style="color: #60a5fa;"></i> Checklist di Ammissibilità &amp; Completezza Formale (D.A. 20/2024 art. 5)
+                            </h4>
+                            <div id="dossier-readiness-container" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 10px;">
+                                <!-- Injected via app.renderPanDossierSection() -->
+                            </div>
+                        </div>
+
+                        <!-- I 6 ALLEGATI UFFICIALI DEL DOSSIER -->
+                        <div style="margin-bottom: 14px;">
+                            <h4 style="margin: 0 0 14px 0; font-size: 15px; font-weight: 700; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
+                                <i class='bx bx-folder' style="color: #10b981;"></i> I 6 Allegati Ufficiali del Dossier di Accreditamento
+                            </h4>
+                            <div id="dossier-attachments-container" class="dossier-grid">
+                                <!-- Injected via app.renderPanDossierSection() -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- VIEW: Procedure OTA & Biblioteca POS Sanitarie -->
                 <div id="view-procedure-ota" class="view">
-                    <div class="gap-header" style="margin-bottom:24px;">
-                        <h3>Procedure OTA</h3>
-                        <span style="font-size:12px;color:var(--text-muted);">Procedure, Manuali e Documenti dell'Organismo di Accreditamento</span>
-                    </div>
-                    <!-- Tab Navigation -->
-                    <div class="tab-nav" style="display:flex;gap:8px;margin-bottom:20px;">
-                        <button id="proc-tab-normativa"  class="filter-btn active" onclick="app.switchProcTab('normativa')">Normativa OTA</button>
-                        <button id="proc-tab-procedure"  class="filter-btn"        onclick="app.switchProcTab('procedure')">Procedure OTA</button>
-                        <button id="proc-tab-manuali"    class="filter-btn"        onclick="app.switchProcTab('manuali')">Manuali Accreditamento</button>
-                    </div>
-                    <!-- Tab Normativa -->
-                    <div id="proc-page-normativa">
-                        <div id="proc-normativa-container">
-                            <!-- Popolato da renderProcedureManuali() -->
+                    <div class="gap-header" style="margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+                        <div>
+                            <h3 style="margin: 0 0 6px 0; font-size: 20px; font-weight: 800; color: var(--text-main); display: flex; align-items: center; gap: 10px;">
+                                <i class='bx bx-clipboard' style="color: var(--primary);"></i> Biblioteca POS Sanitarie &amp; Procedure Ufficiali OTA
+                            </h3>
+                            <span style="font-size: 13px; color: var(--text-muted);">
+                                Catalogo di <strong>Procedure Operative Standard (POS)</strong> conformi a <strong>D.A. 20/2024</strong>, <strong>D.A. 890/2002</strong> e <strong>ISO 9001 §7.5</strong> con personalizzatore guidato (POS Builder) e pubblicazione diretta nel Fascicolo DMS.
+                            </span>
                         </div>
                     </div>
-                    <!-- Tab Procedure -->
-                    <div id="proc-page-procedure" style="display:none;">
-                        <div id="proc-manuals-container">
-                            <!-- Popolato da renderProcedureManuali() -->
+
+                    <!-- TAB NAVIGATION -->
+                    <div class="dms-tabs-header" style="margin-bottom: 20px; display: flex; gap: 8px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 12px; flex-wrap: wrap;">
+                        <button id="proc-tab-pos" class="btn btn-primary" onclick="app.switchProcTab('pos')" style="font-weight: 600;">
+                            <i class='bx bx-folder-plus'></i> 1. Biblioteca POS Sanitarie (8 Modelli Ufficiali)
+                        </button>
+                        <button id="proc-tab-ota" class="btn btn-outline" onclick="app.switchProcTab('ota')" style="font-weight: 600;">
+                            <i class='bx bx-file-blank'></i> 2. Procedure Ufficiali OTA Regione Siciliana
+                        </button>
+                        <button id="proc-tab-manuali" class="btn btn-outline" onclick="app.switchProcTab('manuali')" style="font-weight: 600;">
+                            <i class='bx bx-book'></i> 3. Manuali di Accreditamento
+                        </button>
+                    </div>
+
+                    <!-- ============================================================
+                         TAB 1: BIBLIOTECA POS SANITARIE & BUILDER
+                         ============================================================ -->
+                    <div id="proc-page-pos">
+                        <!-- FILTRI E RICERCA POS -->
+                        <div class="glass-card" style="padding: 18px 20px; margin-bottom: 24px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 12px;">
+                                <div style="font-size: 13px; font-weight: 700; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
+                                    <i class='bx bx-filter' style="color: var(--primary);"></i> Filtra per Categoria Operativa
+                                </div>
+                                <div style="position: relative; flex: 1; max-width: 380px; min-width: 220px;">
+                                    <input type="text" id="pos-search-input" class="input-box" placeholder="Cerca POS per codice, titolo o norma..." style="width: 100%; padding-left: 36px; font-size: 12px;" oninput="app.filterPosLibrary()">
+                                    <i class='bx bx-search' style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 16px;"></i>
+                                </div>
+                            </div>
+                            <!-- Category Buttons -->
+                            <div id="pos-cat-filters" style="display: flex; gap: 8px; flex-wrap: wrap;">
+                                <button class="filter-btn active" data-cat="all" onclick="app.setPosCategoryFilter('all')">Tutte le POS (8)</button>
+                                <button class="filter-btn" data-cat="igiene" onclick="app.setPosCategoryFilter('igiene')">Igiene &amp; Sanificazione</button>
+                                <button class="filter-btn" data-cat="farmaci" onclick="app.setPosCategoryFilter('farmaci')">Farmaci &amp; Stupefacenti</button>
+                                <button class="filter-btn" data-cat="privacy" onclick="app.setPosCategoryFilter('privacy')">Consenso &amp; Privacy</button>
+                                <button class="filter-btn" data-cat="emergenza" onclick="app.setPosCategoryFilter('emergenza')">Emergenze &amp; BLSD</button>
+                                <button class="filter-btn" data-cat="sterilizzazione" onclick="app.setPosCategoryFilter('sterilizzazione')">Sterilizzazione DM</button>
+                                <button class="filter-btn" data-cat="rifiuti" onclick="app.setPosCategoryFilter('rifiuti')">Rifiuti Sanitari</button>
+                                <button class="filter-btn" data-cat="organizzazione" onclick="app.setPosCategoryFilter('organizzazione')">Triage &amp; Liste Attesa</button>
+                                <button class="filter-btn" data-cat="risk_management" onclick="app.setPosCategoryFilter('risk_management')">Incident Reporting</button>
+                            </div>
+                        </div>
+
+                        <!-- GRID DELLE POS CARDS -->
+                        <div id="pos-library-grid" class="pos-grid">
+                            <!-- Injected via app.renderPosLibraryCards() -->
                         </div>
                     </div>
-                    <!-- Tab Manuali -->
-                    <div id="proc-page-manuali" style="display:none;">
-                        <div class="glass-card" style="padding:32px;text-align:center;color:var(--text-muted);">
-                            <i class='bx bx-file-blank' style="font-size:48px;display:block;margin-bottom:12px;opacity:0.4;"></i>
-                            <strong>Manuali di Accreditamento OTA</strong><br>
-                            <span style="font-size:13px;">I manuali ufficiali OTA saranno disponibili qui.</span>
+
+                    <!-- ============================================================
+                         TAB 2: PROCEDURE UFFICIALI OTA REGIONE SICILIANA
+                         ============================================================ -->
+                    <div id="proc-page-ota" style="display: none;">
+                        <div class="glass-card" style="padding: 16px 20px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+                            <span style="font-size: 13px; font-weight: 700; color: var(--text-main);">Documenti Ufficiali Emessi da Assessorato della Salute &amp; OTA Sicilia</span>
+                            <div style="position: relative; max-width: 320px; min-width: 200px;">
+                                <input type="text" id="ota-proc-search-input" class="input-box" placeholder="Cerca procedura OTA..." style="width: 100%; padding-left: 34px; font-size: 12px;" oninput="app.filterOtaProcedures()">
+                                <i class='bx bx-search' style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 16px;"></i>
+                            </div>
+                        </div>
+                        <div id="ota-procedures-grid" class="pos-grid">
+                            <!-- Injected via app.renderOtaProcedures() -->
+                        </div>
+                    </div>
+
+                    <!-- ============================================================
+                         TAB 3: MANUALI DI ACCREDITAMENTO
+                         ============================================================ -->
+                    <div id="proc-page-manuali" style="display: none;">
+                        <div id="manuals-list-container" class="pos-grid">
+                            <!-- Injected via app.renderManualsList() -->
                         </div>
                     </div>
                 </div>
@@ -930,6 +2308,247 @@
                         <i class='bx bx-send'></i>
                     </button>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Dettaglio & Gestione Requisito 360 -->
+    <div id="req-modal-360" class="timeline-modal-overlay" style="display: none;" onclick="if(event.target === this) app.closeRequirement360Modal();">
+        <div class="timeline-modal-content" style="max-width: 720px; max-height: 90vh; overflow-y: auto; padding: 28px;">
+            <button onclick="app.closeRequirement360Modal();" style="position: absolute; top: 20px; right: 20px; background: none; border: none; color: var(--text-muted); font-size: 24px; cursor: pointer;">
+                <i class='bx bx-x'></i>
+            </button>
+            <div id="req-modal-360-header" style="margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 16px;">
+                <!-- Popolato da openRequirement360Modal() -->
+            </div>
+            <div id="req-modal-360-body">
+                <!-- Form Interattivo 360 Popolato da app.js -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Dettaglio & Workflow DMS Controllato (§7.5 ISO 9001) -->
+    <div id="modal-dms-document" class="timeline-modal-overlay" style="display: none;" onclick="if(event.target === this) app.closeDmsModal();">
+        <div class="timeline-modal-content" style="max-width: 820px; max-height: 90vh; overflow-y: auto; padding: 28px;">
+            <button onclick="app.closeDmsModal();" style="position: absolute; top: 20px; right: 20px; background: none; border: none; color: var(--text-muted); font-size: 24px; cursor: pointer;">
+                <i class='bx bx-x'></i>
+            </button>
+            <div id="dms-modal-header" style="margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 16px;">
+                <!-- Popolato da openDmsDocModal() -->
+            </div>
+            <div id="dms-modal-body">
+                <!-- Popolato da openDmsDocModal() -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Nuova Revisione DMS -->
+    <div id="modal-dms-revision" class="timeline-modal-overlay" style="display: none;" onclick="if(event.target === this) app.closeDmsRevisionModal();">
+        <div class="timeline-modal-content" style="max-width: 600px; max-height: 90vh; overflow-y: auto; padding: 28px;">
+            <button onclick="app.closeDmsRevisionModal();" style="position: absolute; top: 20px; right: 20px; background: none; border: none; color: var(--text-muted); font-size: 24px; cursor: pointer;">
+                <i class='bx bx-x'></i>
+            </button>
+            <div id="dms-revision-modal-header" style="margin-bottom: 18px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 14px;">
+                <h3 style="margin: 0; font-size: 18px; font-weight: 700; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
+                    <i class='bx bx-git-branch' style="color: var(--primary);"></i> Crea Nuova Revisione Documentale
+                </h3>
+            </div>
+            <div id="dms-revision-modal-body">
+                <!-- Form revisione popolato da app.js -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Dettaglio & Esecuzione Sessione di Audit (§9.2) -->
+    <div id="modal-audit-session" class="timeline-modal-overlay" style="display: none;" onclick="if(event.target === this) app.closeAuditModal();">
+        <div class="timeline-modal-content" style="max-width: 850px; max-height: 90vh; overflow-y: auto; padding: 28px;">
+            <button onclick="app.closeAuditModal();" style="position: absolute; top: 20px; right: 20px; background: none; border: none; color: var(--text-muted); font-size: 24px; cursor: pointer;">
+                <i class='bx bx-x'></i>
+            </button>
+            <div id="audit-modal-header" style="margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 16px;">
+                <!-- Popolato da openAuditModal() -->
+            </div>
+            <div id="audit-modal-body">
+                <!-- Form ed esecuzione checklist popolati da app.js -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Dettaglio & Risoluzione CAPA (§10.2) -->
+    <div id="modal-capa-detail" class="timeline-modal-overlay" style="display: none;" onclick="if(event.target === this) app.closeCapaModal();">
+        <div class="timeline-modal-content" style="max-width: 750px; max-height: 90vh; overflow-y: auto; padding: 28px;">
+            <button onclick="app.closeCapaModal();" style="position: absolute; top: 20px; right: 20px; background: none; border: none; color: var(--text-muted); font-size: 24px; cursor: pointer;">
+                <i class='bx bx-x'></i>
+            </button>
+            <div id="capa-modal-header" style="margin-bottom: 18px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 14px;">
+                <!-- Popolato da openCapaModal() -->
+            </div>
+            <div id="capa-modal-body">
+                <!-- Form RCA & Piano Azioni popolato da app.js -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Dettaglio & Valutazione Rischio (§6.1 / ISO 31000) -->
+    <div id="modal-risk-detail" class="timeline-modal-overlay" style="display: none;" onclick="if(event.target === this) app.closeRiskModal();">
+        <div class="timeline-modal-content" style="max-width: 780px; max-height: 90vh; overflow-y: auto; padding: 28px;">
+            <button onclick="app.closeRiskModal();" style="position: absolute; top: 20px; right: 20px; background: none; border: none; color: var(--text-muted); font-size: 24px; cursor: pointer;">
+                <i class='bx bx-x'></i>
+            </button>
+            <div id="risk-modal-header" style="margin-bottom: 18px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 14px;">
+                <!-- Popolato da openRiskModal() -->
+            </div>
+            <div id="risk-modal-body">
+                <!-- Form Rischio & Calcolo PxG popolato da app.js -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Segnalazione & Analisi Incident Reporting (Legge 24/2017) -->
+    <div id="modal-incident-detail" class="timeline-modal-overlay" style="display: none;" onclick="if(event.target === this) app.closeIncidentModal();">
+        <div class="timeline-modal-content" style="max-width: 760px; max-height: 90vh; overflow-y: auto; padding: 28px;">
+            <button onclick="app.closeIncidentModal();" style="position: absolute; top: 20px; right: 20px; background: none; border: none; color: var(--text-muted); font-size: 24px; cursor: pointer;">
+                <i class='bx bx-x'></i>
+            </button>
+            <div id="incident-modal-header" style="margin-bottom: 18px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 14px;">
+                <!-- Popolato da openIncidentModal() -->
+            </div>
+            <div id="incident-modal-body">
+                <!-- Form Incident & RCA popolato da app.js -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Dettaglio & Compilazione Verbale di Riesame della Direzione (§9.3) -->
+    <div id="modal-review-detail" class="timeline-modal-overlay" style="display: none;" onclick="if(event.target === this) app.closeReviewModal();">
+        <div class="timeline-modal-content" style="max-width: 880px; max-height: 90vh; overflow-y: auto; padding: 28px;">
+            <button onclick="app.closeReviewModal();" style="position: absolute; top: 20px; right: 20px; background: none; border: none; color: var(--text-muted); font-size: 24px; cursor: pointer;">
+                <i class='bx bx-x'></i>
+            </button>
+            <div id="review-modal-header" style="margin-bottom: 18px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 14px;">
+                <!-- Popolato da openReviewModal() -->
+            </div>
+            <div id="review-modal-body">
+                <!-- Form Verbale di Riesame popolato da app.js -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Dettaglio & Gestione Obiettivo della Qualità (§6.2) -->
+    <div id="modal-objective-detail" class="timeline-modal-overlay" style="display: none;" onclick="if(event.target === this) app.closeObjectiveModal();">
+        <div class="timeline-modal-content" style="max-width: 680px; max-height: 90vh; overflow-y: auto; padding: 28px;">
+            <button onclick="app.closeObjectiveModal();" style="position: absolute; top: 20px; right: 20px; background: none; border: none; color: var(--text-muted); font-size: 24px; cursor: pointer;">
+                <i class='bx bx-x'></i>
+            </button>
+            <div id="objective-modal-header" style="margin-bottom: 18px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 14px;">
+                <!-- Popolato da openObjectiveModal() -->
+            </div>
+            <div id="objective-modal-body">
+                <!-- Form Obiettivo SMART popolato da app.js -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Dettaglio & Aggiornamento Indicatore KPI (§9.1) -->
+    <div id="modal-kpi-detail" class="timeline-modal-overlay" style="display: none;" onclick="if(event.target === this) app.closeKpiModal();">
+        <div class="timeline-modal-content" style="max-width: 620px; max-height: 90vh; overflow-y: auto; padding: 28px;">
+            <button onclick="app.closeKpiModal();" style="position: absolute; top: 20px; right: 20px; background: none; border: none; color: var(--text-muted); font-size: 24px; cursor: pointer;">
+                <i class='bx bx-x'></i>
+            </button>
+            <div id="kpi-modal-header" style="margin-bottom: 18px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 14px;">
+                <!-- Popolato da openKpiModal() -->
+            </div>
+            <div id="kpi-modal-body">
+                <!-- Form KPI popolato da app.js -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Dettaglio & Censimento Attrezzatura / Scadenza (§7.1.3 / §7.1.5 / CEI 62-5) -->
+    <div id="modal-maintenance-detail" class="timeline-modal-overlay" style="display: none;" onclick="if(event.target === this) app.closeMaintenanceModal();">
+        <div class="timeline-modal-content" style="max-width: 760px; max-height: 90vh; overflow-y: auto; padding: 28px;">
+            <button onclick="app.closeMaintenanceModal();" style="position: absolute; top: 20px; right: 20px; background: none; border: none; color: var(--text-muted); font-size: 24px; cursor: pointer;">
+                <i class='bx bx-x'></i>
+            </button>
+            <div id="maintenance-modal-header" style="margin-bottom: 18px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 14px;">
+                <!-- Popolato da openMaintenanceModal() -->
+            </div>
+            <div id="maintenance-modal-body">
+                <!-- Form Attrezzatura popolato da app.js -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Registrazione Intervento di Manutenzione / Verifica / VSE / Taratura -->
+    <div id="modal-maintenance-intervention" class="timeline-modal-overlay" style="display: none;" onclick="if(event.target === this) app.closeInterventionModal();">
+        <div class="timeline-modal-content" style="max-width: 680px; max-height: 90vh; overflow-y: auto; padding: 28px;">
+            <button onclick="app.closeInterventionModal();" style="position: absolute; top: 20px; right: 20px; background: none; border: none; color: var(--text-muted); font-size: 24px; cursor: pointer;">
+                <i class='bx bx-x'></i>
+            </button>
+            <div id="intervention-modal-header" style="margin-bottom: 18px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 14px;">
+                <!-- Popolato da openInterventionModal() -->
+            </div>
+            <div id="intervention-modal-body">
+                <!-- Form Intervento popolato da app.js -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Dettaglio & Aggiornamento Step Procedurale OTA (D.A. 20/2024) -->
+    <div id="modal-iter-step-edit" class="timeline-modal-overlay" style="display: none;" onclick="if(event.target === this) app.closeIterStepModal();">
+        <div class="timeline-modal-content" style="max-width: 700px; max-height: 90vh; overflow-y: auto; padding: 28px;">
+            <button onclick="app.closeIterStepModal();" style="position: absolute; top: 20px; right: 20px; background: none; border: none; color: var(--text-muted); font-size: 24px; cursor: pointer;">
+                <i class='bx bx-x'></i>
+            </button>
+            <div id="iter-step-modal-header" style="margin-bottom: 18px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 14px;">
+                <!-- Popolato da openIterStepModal() -->
+            </div>
+            <div id="iter-step-modal-body">
+                <!-- Form Step Popolato da app.js -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Revisione Specialistica & Validazione Consulente (FASE 8) -->
+    <div id="modal-consultant-review" class="timeline-modal-overlay" style="display: none;" onclick="if(event.target === this) app.closeConsultantReviewModal();">
+        <div class="timeline-modal-content" style="max-width: 780px; max-height: 90vh; overflow-y: auto; padding: 28px;">
+            <button onclick="app.closeConsultantReviewModal();" style="position: absolute; top: 20px; right: 20px; background: none; border: none; color: var(--text-muted); font-size: 24px; cursor: pointer;">
+                <i class='bx bx-x'></i>
+            </button>
+            <div id="consultant-review-modal-header" style="margin-bottom: 18px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 14px;">
+                <!-- Popolato da openConsultantReviewModal() -->
+            </div>
+            <div id="consultant-review-modal-body">
+                <!-- Form Revisione Popolato da app.js -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal POS Builder & Personalizzazione Guidata (FASE 9) -->
+    <div id="modal-pos-builder" class="timeline-modal-overlay" style="display: none;" onclick="if(event.target === this) app.closePosBuilderModal();">
+        <div class="timeline-modal-content" style="max-width: 900px; max-height: 92vh; overflow-y: auto; padding: 28px;">
+            <button onclick="app.closePosBuilderModal();" style="position: absolute; top: 20px; right: 20px; background: none; border: none; color: var(--text-muted); font-size: 24px; cursor: pointer;">
+                <i class='bx bx-x'></i>
+            </button>
+            <div id="pos-builder-modal-header" style="margin-bottom: 18px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 14px;">
+                <!-- Popolato da openPosBuilderModal() -->
+            </div>
+
+            <!-- TAB NAVIGATION DEL BUILDER -->
+            <div style="display: flex; gap: 8px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px; margin-bottom: 18px;">
+                <button id="pos-builder-tab-btn-params" class="pos-builder-tab-btn active" onclick="app.switchPosBuilderTab('params')">
+                    <i class='bx bx-slider'></i> 1. Parametri &amp; Responsabili
+                </button>
+                <button id="pos-builder-tab-btn-fasi" class="pos-builder-tab-btn" onclick="app.switchPosBuilderTab('fasi')">
+                    <i class='bx bx-list-check'></i> 2. Fasi Operative &amp; Registri
+                </button>
+                <button id="pos-builder-tab-btn-preview" class="pos-builder-tab-btn" onclick="app.switchPosBuilderTab('preview')">
+                    <i class='bx bx-file'></i> 3. Anteprima Ufficiale &amp; Firme (§7.5)
+                </button>
+            </div>
+
+            <div id="pos-builder-modal-body">
+                <!-- Form e anteprima popolati da app.js -->
             </div>
         </div>
     </div>
