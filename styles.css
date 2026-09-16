@@ -24,18 +24,33 @@
     font-family: 'Outfit', sans-serif;
 }
 
+html {
+    height: 100%;
+    min-height: 100dvh;
+    box-sizing: border-box;
+}
+
 body {
     background-color: var(--bg-darker);
     color: var(--text-main);
+    min-height: 100dvh;
     height: 100vh;
+    height: 100dvh;
     overflow: hidden;
     background: radial-gradient(circle at top left, #1e293b, #020617);
     scroll-behavior: smooth;
+    margin: 0;
+    padding: 0;
 }
 
 .app-container {
     display: flex;
+    width: 100%;
     height: 100vh;
+    height: 100dvh;
+    min-height: 100dvh;
+    overflow: hidden;
+    position: relative;
 }
 
 /* Glassmorphism Utilities */
@@ -117,21 +132,28 @@ body {
 
 /* Main Content */
 .main-content {
-    flex: 1;
+    flex: 1 1 0%;
     min-width: 0;
+    min-height: 0;
+    height: 100%;
+    max-height: 100%;
     display: flex;
     flex-direction: column;
     overflow: hidden;       /* mantiene il topbar fisso */
-    min-height: 0;          /* CRITICO: permette al figlio flex di scrollare */
+    position: relative;
 }
 
 .topbar {
     height: 80px;
+    min-height: 80px;
+    max-height: 80px;
+    flex-shrink: 0;
     display: flex;
     justify-content: space-between;
     align-items: center;
     padding: 0 40px;
     border-bottom: 1px solid var(--glass-border);
+    z-index: 5;
 }
 
 .topbar h2 {
@@ -173,46 +195,36 @@ body {
 }
 
 .content-area {
-    flex: 1;
-    min-height: 0;          /* CRITICO: senza questo flex non attiva overflow-y */
-    padding: 40px;
-    padding-bottom: 60px;   /* evita che il contenuto venga tagliato in fondo */
-    overflow-y: auto;
-    overflow-x: hidden;
+    flex: 1 1 0%;
+    min-height: 0 !important;
+    height: auto !important;
+    max-height: none !important;
+    width: 100%;
+    padding: 32px 40px 100px 40px;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
     position: relative;
-    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: contain;
+    touch-action: pan-y;
     /* Scrollbar personalizzata */
     scrollbar-width: thin;
-    scrollbar-color: rgba(59,130,246,0.3) transparent;
+    scrollbar-color: rgba(59, 130, 246, 0.6) rgba(255, 255, 255, 0.04);
 }
 
 .content-area::-webkit-scrollbar {
-    width: 6px;
+    width: 8px;
 }
 .content-area::-webkit-scrollbar-track {
-    background: transparent;
+    background: rgba(255, 255, 255, 0.04);
+    border-radius: 4px;
 }
 .content-area::-webkit-scrollbar-thumb {
-    background: rgba(59,130,246,0.3);
-    border-radius: 3px;
+    background: rgba(59, 130, 246, 0.5);
+    border-radius: 4px;
 }
 .content-area::-webkit-scrollbar-thumb:hover {
-    background: rgba(59,130,246,0.5);
-}
-
-/* Views */
-.view {
-    display: none;
-    animation: fadeIn 0.4s ease forwards;
-}
-
-.view.active-view {
-    display: block;
-}
-
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
+    background: rgba(59, 130, 246, 0.8);
 }
 
 /* Buttons */
@@ -973,75 +985,109 @@ body {
     margin-left: auto;
 }
 
-/* ===== CORREZIONI SCROLLING VISTE (Gap Analysis, Fascicolo, Mantenimento) ===== */
+/* ===== CORREZIONI SCROLLING VISTE (Audit, CAPA, Gap Analysis, Fascicolo, Risk, ecc.) ===== */
 
-/* Le view devono rimanere block per non interferire con lo scroll del content-area */
-.view.active-view {
-    display: block;
-    min-height: 100%;  /* occupa almeno tutto lo spazio disponibile */
+/* Le view devono essere block con altezza auto e overflow visible */
+.view {
+    display: none;
+    width: 100%;
+    min-height: auto;
+    height: auto;
+    overflow: visible;
 }
 
-/* Tabelle con overflow orizzontale corretto */
+.view.active-view {
+    display: block !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    animation: fadeIn 0.3s ease forwards;
+}
+
+/* Container pagine e tab secondarie: non bloccare mai l'altezza naturale */
+.dms-page,
+.gap-page,
+#view-audit-capa,
+#view-audit-capa .dms-page,
+#audit-page-sessions,
+#audit-page-capas,
+#view-documents .dms-page,
+#view-risk-management .dms-page,
+#view-management-review .dms-page,
+#view-maintenance,
+#view-consultants,
+#view-procedure-ota,
+#view-normativa,
+#view-panoramica {
+    width: 100% !important;
+    min-height: auto !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+}
+
+/* Card che racchiudono tabelle: mai overflow hidden sul wrapper */
+.table-glass-card,
+.gap-section.glass-card,
+.gap-section {
+    padding: 0 !important;
+    overflow: visible !important;
+    margin-bottom: 24px;
+    border-radius: 16px;
+}
+
+/* Mantenimento e Fascicolo containers */
+#view-maintenance .checklist-container,
+#view-documents .checklist-container {
+    overflow: visible !important;
+}
+
+/* Tabelle con overflow orizzontale fluido e propagazione scroll verticale */
+.table-responsive,
 .checklist-table-wrapper {
-    overflow-x: auto;
-    overflow-y: visible;
+    width: 100% !important;
+    max-height: none !important;
+    overflow-x: auto !important;
+    overflow-y: visible !important;
+    overscroll-behavior-y: auto !important;
+    overscroll-behavior-x: contain;
+    touch-action: pan-y pan-x;
     -webkit-overflow-scrolling: touch;
+    border-radius: 16px;
     /* Scrollbar orizzontale sottile */
     scrollbar-width: thin;
     scrollbar-color: rgba(59,130,246,0.3) transparent;
 }
 
+.table-responsive::-webkit-scrollbar,
 .checklist-table-wrapper::-webkit-scrollbar {
-    height: 5px;
+    height: 6px;
 }
+.table-responsive::-webkit-scrollbar-track,
 .checklist-table-wrapper::-webkit-scrollbar-track {
     background: transparent;
 }
+.table-responsive::-webkit-scrollbar-thumb,
 .checklist-table-wrapper::-webkit-scrollbar-thumb {
     background: rgba(59,130,246,0.3);
     border-radius: 3px;
 }
 
-/* Impedisci che le tabelle spingano fuori dal layout */
+/* Impedisci che le tabelle spingano fuori dal layout e mantieni touch attivo */
 .checklist-table {
     width: 100%;
     min-width: 700px; /* forza scrollbar orizzontale invece di comprimere le celle */
     border-collapse: collapse;
     text-align: left;
+    touch-action: pan-y pan-x;
 }
 
-/* Gap Analysis — le pagine tab occupano tutto lo spazio */
-.gap-page {
-    animation: fadeIn 0.3s ease forwards;
-    width: 100%;
-}
-
-/* Mantenimento — card container */
-#view-maintenance .checklist-container {
-    overflow: visible;
-}
-
-/* Fascicolo — card container */
-#view-documents .checklist-container {
-    overflow: visible;
-}
-
-/* Gap Analysis cards */
-.gap-section {
-    overflow: visible;
-    padding: 0;
-    margin-bottom: 24px;
-}
-
-/* Evita che il glass-card tagli le tabelle */
-.gap-section.glass-card {
-    overflow: visible;
-}
-
-/* Fix animazione fadeIn su view attive — non deve bloccare scroll */
+/* Fix animazione fadeIn su view attive — to: transform: none per evitare stacking context residuo */
 @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to   { opacity: 1; transform: translateY(0); }
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: none; }
 }
 
 /* ===== SIDEBAR ACCORDION / SUBMENU ===== */
@@ -2795,4 +2841,55 @@ body {
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
     font-family: 'Outfit', sans-serif;
     line-height: 1.6;
+}
+
+/* ============================================================
+   RESPONSIVE & MOBILE SCROLLING OPTIMIZATION
+   ============================================================ */
+@media (max-width: 1024px) {
+    .topbar {
+        padding: 0 24px;
+    }
+    .content-area {
+        padding: 24px 24px 90px 24px;
+    }
+}
+
+@media (max-width: 768px) {
+    .app-container {
+        flex-direction: column;
+        height: 100dvh;
+        min-height: 100dvh;
+    }
+    .sidebar {
+        width: 100%;
+        min-width: 100%;
+        max-width: 100%;
+        height: auto;
+        max-height: 60px;
+        padding: 8px 12px;
+        flex-direction: row;
+        align-items: center;
+        overflow-x: auto;
+        overflow-y: hidden;
+        flex-shrink: 0;
+    }
+    .topbar {
+        height: 60px;
+        min-height: 60px;
+        max-height: 60px;
+        padding: 0 16px;
+        flex-shrink: 0;
+    }
+    .topbar h2 {
+        font-size: 16px;
+    }
+    .content-area {
+        padding: 16px 16px 90px 16px;
+        flex: 1 1 0%;
+        min-height: 0;
+    }
+    .dms-tab-nav {
+        flex-direction: column;
+    }
 }

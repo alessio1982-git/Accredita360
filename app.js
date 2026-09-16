@@ -445,6 +445,21 @@ const app = {
 
         // Setup dropzones per planimetria e foto
         this.setupAnagraficaDropzones();
+
+        // Scorrimento Universale Mousewheel & Trackpad per content-area
+        window.addEventListener('wheel', (e) => {
+            const modal = document.querySelector('.timeline-modal-overlay[style*="display: flex"], .timeline-modal-overlay[style*="display: block"]');
+            if (modal && modal.style.display !== 'none') return;
+            if (e.target && e.target.closest && e.target.closest('.sidebar')) return;
+
+            const ca = document.querySelector('.content-area');
+            if (!ca) return;
+
+            const inner = e.target.closest && e.target.closest('.notification-list, textarea');
+            if (inner && inner !== ca) return;
+
+            ca.scrollTop += e.deltaY;
+        }, { passive: true });
     },
 
     navigate(viewId) {
@@ -472,21 +487,33 @@ const app = {
         const views = document.querySelectorAll('.view');
         views.forEach(v => v.classList.remove('active-view'));
 
+        const contentArea = document.querySelector('.content-area');
+        if (contentArea) {
+            contentArea.scrollTop = 0;
+            if (typeof contentArea.scrollTo === 'function') {
+                contentArea.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+            }
+        }
+
         const targetView = document.getElementById("view-" + viewId);
         if (targetView) {
             targetView.classList.add('active-view');
-            // Hook: azioni da eseguire all'ingresso in una vista
-            if (viewId === 'matrice360')          this.renderMatrice360();
-            if (viewId === 'documents')           this.renderDmsRegister();
-            if (viewId === 'audit-capa')          this.renderAuditCapaView();
-            if (viewId === 'risk-management')     this.renderRiskManagementView();
-            if (viewId === 'management-review')   this.renderManagementReviewView();
-            if (viewId === 'panoramica')          this.renderAccreditationIterView();
-            if (viewId === 'anagrafica')          this.loadAnagrafica().catch(console.warn);
-            if (viewId === 'maintenance')         this.renderMaintenanceView();
-            if (viewId === 'consultants')         this.renderConsultantsView();
-            if (viewId === 'procedure-ota')       this.renderProcedureOtaView();
-            if (viewId === 'normativa')           this.renderNormativaView();
+            // Hook sicuri: azioni da eseguire all'ingresso in una vista
+            try {
+                if (viewId === 'matrice360')          this.renderMatrice360();
+                if (viewId === 'documents')           this.renderDmsRegister();
+                if (viewId === 'audit-capa')          this.renderAuditCapaView();
+                if (viewId === 'risk-management')     this.renderRiskManagementView();
+                if (viewId === 'management-review')   this.renderManagementReviewView();
+                if (viewId === 'panoramica')          this.renderAccreditationIterView();
+                if (viewId === 'anagrafica')          this.loadAnagrafica().catch(console.warn);
+                if (viewId === 'maintenance')         this.renderMaintenanceView();
+                if (viewId === 'consultants')         this.renderConsultantsView();
+                if (viewId === 'procedure-ota')       this.renderProcedureOtaView();
+                if (viewId === 'normativa')           this.renderNormativaView();
+            } catch (err) {
+                console.error('[Navigate] Errore render hook vista ' + viewId + ':', err);
+            }
         } else {
             console.warn('[Navigate] Vista non trovata:', viewId);
         }
