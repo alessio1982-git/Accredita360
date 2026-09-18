@@ -96,7 +96,7 @@ const app = {
     doLogout() {
         // Pulisce la sessione e torna alla pagina principale
         try {
-            const KEY = 'accredita360_session_v2';
+            const KEY = 'accredita360s_session_v2';
             sessionStorage.removeItem(KEY);
             localStorage.removeItem(KEY);
         } catch(e) {}
@@ -978,7 +978,7 @@ const app = {
 <body>
   <div class="watermark">BOZZA</div>
 
-  <div class="header-logo">&#9877; Accredita360</div>
+  <div class="header-logo">&#9877; Accredita360s</div>
   <div class="header-sub">Piattaforma RegTech per l'Accreditamento Sanitario in Sicilia &nbsp;|&nbsp; SanitàReg &nbsp;|&nbsp; Data: ${oggi}</div>
 
   <h1>${req.titolo}</h1>
@@ -1056,7 +1056,7 @@ const app = {
   </table>
 
   <div class="footer">
-    <span>Accredita360 &copy; ${new Date().getFullYear()} — Documento generato automaticamente in base a ${req.norma}</span>
+    <span>Accredita360s &copy; ${new Date().getFullYear()} — Documento generato automaticamente in base a ${req.norma}</span>
     <span>Cod. Req: ${req.id} — Pagina 1 di 1</span>
   </div>
 </body>
@@ -1166,7 +1166,7 @@ const app = {
     generaIstanzaAccordo() {
         const oggi = new Date().toLocaleDateString('it-IT');
         const user = Backend.getCurrentUser();
-        const structures = JSON.parse(localStorage.getItem('accredita360_structures') || '{}');
+        const structures = JSON.parse(localStorage.getItem('accredita360s_structures') || '{}');
         const myStruct = user ? structures[user.email] : null;
         const tipoLabels = {
             'poliambulatorio': 'Poliambulatorio / Ambulatorio Specialistico',
@@ -1210,7 +1210,7 @@ const app = {
   </style>
 </head>
 <body>
-  <div class="header-logo">&#9877; Accredita360</div>
+  <div class="header-logo">&#9877; Accredita360s</div>
   <div class="header-sub">Piattaforma RegTech per l'Accreditamento Sanitario in Sicilia &nbsp;|&nbsp; Data: ${oggi}</div>
 
   <h1>Istanza di Richiesta Accordo Contrattuale SSN</h1>
@@ -1277,7 +1277,7 @@ const app = {
   </table>
 
   <div class="footer">
-    <span>Accredita360 &copy; ${new Date().getFullYear()} — Documento generato automaticamente | D.P.Reg. n. 12/2019</span>
+    <span>Accredita360s &copy; ${new Date().getFullYear()} — Documento generato automaticamente | D.P.Reg. n. 12/2019</span>
     <span>Istanza Accordo Contrattuale SSN — ${oggi}</span>
   </div>
 </body>
@@ -2313,7 +2313,7 @@ const app = {
     getDraftStorageKey() {
         const user = Backend.getCurrentUser();
         const email = user ? user.email : 'guest';
-        return `accredita360_draft_anagrafica_${email}`;
+        return `accredita360s_draft_anagrafica_${email}`;
     },
 
     initAutosave() {
@@ -2522,22 +2522,22 @@ const app = {
         if (e) e.preventDefault();
         const html = `
             <p><strong>INFORMATIVA SUL TRATTAMENTO DEI DATI PERSONALI (GDPR)</strong></p>
-            <p>Ai sensi del Regolamento UE 2016/679 (GDPR), si informa l'utente che i dati personali raccolti tramite il form di Anagrafica saranno trattati esclusivamente per l'erogazione del servizio di conformità e per le procedure di accreditamento istituzionale di Accredita360.</p>
+            <p>Ai sensi del Regolamento UE 2016/679 (GDPR), si informa l'utente che i dati personali raccolti tramite il form di Anagrafica saranno trattati esclusivamente per l'erogazione del servizio di conformità e per le procedure di accreditamento istituzionale di Accredita360s.</p>
             <p><strong>1. Finalità del trattamento:</strong> Gestione e verifica dei requisiti strutturali, organizzativi e tecnologici della struttura sanitaria, collegamento con consulenti assegnati e amministratori.</p>
             <p><strong>2. Conservazione:</strong> I dati saranno conservati in modo sicuro sui database cifrati di Supabase per il periodo necessario all'esecuzione dei servizi contrattuali e agli obblighi normativi.</p>
             <p><strong>3. Diritti dell'interessato:</strong> L'utente può esercitare in qualsiasi momento i diritti di accesso, rettifica, cancellazione o opposizione scrivendo all'indirizzo email di supporto.</p>
         `;
-        this.showLegalModal("Informativa Privacy - Accredita360", html);
+        this.showLegalModal("Informativa Privacy - Accredita360s", html);
     },
 
     showTermsAndConditions(e) {
         if (e) e.preventDefault();
         const html = `
             <p><strong>CONTRATTO DI LICENZA D'USO E TERMINI DI SERVIZIO (SaaS)</strong></p>
-            <p>Il presente documento definisce i termini contrattuali per l'utilizzo della piattaforma software SaaS Accredita360 da parte della struttura registrata.</p>
+            <p>Il presente documento definisce i termini contrattuali per l'utilizzo della piattaforma software SaaS Accredita360s da parte della struttura registrata.</p>
             <p><strong>1. Licenza d'uso:</strong> Viene concessa una licenza limitata, non esclusiva e non trasferibile per l'utilizzo della piattaforma per scopi di autovalutazione e accreditamento.</p>
             <p><strong>2. Obbligo di Pagamento:</strong> L'accesso completo alle funzionalità di Gap Analysis, caricamento documentale e rilascio attestati è subordinato alla sottoscrizione e al regolare pagamento del piano tariffario prescelto.</p>
-            <p><strong>3. Responsabilità:</strong> Accredita360 fornisce strumenti di supporto ma non garantisce l'ottenimento automatico del provvedimento da parte delle autorità ASP, che rimane sotto l'esclusiva responsabilità della struttura sanitaria.</p>
+            <p><strong>3. Responsabilità:</strong> Accredita360s fornisce strumenti di supporto ma non garantisce l'ottenimento automatico del provvedimento da parte delle autorità ASP, che rimane sotto l'esclusiva responsabilità della struttura sanitaria.</p>
             <p><strong>4. Versione:</strong> Contratto di Servizio v1.0.</p>
         `;
         this.showLegalModal("Termini e Condizioni di Servizio", html);
@@ -2718,7 +2718,7 @@ app.startRealtimeBridge = function() {
                 
                 if (isAssigned !== wasAssignedInUI) {
                     console.log('[Realtime Client Sync] Aggiornamento stato assegnazione UI...');
-                    const sessionKey = 'accredita360_session_v2';
+                    const sessionKey = 'accredita360s_session_v2';
                     const rawSession = sessionStorage.getItem(sessionKey) || localStorage.getItem(sessionKey);
                     if (rawSession) {
                         const parsed = JSON.parse(rawSession);
@@ -3588,7 +3588,7 @@ app.generaRelazioneAutovalutazione = async function(format = 'docx') {
 <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
 <head>
   <meta charset='UTF-8'>
-  <title>Relazione Ufficiale di Autovalutazione — Accredita360</title>
+  <title>Relazione Ufficiale di Autovalutazione — Accredita360s</title>
   <style>
     body { font-family: 'Arial', sans-serif; margin: 40px; color: #1e293b; line-height: 1.5; font-size: 12px; }
     .header-box { border-bottom: 2px solid #0284c7; padding-bottom: 12px; margin-bottom: 25px; }
@@ -3688,7 +3688,7 @@ app.generaRelazioneAutovalutazione = async function(format = 'docx') {
   </p>
 
   <div class="stamp-box">
-    <strong>SIGILLO DIGITALE ACCREDITA360:</strong> Relazione compilata e certificata attraverso il motore normativo Accredita360 con marcatura oraria. Fascicolo pronto per l'invio alla Commissione Ispettiva ASP / OTA.
+    <strong>SIGILLO DIGITALE ACCREDITA360S:</strong> Relazione compilata e certificata attraverso il motore normativo Accredita360s con marcatura oraria. Fascicolo pronto per l'invio alla Commissione Ispettiva ASP / OTA.
   </div>
 
   <table class="signature-table">
@@ -4459,7 +4459,7 @@ app.esportaMatrice360 = function(format) {
         container.innerHTML = `
             <div style="border-bottom: 2px solid #0284c7; padding-bottom: 12px; margin-bottom: 20px; display:flex; justify-content:space-between; align-items:flex-end;">
                 <div>
-                    <h1 style="font-size: 20px; margin: 0; color: #0284c7;">ACCREDITA 360 — MATRICE DI CONFORMITÀ</h1>
+                    <h1 style="font-size: 20px; margin: 0; color: #0284c7;">ACCREDITA 360S — MATRICE DI CONFORMITÀ</h1>
                     <div style="font-size: 12px; color: #555; margin-top: 4px;">Sistema Integrato Qualità, Compliance &amp; Accreditamento Sanitario</div>
                 </div>
                 <div style="text-align: right; font-size: 11px; color: #555;">
@@ -5276,7 +5276,7 @@ app.esportaDmsPDF = function() {
     container.innerHTML = `
         <div style="border-bottom: 2px solid #0284c7; padding-bottom: 12px; margin-bottom: 20px; display:flex; justify-content:space-between; align-items:flex-end;">
             <div>
-                <h1 style="font-size: 20px; margin: 0; color: #0284c7;">ACCREDITA 360 — REGISTRO DOCUMENTALE CONTROLLATO</h1>
+                <h1 style="font-size: 20px; margin: 0; color: #0284c7;">ACCREDITA 360S — REGISTRO DOCUMENTALE CONTROLLATO</h1>
                 <div style="font-size: 12px; color: #555; margin-top: 4px;">Informazioni Documentate Controllate ex Norma UNI EN ISO 9001:2015 (§7.5)</div>
             </div>
             <div style="text-align: right; font-size: 11px; color: #555;">
@@ -6387,7 +6387,7 @@ app.esportaAuditReport = function(auditId) {
     container.innerHTML = `
         <div style="border-bottom: 2px solid #0284c7; padding-bottom: 12px; margin-bottom: 20px; display:flex; justify-content:space-between; align-items:flex-end;">
             <div>
-                <h1 style="font-size: 20px; margin: 0; color: #0284c7;">ACCREDITA 360 — VERBALE DI AUDIT</h1>
+                <h1 style="font-size: 20px; margin: 0; color: #0284c7;">ACCREDITA 360S — VERBALE DI AUDIT</h1>
                 <div style="font-size: 12px; color: #555; margin-top: 4px;">Valutazione della Conformità ex Norma UNI EN ISO 9001:2015 (§9.2) &amp; D.A. 20/2024</div>
             </div>
             <div style="text-align: right; font-size: 11px; color: #555;">
@@ -7440,7 +7440,7 @@ app.esportaPianoRiskManagementPDF = function() {
     container.innerHTML = `
         <div style="border-bottom: 2px solid #0284c7; padding-bottom: 12px; margin-bottom: 20px; display:flex; justify-content:space-between; align-items:flex-end;">
             <div>
-                <h1 style="font-size: 20px; margin: 0; color: #0284c7;">ACCREDITA 360 — PIANO GESTIONE DEL RISCHIO SANITARIO</h1>
+                <h1 style="font-size: 20px; margin: 0; color: #0284c7;">ACCREDITA 360S — PIANO GESTIONE DEL RISCHIO SANITARIO</h1>
                 <div style="font-size: 12px; color: #555; margin-top: 4px;">Valutazione Rischi Clinici &amp; Sicurezza delle Cure (Legge 24/2017 &amp; §6.1 ISO 9001:2015)</div>
             </div>
             <div style="text-align: right; font-size: 11px; color: #555;">
@@ -8482,7 +8482,7 @@ app.esportaVerbaleRiesamePDF = async function(reviewId) {
     container.innerHTML = `
         <div style="border-bottom: 2px solid #2563eb; padding-bottom: 12px; margin-bottom: 20px; display:flex; justify-content:space-between; align-items:flex-end;">
             <div>
-                <h1 style="font-size: 18px; margin: 0; color: #2563eb;">ACCREDITA 360 — VERBALE DEL RIESAME DELLA DIREZIONE</h1>
+                <h1 style="font-size: 18px; margin: 0; color: #2563eb;">ACCREDITA 360S — VERBALE DEL RIESAME DELLA DIREZIONE</h1>
                 <div style="font-size: 11px; color: #555; margin-top: 4px;">Valutazione del Sistema di Gestione per la Qualità (UNI EN ISO 9001:2015 §9.3 &amp; D.A. 20/2024)</div>
             </div>
             <div style="text-align: right; font-size: 11px; color: #555;">
@@ -10620,7 +10620,7 @@ app.updatePosBuilderPreview = function() {
             <table style="width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 0;">
                 <tr>
                     <td style="border: 1px solid #cbd5e1; padding: 8px; width: 25%; text-align: center; font-weight: 700; color: #0f172a;">
-                        ACCREDITA360<br><span style="font-size: 10px; color: #64748b; font-weight: normal;">Sistema Gestione Qualità</span>
+                        ACCREDITA360S<br><span style="font-size: 10px; color: #64748b; font-weight: normal;">Sistema Gestione Qualità</span>
                     </td>
                     <td style="border: 1px solid #cbd5e1; padding: 8px; width: 50%; text-align: center;">
                         <strong style="font-size: 14px; text-transform: uppercase;">PROCEDURA OPERATIVA STANDARD</strong><br>

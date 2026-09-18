@@ -48,8 +48,8 @@ test.describe('FASE 9: Biblioteca POS Sanitarie, POS Builder Interattivo & Centr
           registration_status: 'active'
         }
       };
-      window.sessionStorage.setItem('accredita360_session_v2', JSON.stringify(session));
-      window.localStorage.setItem('accredita360_session_v2', JSON.stringify(session));
+      window.sessionStorage.setItem('accredita360s_session_v2', JSON.stringify(session));
+      window.localStorage.setItem('accredita360s_session_v2', JSON.stringify(session));
       window.confirm = () => true;
       window.alert = (msg) => { window['__lastAlert'] = msg; };
       window.prompt = (msg, def) => 'OK';
@@ -63,7 +63,7 @@ test.describe('FASE 9: Biblioteca POS Sanitarie, POS Builder Interattivo & Centr
         responsabile: 'Dott. Mario Rossi',
         city: 'Palermo'
       };
-      window.localStorage.setItem('accredita360_struttura', JSON.stringify(mockStructure));
+      window.localStorage.setItem('accredita360s_struttura', JSON.stringify(mockStructure));
     });
 
     // Mock window.supabase con proxy e getter/setter robusto

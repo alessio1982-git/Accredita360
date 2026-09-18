@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Accedi — Accredita360</title>
-    <meta name="description" content="Accedi alla piattaforma Accredita360 per gestire l'iter di accreditamento sanitario OTA in Sicilia.">
+    <title>Accedi — Accredita360s</title>
+    <meta name="description" content="Accedi alla piattaforma Accredita360s per gestire l'iter di accreditamento sanitario OTA in Sicilia.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -285,8 +285,8 @@
     <!-- TOP BAR -->
     <header class="top-bar">
         <a href="index.html" class="logo">
-            <img src="logo.png" alt="Accredita360">
-            Accredita360
+            <img src="logo.png" alt="Accredita360s">
+            Accredita360s
         </a>
         <div class="top-bar-actions">
             <span style="color:var(--text-muted); font-size:13px;">Non hai un account?</span>
@@ -457,7 +457,7 @@
 
     const SUPA_URL    = 'https://kvthfnkgfbxtjgkqpbwj.supabase.co';
     const SUPA_KEY    = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt2dGhmbmtnZmJ4dGpna3FwYndqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NzkxNDQsImV4cCI6MjA5NDQ1NTE0NH0._2UzfUZqy7P7W_9S8xpFWcz0K_pAykl4D8sdXghvbLM';
-    const SESSION_KEY = 'accredita360_session_v2';
+    const SESSION_KEY = 'accredita360s_session_v2';
     const SESSION_TTL = 8 * 60 * 60 * 1000; // 8 ore in ms
 
     // ── Helpers UI ──────────────────────────────────────────────
@@ -662,7 +662,7 @@
                 setupContainer.style.display = 'block';
                 if (resendLink) resendLink.style.display = 'none';
 
-                const otpAuthUrl = `otpauth://totp/Accredita360:${email}?secret=${secret}&issuer=Accredita360`;
+                const otpAuthUrl = `otpauth://totp/Accredita360s:${email}?secret=${secret}&issuer=Accredita360s`;
                 const qrContainer = document.getElementById('totp-qr');
                 qrContainer.innerHTML = '';
                 if (typeof QRCode !== 'undefined') {

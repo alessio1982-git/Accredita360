@@ -48,7 +48,7 @@ test.describe('FASE 7: Iter di Accreditamento Istituzionale OTA, Cronoprogramma 
           registration_status: 'active'
         }
       };
-      window.sessionStorage.setItem('accredita360_session_v2', JSON.stringify(session));
+      window.sessionStorage.setItem('accredita360s_session_v2', JSON.stringify(session));
       window.confirm = () => true;
       window.alert = (msg) => { window['__lastAlert'] = msg; };
       window.prompt = (msg, def) => 'OK';
@@ -62,7 +62,7 @@ test.describe('FASE 7: Iter di Accreditamento Istituzionale OTA, Cronoprogramma 
         { id: 'SPEC_OTA_01', titolo: 'Protocolli Assistenziali OTA', stato: 'green', stato_esteso: 'conforme', percorso: 'ota' },
         { id: 'SPEC_OTA_02', titolo: 'Manutenzione Elettromedicali CEI 62-5', stato: 'green', stato_esteso: 'conforme', percorso: 'ota' }
       ];
-      window.localStorage.setItem(`accredita360_reqs_${email}`, JSON.stringify(mockReqs));
+      window.localStorage.setItem(`accredita360s_reqs_${email}`, JSON.stringify(mockReqs));
     });
 
     // Mock window.supabase con proxy, getter/setter e channel support

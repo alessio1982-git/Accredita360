@@ -1,5 +1,5 @@
 /**
- * Accredita360 — consulente.js
+ * Accredita360s — consulente.js
  * Controller per il pannello Consulente (consulente.html)
  * Gestisce: dashboard, monitoraggio clienti, normativa, procedure OTA, panoramica
  */

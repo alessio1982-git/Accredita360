@@ -1,5 +1,5 @@
 /**
- * Accredita 360 — Motore Normativo & Matrice di Conformità Multi-Standard
+ * Accredita 360s — Motore Normativo & Matrice di Conformità Multi-Standard
  * 
  * Standard Integrati:
  * - Autorizzazione Sanitaria ASP (D.A. 890/2002 e s.m.i.)
@@ -60,7 +60,7 @@ const NormativaDB = {
     },
 
     // ============================================================
-    // 2. IGLI 8 STATI OPERATIVI DI CONFORMITÀ MASTER ACCREDITA 360
+    // 2. IGLI 8 STATI OPERATIVI DI CONFORMITÀ MASTER ACCREDITA 360S
     // ============================================================
     stati360: {
         "conforme": {
@@ -1702,7 +1702,7 @@ const NormativaDB = {
             description: 'Mancata presentazione dell\'istanza di rinnovo o dei flussi di debito informativo nei termini previsti dal D.A. 20/2024.',
             probability: 2,
             severity: 5,
-            barriers: 'Monitoraggio tramite Scadenziario Mantenimento di Accredita360 con pre-audit annuale e notifiche anticipate.',
+            barriers: 'Monitoraggio tramite Scadenziario Mantenimento di Accredita360s con pre-audit annuale e notifiche anticipate.',
             res_probability: 1,
             res_severity: 2,
             responsible: 'Direttore Sanitario & Ufficio Qualità',
@@ -1943,7 +1943,7 @@ const NormativaDB = {
             status: 'in_corso', // in_corso, raggiunto, in_ritardo, non_raggiunto
             target_date: '2026-11-30',
             responsible: 'Direttore Sanitario & Legale Rappresentante',
-            resources_allocated: 'Consulenza Specialistica Accredita360, Adeguamenti Strutturali'
+            resources_allocated: 'Consulenza Specialistica Accredita360s, Adeguamenti Strutturali'
         },
         {
             code: 'OBJ-2026-02',
@@ -2640,7 +2640,7 @@ const NormativaDB = {
             dpi_obbligatori: 'Non applicabile (gestione documentale e metodologica).',
             fasi_operative: [
                 '1. Rilevazione dell\'evento e messa in sicurezza immediata del paziente e del personale coinvolto.',
-                '2. Compilazione della Scheda di Incident Reporting (anonima o nominativa) sul portale Accredita360 entro 24 ore.',
+                '2. Compilazione della Scheda di Incident Reporting (anonima o nominativa) sul portale Accredita360s entro 24 ore.',
                 '3. Analisi preliminare da parte del Risk Manager e classificazione dell\'evento (Near Miss, Incidente Minore, Evento Sentinella).',
                 '4. Conduzione dell\'analisi delle cause radice (Root Cause Analysis con metodo 5 Why o Diagramma a Lisca di Pesce).',
                 '5. Apertura di Azione Correttiva CAPA nel modulo Audit/CAPA, attuazione delle misure preventive e monitoraggio efficacia a 60 giorni.'

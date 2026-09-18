@@ -12,7 +12,7 @@ async function main() {
 <html lang="it">
 <head>
     <meta charset="UTF-8">
-    <title>Accredita360 Logos</title>
+    <title>Accredita360s Logos</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Playfair+Display:wght@700;800;900&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -38,7 +38,7 @@ async function main() {
             display: block;
         }
 
-        /* 1. Logo Orizzontale Clean (Accredita360) */
+        /* 1. Logo Orizzontale Clean (Accredita360s) */
         #logo-horizontal-clean {
             display: inline-flex;
             align-items: center;
@@ -63,7 +63,7 @@ async function main() {
             margin-left: 2px;
         }
 
-        /* 2. Logo Orizzontale Con Spazio 'Accredita 360' */
+        /* 2. Logo Orizzontale Con Spazio 'Accredita 360s' */
         #logo-horizontal-spaced {
             display: inline-flex;
             align-items: center;
@@ -279,21 +279,21 @@ async function main() {
     <!-- 1. Horizontal Clean -->
     <div id="logo-horizontal-clean">
         <canvas class="clean-logo-canvas"></canvas>
-        <div class="brand-title">Accredita<span class="accent">360</span></div>
+        <div class="brand-title">Accredita<span class="accent">360s</span></div>
     </div>
 
     <!-- 2. Horizontal Spaced -->
     <div id="logo-horizontal-spaced">
         <canvas class="clean-logo-canvas"></canvas>
-        <div class="brand-title">Accredita<span class="accent"> 360</span></div>
+        <div class="brand-title">Accredita<span class="accent"> 360s</span></div>
     </div>
 
     <!-- 3. Horizontal Corporate with Tagline -->
     <div id="logo-horizontal-corporate">
         <canvas class="clean-logo-canvas"></canvas>
         <div class="brand-container">
-            <div class="brand-title">Accredita<span class="accent">360</span></div>
-            <div class="brand-subtitle">Sistemi di Qualità & Accreditamento Sanitario</div>
+            <div class="brand-title">Accredita<span class="accent">360s</span></div>
+            <div class="brand-subtitle">Sistemi di Qualità & Accreditamento Sanitario • accredita360s.com</div>
             <div class="brand-badge">✓ Piattaforma Sanitaria Digitale</div>
         </div>
     </div>
@@ -302,16 +302,16 @@ async function main() {
     <div id="logo-horizontal-playfair">
         <canvas class="clean-logo-canvas"></canvas>
         <div>
-            <div class="brand-title">Accredita<span class="accent">360</span></div>
-            <div class="brand-subtitle">Governance & Accreditamento Sanitario</div>
+            <div class="brand-title">Accredita<span class="accent">360s</span></div>
+            <div class="brand-subtitle">Governance & Accreditamento Sanitario • accredita360s.com</div>
         </div>
     </div>
 
     <!-- 5. Vertical Stacked -->
     <div id="logo-vertical-stacked">
         <canvas class="clean-logo-canvas"></canvas>
-        <div class="brand-title">Accredita<span class="accent">360</span></div>
-        <div class="brand-subtitle">Sistemi di Qualità & Accreditamento Sanitario</div>
+        <div class="brand-title">Accredita<span class="accent">360s</span></div>
+        <div class="brand-subtitle">Sistemi di Qualità & Accreditamento Sanitario • accredita360s.com</div>
     </div>
 
     <!-- 6. Pure Emblem -->
@@ -323,9 +323,9 @@ async function main() {
     <div id="logo-banner-wide">
         <canvas class="clean-logo-canvas"></canvas>
         <div>
-            <div class="brand-title">Accredita<span class="accent">360</span></div>
-            <div class="brand-subtitle">Sistemi di Qualità & Accreditamento Sanitario</div>
-            <div class="brand-badge">✓ Conformità D.A. 890 & D.Lgs 101/2020</div>
+            <div class="brand-title">Accredita<span class="accent">360s</span></div>
+            <div class="brand-subtitle">Sistemi di Qualità & Accreditamento Sanitario • www.accredita360s.com</div>
+            <div class="brand-badge">✓ Conformità D.A. 890 & D.A. 20/2024 & ISO 9001</div>
         </div>
     </div>
 
@@ -405,13 +405,13 @@ async function main() {
     const cleanedDataUrl = await page.evaluate(() => window.cleanedEmblemDataUrl);
 
     const outputs = [
-        { id: '#logo-horizontal-clean', filename: 'logo_accredita360_orizzontale.png' },
+        { id: '#logo-horizontal-clean', filename: 'logo_accredita360s_orizzontale.png' },
         { id: '#logo-horizontal-spaced', filename: 'logo_accredita_360_orizzontale_spaziato.png' },
-        { id: '#logo-horizontal-corporate', filename: 'logo_accredita360_corporate_tagline.png' },
-        { id: '#logo-horizontal-playfair', filename: 'logo_accredita360_serif_istituzionale.png' },
-        { id: '#logo-vertical-stacked', filename: 'logo_accredita360_verticale.png' },
-        { id: '#logo-emblem-only', filename: 'logo_accredita360_emblema_puro.png' },
-        { id: '#logo-banner-wide', filename: 'logo_accredita360_banner_header.png' }
+        { id: '#logo-horizontal-corporate', filename: 'logo_accredita360s_corporate_tagline.png' },
+        { id: '#logo-horizontal-playfair', filename: 'logo_accredita360s_serif_istituzionale.png' },
+        { id: '#logo-vertical-stacked', filename: 'logo_accredita360s_verticale.png' },
+        { id: '#logo-emblem-only', filename: 'logo_accredita360s_emblema_puro.png' },
+        { id: '#logo-banner-wide', filename: 'logo_accredita360s_banner_header.png' }
     ];
 
     for (const item of outputs) {
@@ -428,7 +428,7 @@ async function main() {
 
     // Default main file requested by user: 'logo_accredita_360_sfondo_bianco.png'
     fs.copyFileSync(
-        path.resolve(__dirname, 'logo_accredita360_orizzontale.png'),
+        path.resolve(__dirname, 'logo_accredita360s_orizzontale.png'),
         path.resolve(__dirname, 'logo_accredita_360_sfondo_bianco.png')
     );
     console.log('Creato file principale: logo_accredita_360_sfondo_bianco.png');
@@ -445,8 +445,8 @@ async function main() {
 
 function createSvgLogos(cleanedDataUrl) {
     // 1. Horizontal SVG
-    const svgHorizontal = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 780 180" width="780" height="180">
-    <rect width="780" height="180" fill="#ffffff" />
+    const svgHorizontal = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 180" width="800" height="180">
+    <rect width="800" height="180" fill="#ffffff" />
     <defs>
         <style>
             @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@800;900&amp;display=swap');
@@ -455,13 +455,13 @@ function createSvgLogos(cleanedDataUrl) {
         </style>
     </defs>
     <image href="${cleanedDataUrl}" x="24" y="15" width="150" height="150" />
-    <text x="190" y="112" class="brand-text">Accredita<tspan class="brand-accent">360</tspan></text>
+    <text x="190" y="112" class="brand-text">Accredita<tspan class="brand-accent">360s</tspan></text>
 </svg>`;
-    fs.writeFileSync(path.resolve(__dirname, 'logo_accredita360_orizzontale.svg'), svgHorizontal, 'utf-8');
+    fs.writeFileSync(path.resolve(__dirname, 'logo_accredita360s_orizzontale.svg'), svgHorizontal, 'utf-8');
 
     // 2. Horizontal Spaced SVG
-    const svgSpaced = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 180" width="820" height="180">
-    <rect width="820" height="180" fill="#ffffff" />
+    const svgSpaced = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 840 180" width="840" height="180">
+    <rect width="840" height="180" fill="#ffffff" />
     <defs>
         <style>
             @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@800;900&amp;display=swap');
@@ -470,13 +470,13 @@ function createSvgLogos(cleanedDataUrl) {
         </style>
     </defs>
     <image href="${cleanedDataUrl}" x="24" y="15" width="150" height="150" />
-    <text x="190" y="112" class="brand-text">Accredita <tspan class="brand-accent">360</tspan></text>
+    <text x="190" y="112" class="brand-text">Accredita <tspan class="brand-accent">360s</tspan></text>
 </svg>`;
     fs.writeFileSync(path.resolve(__dirname, 'logo_accredita_360_spaziato.svg'), svgSpaced, 'utf-8');
 
     // 3. Horizontal with Tagline SVG
-    const svgCorporate = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 940 200" width="940" height="200">
-    <rect width="940" height="200" fill="#ffffff" />
+    const svgCorporate = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 200" width="960" height="200">
+    <rect width="960" height="200" fill="#ffffff" />
     <defs>
         <style>
             @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@700;800;900&amp;display=swap');
@@ -486,10 +486,10 @@ function createSvgLogos(cleanedDataUrl) {
         </style>
     </defs>
     <image href="${cleanedDataUrl}" x="28" y="25" width="150" height="150" />
-    <text x="198" y="102" class="brand-text">Accredita<tspan class="brand-accent">360</tspan></text>
+    <text x="198" y="102" class="brand-text">Accredita<tspan class="brand-accent">360s</tspan></text>
     <text x="200" y="138" class="brand-sub">SISTEMI DI QUALITÀ &amp; ACCREDITAMENTO SANITARIO</text>
 </svg>`;
-    fs.writeFileSync(path.resolve(__dirname, 'logo_accredita360_corporate.svg'), svgCorporate, 'utf-8');
+    fs.writeFileSync(path.resolve(__dirname, 'logo_accredita360s_corporate.svg'), svgCorporate, 'utf-8');
 
     // 4. Vertical Stacked SVG
     const svgVertical = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 440" width="520" height="440">
@@ -503,10 +503,10 @@ function createSvgLogos(cleanedDataUrl) {
         </style>
     </defs>
     <image href="${cleanedDataUrl}" x="160" y="24" width="200" height="200" />
-    <text x="260" y="295" class="brand-text">Accredita<tspan class="brand-accent">360</tspan></text>
+    <text x="260" y="295" class="brand-text">Accredita<tspan class="brand-accent">360s</tspan></text>
     <text x="260" y="335" class="brand-sub">SISTEMI DI QUALITÀ &amp; ACCREDITAMENTO</text>
 </svg>`;
-    fs.writeFileSync(path.resolve(__dirname, 'logo_accredita360_verticale.svg'), svgVertical, 'utf-8');
+    fs.writeFileSync(path.resolve(__dirname, 'logo_accredita360s_verticale.svg'), svgVertical, 'utf-8');
 
     console.log('Tutti i file vettoriali SVG generati con successo!');
 }

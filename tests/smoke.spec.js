@@ -6,7 +6,7 @@ const BASE_URL = 'https://accredita360s.com';
 // ─── SMOKE TEST: Homepage ────────────────────────────────────
 test('homepage si carica correttamente', async ({ page }) => {
   await page.goto(BASE_URL);
-  await expect(page).toHaveTitle(/Accredita360/i);
+  await expect(page).toHaveTitle(/Accredita360s/i);
   // Verifica che i pulsanti principali siano visibili (usando .first() per evitare strict mode violation)
   await expect(page.locator('a[href="login.html"], a:has-text("Accedi")').first()).toBeVisible();
   await expect(page.locator('a[href="register.html"], a:has-text("Registrati")').first()).toBeVisible();
@@ -22,7 +22,7 @@ test('pagina login si apre e mostra i tre pannelli', async ({ page }) => {
   });
 
   await page.goto(`${BASE_URL}/login.html`);
-  await expect(page).toHaveTitle(/Accredita360|Login|Accedi/i);
+  await expect(page).toHaveTitle(/Accredita360s|Login|Accedi/i);
   
   // 1. Verifica che i tre pannelli siano visibili
   await expect(page.locator('#panel-utente')).toBeVisible();
@@ -119,7 +119,7 @@ test('role cross-check: consulente provando ad accedere da admin riceve 403 e bl
 // ─── REGISTRAZIONE: pagina accessibile ───────────────────────
 test('pagina registrazione si apre', async ({ page }) => {
   await page.goto(`${BASE_URL}/register.html`);
-  await expect(page).toHaveTitle(/Accredita360|Registr/i);
+  await expect(page).toHaveTitle(/Accredita360s|Registr/i);
   await expect(page.locator('#reg-email')).toBeVisible();
   await expect(page.locator('#reg-pwd')).toBeVisible();
 });
@@ -225,7 +225,7 @@ test('verifica download modelli e istanze', async ({ page }) => {
         registration_status: 'active'
       }
     };
-    window.sessionStorage.setItem('accredita360_session_v2', JSON.stringify(session));
+    window.sessionStorage.setItem('accredita360s_session_v2', JSON.stringify(session));
   });
 
   const fs = require('fs');
@@ -349,12 +349,12 @@ test('consultant filter redflag displays only flagged structures', async ({ page
       user: {
         id: 'user_consulente_test',
         email: 'consulente@demo.it',
-        name: 'Supervisor Accredita360',
+        name: 'Supervisor Accredita360s',
         role: 'consulente',
         registration_status: 'active'
       }
     };
-    window.sessionStorage.setItem('accredita360_session_v2', JSON.stringify(session));
+    window.sessionStorage.setItem('accredita360s_session_v2', JSON.stringify(session));
   });
 
   // Mock structures list logic inside client context
@@ -470,7 +470,7 @@ test('migration preserves document state when structure changes complexity', asy
         registration_status: 'active'
       }
     };
-    window.sessionStorage.setItem('accredita360_session_v2', JSON.stringify(session));
+    window.sessionStorage.setItem('accredita360s_session_v2', JSON.stringify(session));
   });
 
   // Mock di window.supabase per intercettare le query al database dei requisiti
@@ -551,7 +551,7 @@ test('migration preserves document state when structure changes complexity', asy
                   eq: function() {
                     return {
                       single: () => Promise.resolve({
-                        data: { email: 'alessio.arlotta@gmail.com', registration_status: 'active', role: 'cliente', stato_assegnazione: 'in_carico', consulente_email_fk: 'admin@accredita360.it' },
+                        data: { email: 'alessio.arlotta@gmail.com', registration_status: 'active', role: 'cliente', stato_assegnazione: 'in_carico', consulente_email_fk: 'admin@accredita360s.it' },
                         error: null
                       })
                     };
@@ -664,7 +664,7 @@ test('migration preserves document state when structure changes complexity', asy
                       eq: function() {
                         return {
                           single: () => Promise.resolve({
-                            data: { email: 'alessio.arlotta@gmail.com', registration_status: 'active', role: 'cliente', stato_assegnazione: 'in_carico', consulente_email_fk: 'admin@accredita360.it' },
+                            data: { email: 'alessio.arlotta@gmail.com', registration_status: 'active', role: 'cliente', stato_assegnazione: 'in_carico', consulente_email_fk: 'admin@accredita360s.it' },
                             error: null
                           })
                         };
@@ -786,7 +786,7 @@ test('gestione utenti: autorizza, sospendi, riattiva ed elimina in tempo reale',
         registration_status: 'active'
       }
     };
-    window.sessionStorage.setItem('accredita360_session_v2', JSON.stringify(session));
+    window.sessionStorage.setItem('accredita360s_session_v2', JSON.stringify(session));
     window.confirm = () => true;
     window.alert = () => {};
   });
@@ -889,7 +889,7 @@ test('sicurezza: utente sospeso viene disconnesso al caricamento di app.html', a
 
   // Imposta sessione utente fittizia "attiva"
   await page.addInitScript(() => {
-    if (!window.sessionStorage.getItem('accredita360_session_v2_initialized')) {
+    if (!window.sessionStorage.getItem('accredita360s_session_v2_initialized')) {
       const session = {
         expiresAt: Date.now() + 8 * 60 * 60 * 1000,
         createdAt: new Date().toISOString(),
@@ -901,8 +901,8 @@ test('sicurezza: utente sospeso viene disconnesso al caricamento di app.html', a
           registration_status: 'active' // la sessione locale crede sia attivo
         }
       };
-      window.sessionStorage.setItem('accredita360_session_v2', JSON.stringify(session));
-      window.sessionStorage.setItem('accredita360_session_v2_initialized', 'true');
+      window.sessionStorage.setItem('accredita360s_session_v2', JSON.stringify(session));
+      window.sessionStorage.setItem('accredita360s_session_v2_initialized', 'true');
     }
     window.confirm = () => true;
     window.alert = () => {};
@@ -1023,7 +1023,7 @@ test('sicurezza: utente sospeso viene disconnesso al caricamento di app.html', a
   expect(url).toMatch(/login|index/);
 
   // Verifica che la sessione sia stata rimossa
-  const sessionVal = await page.evaluate(() => window.sessionStorage.getItem('accredita360_session_v2'));
+  const sessionVal = await page.evaluate(() => window.sessionStorage.getItem('accredita360s_session_v2'));
   expect(sessionVal).toBeNull();
 });
 

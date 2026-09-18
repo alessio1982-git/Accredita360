@@ -1,5 +1,5 @@
 /**
- * Accredita360 — register.js v3
+ * Accredita360s — register.js v3
  * Controller per la pagina di registrazione (register.html)
  * Gestisce: validazione form, invio, schermata successo
  */

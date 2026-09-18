@@ -1,5 +1,5 @@
 /**
- * Accredita360 — login.js
+ * Accredita360s — login.js
  * Controller per la pagina di accesso (login.html)
  * Gestisce: selezione pannello, login, redirect basato sul ruolo
  */

@@ -1,0 +1,22 @@
+{
+  "owner": {
+    "title": "Dott.",
+    "fullName": "Alessio Arlotta",
+    "address": "Via S. Spirito, 26",
+    "cap": "98066",
+    "city": "Patti",
+    "province": "ME",
+    "country": "Italia",
+    "piva": "03246740835",
+    "cf": "RLTLSS82S20G377R",
+    "pec": "studio.arlotta@pec.it",
+    "role": "Proprietario Assoluto, Autore ed Esclusivo Titolare",
+    "platform": "Accredita360s"
+  },
+  "ip_registration": {
+    "trademark_name": "Accredita360s",
+    "nice_classes": [9, 42, 44],
+    "copyright_law": "L. 633/1941, D.Lgs. 518/1992 (SIAE)",
+    "trademark_law": "D.Lgs. 30/2005 (UIBM / MIMIT)"
+  }
+}

@@ -1,7 +1,7 @@
 {
-  "name": "accredita360-tests",
+  "name": "accredita360s-tests",
   "version": "1.0.0",
-  "description": "Suite di test E2E per Accredita360 (Ripristino v22.08.2026)",
+  "description": "Suite di test E2E per Accredita360s (Ripristino v22.08.2026)",
   "scripts": {
     "test": "npx playwright test",
     "test:headed": "npx playwright test --headed",

@@ -47,7 +47,7 @@ test.describe('FASE 6: Mantenimento nel Tempo, Scadenziario Verifiche Periodiche
           registration_status: 'active'
         }
       };
-      window.sessionStorage.setItem('accredita360_session_v2', JSON.stringify(session));
+      window.sessionStorage.setItem('accredita360s_session_v2', JSON.stringify(session));
       window.confirm = () => true;
       window.alert = (msg) => { window['__lastAlert'] = msg; };
       window.prompt = (msg, def) => 'OK';
@@ -242,7 +242,7 @@ test.describe('FASE 6: Mantenimento nel Tempo, Scadenziario Verifiche Periodiche
         }
       ];
 
-      localStorage.setItem(`accredita360_maintenance_${email}`, JSON.stringify(initialItems));
+      localStorage.setItem(`accredita360s_maintenance_${email}`, JSON.stringify(initialItems));
     });
   });
 

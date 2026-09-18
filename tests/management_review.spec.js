@@ -47,7 +47,7 @@ test.describe('FASE 5: Riesame della Direzione (§9.3 ISO 9001:2015), Obiettivi 
           registration_status: 'active'
         }
       };
-      window.sessionStorage.setItem('accredita360_session_v2', JSON.stringify(session));
+      window.sessionStorage.setItem('accredita360s_session_v2', JSON.stringify(session));
       window.confirm = () => true;
       window.alert = (msg) => { window['__lastAlert'] = msg; };
       window.prompt = (msg, def) => '98';
@@ -198,7 +198,7 @@ test.describe('FASE 5: Riesame della Direzione (§9.3 ISO 9001:2015), Obiettivi 
           updated_at: nowIso
         }
       ];
-      localStorage.setItem(`accredita360_reviews_${email}`, JSON.stringify(initialReviews));
+      localStorage.setItem(`accredita360s_reviews_${email}`, JSON.stringify(initialReviews));
 
       // Mock Obiettivi
       const initialObjs = [
@@ -213,7 +213,7 @@ test.describe('FASE 5: Riesame della Direzione (§9.3 ISO 9001:2015), Obiettivi 
           status: 'in_corso',
           target_date: `${currentYear}-11-30`,
           responsible: 'Direttore Sanitario',
-          resources_allocated: 'Consulenza Accredita360',
+          resources_allocated: 'Consulenza Accredita360s',
           user_email: email,
           updated_at: nowIso
         },
@@ -233,7 +233,7 @@ test.describe('FASE 5: Riesame della Direzione (§9.3 ISO 9001:2015), Obiettivi 
           updated_at: nowIso
         }
       ];
-      localStorage.setItem(`accredita360_objectives_${email}`, JSON.stringify(initialObjs));
+      localStorage.setItem(`accredita360s_objectives_${email}`, JSON.stringify(initialObjs));
 
       // Mock KPI
       const initialKpis = [
@@ -268,7 +268,7 @@ test.describe('FASE 5: Riesame della Direzione (§9.3 ISO 9001:2015), Obiettivi 
           updated_at: nowIso
         }
       ];
-      localStorage.setItem(`accredita360_kpis_${email}`, JSON.stringify(initialKpis));
+      localStorage.setItem(`accredita360s_kpis_${email}`, JSON.stringify(initialKpis));
     });
   });
 

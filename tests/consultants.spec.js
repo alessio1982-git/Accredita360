@@ -48,7 +48,7 @@ test.describe('FASE 8: Area Consulenti & Portale Revisore Sanitario Multi-Strutt
           registration_status: 'active'
         }
       };
-      window.sessionStorage.setItem('accredita360_session_v2', JSON.stringify(session));
+      window.sessionStorage.setItem('accredita360s_session_v2', JSON.stringify(session));
       window.confirm = () => true;
       window.alert = (msg) => { window['__lastAlert'] = msg; };
       window.prompt = (msg, def) => 'Prescrizione Test';
@@ -60,13 +60,13 @@ test.describe('FASE 8: Area Consulenti & Portale Revisore Sanitario Multi-Strutt
         { id: 'SPEC_OTA_01', req_id: 'SPEC_OTA_01', titolo: 'Protocolli Assistenziali OTA', norma: 'D.A. 20/2024', file: 'POS_Assistenza_Pazienti.pdf', stato: 'green', stato_esteso: 'conforme', percorso: 'ota', ai_score: 95, ai_scheda: 'MAMB-2.1-02-PROC' },
         { id: 'SPEC_OTA_02', req_id: 'SPEC_OTA_02', titolo: 'Manutenzione Elettromedicali CEI 62-5', norma: 'CEI 62-5', file: null, stato: 'red', stato_esteso: 'non_conforme', percorso: 'ota', ai_score: 40, ai_scheda: 'MAMB-3.4-MAN' }
       ];
-      window.localStorage.setItem(`accredita360_reqs_${struct1Email}`, JSON.stringify(mockReqs1));
+      window.localStorage.setItem(`accredita360s_reqs_${struct1Email}`, JSON.stringify(mockReqs1));
 
       const struct2Email = 'sanitas.palermo@accredita360s.com';
       const mockReqs2 = [
         { id: 'SPEC_RAD_01', req_id: 'SPEC_RAD_01', titolo: 'Nomina Esperto di Radioprotezione', norma: 'D.Lgs. 101/2020', file: 'Nomina_Esperto_2026.pdf', stato: 'yellow', stato_esteso: 'parziale', percorso: 'asp', ai_score: 75, ai_scheda: 'MAMB-4.1-RAD' }
       ];
-      window.localStorage.setItem(`accredita360_reqs_${struct2Email}`, JSON.stringify(mockReqs2));
+      window.localStorage.setItem(`accredita360s_reqs_${struct2Email}`, JSON.stringify(mockReqs2));
     });
 
     // Mock window.supabase con proxy, getter/setter e channel support

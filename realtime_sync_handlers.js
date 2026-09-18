@@ -1,5 +1,5 @@
 /**
- * ACCREDITA360 — Logica JavaScript di Sincronizzazione Realtime
+ * ACCREDITA360S — Logica JavaScript di Sincronizzazione Realtime
  * Integrazione per i 3 Pannelli (Utente, Consulente, Admin)
  */
 

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Accredita360 - SanitàReg Sicilia</title>
+    <title>Accredita360s - SanitàReg Sicilia</title>
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -19,7 +19,7 @@
         <nav class="sidebar">
             <div class="sidebar-header">
                 <div class="logo">
-                    <img src="logo.png" alt="Accredita360" style="height: 54px; border-radius: 8px; filter: drop-shadow(0 0 8px rgba(59,130,246,0.4));">
+                    <img src="logo.png" alt="Accredita360s" style="height: 54px; border-radius: 8px; filter: drop-shadow(0 0 8px rgba(59,130,246,0.4));">
                     <span>Accredita360s</span>
                 </div>
             </div>
@@ -95,14 +95,14 @@
                         <span class="user-email" style="font-size:11px; color:var(--text-muted); display:block;">—</span>
                     </div>
                     <div class="avatar" title="Profilo utente"><i class='bx bx-user'></i></div>
-                    <button class="btn btn-outline" style="padding: 6px 12px; font-size: 13px;" onclick="(function(){try{var K='accredita360_session_v2';sessionStorage.removeItem(K);localStorage.removeItem(K);}catch(e){}window.location.href='index.html';})()"><i class='bx bx-log-out'></i> Esci</button>
+                    <button class="btn btn-outline" style="padding: 6px 12px; font-size: 13px;" onclick="(function(){try{var K='accredita360s_session_v2';sessionStorage.removeItem(K);localStorage.removeItem(K);}catch(e){}window.location.href='index.html';})()"><i class='bx bx-log-out'></i> Esci</button>
                 </div>
             </header>
             <!-- Script inline: popola nome/email subito dalla sessione e garantisce scrolling universale -->
             <script>
                 (function() {
                     try {
-                        var KEY = 'accredita360_session_v2';
+                        var KEY = 'accredita360s_session_v2';
                         var raw = sessionStorage.getItem(KEY) || localStorage.getItem(KEY);
                         if (raw) {
                             var s = JSON.parse(raw);
@@ -150,7 +150,7 @@
                             <div>
                                 <h3 style="margin:0 0 6px 0; color:var(--warning); font-size:18px; font-weight:700;">In Attesa di Assegnazione</h3>
                                 <p style="margin:0; font-size:13px; color:var(--text-main); line-height:1.5;">
-                                    Grazie per esserti registrato su **Accredita360**. Il nostro team sta analizzando la tua anagrafica per assegnarti un **Consulente dedicato** che ti guiderà passo-passo nell'iter di accreditamento.
+                                    Grazie per esserti registrato su **Accredita360s**. Il nostro team sta analizzando la tua anagrafica per assegnarti un **Consulente dedicato** che ti guiderà passo-passo nell'iter di accreditamento.
                                 </p>
                                 <p style="margin:8px 0 0; font-size:12px; color:var(--text-muted);">
                                     Sarai abilitato alla compilazione dei requisiti non appena l'assegnazione sarà completata.
@@ -176,7 +176,7 @@
                             <div>
                                 <h3 style="margin:0 0 6px 0; color:var(--success); font-size:18px; font-weight:700;">Struttura Certificata con Successo!</h3>
                                 <p style="margin:0; font-size:13px; color:var(--text-main); line-height:1.5;">
-                                    Complimenti! La tua struttura ha ottenuto la **Certificazione Finale di Conformità Sanitaria** approvata dal consulente di Accredita360.
+                                    Complimenti! La tua struttura ha ottenuto la **Certificazione Finale di Conformità Sanitaria** approvata dal consulente di Accredita360s.
                                 </p>
                                 <div style="margin-top:6px; font-size:11px; color:var(--text-muted);" id="cert-success-protocol"></div>
                             </div>
@@ -435,7 +435,7 @@
                             <div style="margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 16px;">
                                 <h5 style="margin: 0 0 8px; color: var(--text-main); font-size: 14px;">Privacy e Trattamento Dati</h5>
                                 <p style="font-size: 12px; color: var(--text-muted); line-height: 1.5; margin: 0 0 10px;">
-                                    Ho preso visione dell'informativa sul trattamento dei dati personali ai sensi del Regolamento UE 2016/679 (GDPR). Acconsento al trattamento dei miei dati personali per le finalità connesse all'erogazione del servizio Accredita360 e alle attività di accreditamento e consulenza richieste. 
+                                    Ho preso visione dell'informativa sul trattamento dei dati personali ai sensi del Regolamento UE 2016/679 (GDPR). Acconsento al trattamento dei miei dati personali per le finalità connesse all'erogazione del servizio Accredita360s e alle attività di accreditamento e consulenza richieste. 
                                     <a href="#" onclick="app.showPrivacyPolicy(event)" style="color: var(--primary); text-decoration: underline; font-weight: 500;">Leggi l'informativa completa</a>
                                 </p>
                                 <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-main); cursor: pointer;">
@@ -448,7 +448,7 @@
                             <div style="margin-bottom: 10px;">
                                 <h5 style="margin: 0 0 8px; color: var(--text-main); font-size: 14px;">Termini e Condizioni di Servizio</h5>
                                 <p style="font-size: 12px; color: var(--text-muted); line-height: 1.5; margin: 0 0 10px;">
-                                    Con la presente, accetto i termini e le condizioni del contratto di licenza d'uso della piattaforma Accredita360. Mi impegno al pagamento della quota di abbonamento corrispondente al piano sottoscritto. Confermo di aver compreso che il servizio sarà attivo dalla conferma del pagamento e che la fatturazione avverrà secondo le modalità indicate. 
+                                    Con la presente, accetto i termini e le condizioni del contratto di licenza d'uso della piattaforma Accredita360s. Mi impegno al pagamento della quota di abbonamento corrispondente al piano sottoscritto. Confermo di aver compreso che il servizio sarà attivo dalla conferma del pagamento e che la fatturazione avverrà secondo le modalità indicate. 
                                     <a href="#" onclick="app.showTermsAndConditions(event)" style="color: var(--primary); text-decoration: underline; font-weight: 500;">Leggi il contratto di servizio</a>
                                 </p>
                                 <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-main); cursor: pointer;">
@@ -1099,7 +1099,7 @@
                                             <i class='bx bx-check' style="font-size:20px; color:#fff;"></i>
                                         </div>
                                         <div style="font-size:12px; font-weight:600; color:var(--success);">1. Accreditamento OTA</div>
-                                        <div style="font-size:11px; color:var(--text-muted); margin-top:2px;">Ottenuto tramite Accredita360</div>
+                                        <div style="font-size:11px; color:var(--text-muted); margin-top:2px;">Ottenuto tramite Accredita360s</div>
                                     </div>
                                     <div style="flex:1; text-align:center; position:relative; z-index:1;">
                                         <div style="width:44px; height:44px; border-radius:50%; background:rgba(245,158,11,0.2); border:2px dashed var(--warning); display:inline-flex; align-items:center; justify-content:center; margin-bottom:8px;">

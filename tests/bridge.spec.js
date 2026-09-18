@@ -37,7 +37,7 @@ test('E2E Real-time Bridge workflow between User and Consultant', async ({ brows
     {
       id: 'user_consulente_test',
       email: 'consulente@demo.it',
-      name: 'Supervisor Accredita360',
+      name: 'Supervisor Accredita360s',
       role: 'consulente',
       registration_status: 'active',
       created_at: new Date().toISOString()
@@ -308,12 +308,12 @@ test('E2E Real-time Bridge workflow between User and Consultant', async ({ brows
       user: {
         id: 'user_consulente_test',
         email: 'consulente@demo.it',
-        name: 'Supervisor Accredita360',
+        name: 'Supervisor Accredita360s',
         role: 'consulente',
         registration_status: 'active'
       }
     };
-    window.sessionStorage.setItem('accredita360_session_v2', JSON.stringify(session));
+    window.sessionStorage.setItem('accredita360s_session_v2', JSON.stringify(session));
   });
 
   // Setup dei mock per le Edge Functions

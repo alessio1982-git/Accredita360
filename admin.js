@@ -1,5 +1,5 @@
 /**
- * Accredita360 — admin.js
+ * Accredita360s — admin.js
  * Controller per il pannello amministratore (admin.html)
  * Estratto da app.js — contiene solo la logica admin/consulente
  */
@@ -656,7 +656,7 @@ const admin = {
             const certHtml = `
             <div style="border: 15px double #10b981; padding: 40px; text-align: center; font-family: 'Outfit', 'Arial', sans-serif; color: #1e293b; background: #fff; width: 680px; margin: 0 auto; box-sizing: border-box;">
                 <div style="margin-bottom: 20px;">
-                    <h2 style="margin: 0; color: #10b981; letter-spacing: 2px; font-size: 26px; font-weight: 800;">ACCREDITA360</h2>
+                    <h2 style="margin: 0; color: #10b981; letter-spacing: 2px; font-size: 26px; font-weight: 800;">ACCREDITA360S</h2>
                     <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 2px; color: #64748b; margin-top: 4px;">Organismo Tecnico Indipendente di Conformità</div>
                 </div>
                 <hr style="border: 0; border-top: 2px solid #10b981; width: 80px; margin: 20px auto;">
@@ -681,7 +681,7 @@ const admin = {
                             <i class='bx bx-badge-check'></i> Approvato con Firma Digitale
                         </div>
                         <br>
-                        <strong>Firmato da:</strong> Supervisor Accredita360
+                        <strong>Firmato da:</strong> Supervisor Accredita360s
                     </div>
                 </div>
             </div>`;

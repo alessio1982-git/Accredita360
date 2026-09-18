@@ -47,7 +47,7 @@ test.describe('Verifica Aggiornamenti Legislativi 2026', () => {
           registration_status: 'active'
         }
       };
-      window.sessionStorage.setItem('accredita360_session_v2', JSON.stringify(session));
+      window.sessionStorage.setItem('accredita360s_session_v2', JSON.stringify(session));
       window.confirm = () => true;
       window.alert = () => {};
       // default mock type

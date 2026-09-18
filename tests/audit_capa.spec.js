@@ -47,7 +47,7 @@ test.describe('FASE 3: Modulo Audit Interni, Pre-Audit OTA & Gestione Non Confor
           registration_status: 'active'
         }
       };
-      window.sessionStorage.setItem('accredita360_session_v2', JSON.stringify(session));
+      window.sessionStorage.setItem('accredita360s_session_v2', JSON.stringify(session));
       window.confirm = () => true;
       window.alert = (msg) => { window['__lastAlert'] = msg; };
       window['__mockStructureType'] = 'poliambulatorio';

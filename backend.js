@@ -1,5 +1,5 @@
 /**
- * Accredita360 - Backend Data Layer v2.0
+ * Accredita360s - Backend Data Layer v2.0
  * Modulo collegato a Supabase per la persistenza reale dei dati in cloud.
  * 
  * Architettura:
@@ -82,7 +82,7 @@ if (!supabase) {
     setTimeout(() => clearInterval(interval), 10000);
 }
 
-const SESSION_KEY = 'accredita360_session_v2';
+const SESSION_KEY = 'accredita360s_session_v2';
 
 const Backend = {
 
@@ -106,7 +106,7 @@ const Backend = {
     // INIZIALIZZAZIONE
     // =========================================================
     async init() {
-        console.log('%c[Accredita360] Supabase Backend v2.0 inizializzato.', 'color:#3b82f6;font-weight:bold;');
+        console.log('%c[Accredita360s] Supabase Backend v2.0 inizializzato.', 'color:#3b82f6;font-weight:bold;');
         console.log(`%c  → Progetto: ${SUPABASE_URL}`, 'color:#64748b;');
     },
 
@@ -1461,7 +1461,7 @@ const Backend = {
             if (user.role === 'user') {
                 // Notifica all'admin/consulente
                 await this.createNotification({
-                    targetEmail: 'admin@accredita360.it',
+                    targetEmail: 'admin@accredita360s.it',
                     title: `Nuovo messaggio su ${requirementId}`,
                     message: `${user.name || user.email}: "${message.trim().substring(0, 60)}..."`,
                     type: 'comment'
@@ -1597,7 +1597,7 @@ const Backend = {
     // ============================================================
 
     _dmsLocalKey(email) {
-        return `accredita360_dms_${email || 'guest'}`;
+        return `accredita360s_dms_${email || 'guest'}`;
     },
 
     _generateDefaultDmsDocuments(userEmail, structureType) {
@@ -1993,11 +1993,11 @@ const Backend = {
     // FASE 3: AUDIT INTERNI & GESTIONE NON CONFORMITÀ / CAPA
     // ============================================================
     _auditLocalKey(email) {
-        return `accredita360_audits_${(email || '').toLowerCase().trim()}`;
+        return `accredita360s_audits_${(email || '').toLowerCase().trim()}`;
     },
 
     _capaLocalKey(email) {
-        return `accredita360_capas_${(email || '').toLowerCase().trim()}`;
+        return `accredita360s_capas_${(email || '').toLowerCase().trim()}`;
     },
 
     _generateDefaultAudits(email) {
@@ -2032,7 +2032,7 @@ const Backend = {
                 type: 'AUD_INT',
                 status: 'pianificato',
                 scope: 'Direzione & Strategia, Processi di Supporto e Gestione Documentale',
-                lead_auditor: 'Consulente Incaricato Accredita360',
+                lead_auditor: 'Consulente Incaricato Accredita360s',
                 audit_team: 'Responsabile Qualità (RGQ)',
                 scheduled_date: new Date(Date.now() + 15 * 86400000).toISOString().slice(0, 10),
                 completed_date: null,
@@ -2258,11 +2258,11 @@ const Backend = {
     // ============================================================
 
     _riskLocalKey(userEmail) {
-        return `accredita360_risks_v1_${(userEmail || 'default').toLowerCase()}`;
+        return `accredita360s_risks_v1_${(userEmail || 'default').toLowerCase()}`;
     },
 
     _incidentLocalKey(userEmail) {
-        return `accredita360_incidents_v1_${(userEmail || 'default').toLowerCase()}`;
+        return `accredita360s_incidents_v1_${(userEmail || 'default').toLowerCase()}`;
     },
 
     _generateDefaultRisks(userEmail) {
@@ -2521,7 +2521,7 @@ const Backend = {
     // FASE 5: RIESAME DELLA DIREZIONE (§9.3 ISO 9001:2015)
     // ============================================================
     _reviewLocalKey(userEmail) {
-        return `accredita360_reviews_${(userEmail || '').toLowerCase().trim()}`;
+        return `accredita360s_reviews_${(userEmail || '').toLowerCase().trim()}`;
     },
 
     _generateDefaultManagementReviews(userEmail) {
@@ -2646,7 +2646,7 @@ const Backend = {
     // FASE 5: OBIETTIVI DELLA QUALITÀ (§6.2 ISO 9001:2015)
     // ============================================================
     _objLocalKey(userEmail) {
-        return `accredita360_objectives_${(userEmail || '').toLowerCase().trim()}`;
+        return `accredita360s_objectives_${(userEmail || '').toLowerCase().trim()}`;
     },
 
     _generateDefaultObjectives(userEmail) {
@@ -2744,7 +2744,7 @@ const Backend = {
     // FASE 5: CRUSCOTTO KPI SANITARI & MONITORAGGIO PRESTAZIONI (§9.1)
     // ============================================================
     _kpiLocalKey(userEmail) {
-        return `accredita360_kpis_${(userEmail || '').toLowerCase().trim()}`;
+        return `accredita360s_kpis_${(userEmail || '').toLowerCase().trim()}`;
     },
 
     _generateDefaultKpis(userEmail) {
@@ -2854,7 +2854,7 @@ const Backend = {
     // FASE 6: MANTENIMENTO NEL TEMPO, SCADENZIARIO & ATTREZZATURE (CEI 62-5 / §7.1.3 & §7.1.5)
     // ============================================================
     _maintenanceLocalKey(userEmail) {
-        return `accredita360_maintenance_${(userEmail || '').toLowerCase().trim()}`;
+        return `accredita360s_maintenance_${(userEmail || '').toLowerCase().trim()}`;
     },
 
     _generateDefaultMaintenanceItems(userEmail) {
@@ -3043,7 +3043,7 @@ const Backend = {
     // FASE 7: ITER DI ACCREDITAMENTO ISTITUZIONALE OTA & DOSSIER ISTANZA (D.A. 20/2024 & D.A. 741/2023)
     // ============================================================
     _iterLocalKey(userEmail) {
-        return `accredita360_iter_${(userEmail || '').toLowerCase().trim()}`;
+        return `accredita360s_iter_${(userEmail || '').toLowerCase().trim()}`;
     },
 
     _generateDefaultIterData(userEmail) {
@@ -3272,7 +3272,7 @@ const Backend = {
     // ============================================================
 
     _consultantLogKey(consultantEmail) {
-        return `accredita360_consultant_log_${(consultantEmail || 'default').toLowerCase().trim()}`;
+        return `accredita360s_consultant_log_${(consultantEmail || 'default').toLowerCase().trim()}`;
     },
 
     async getAssignedStructuresForConsultant(consultantEmail) {
@@ -3348,7 +3348,7 @@ const Backend = {
             // Recupera i requisiti per ciascuna struttura
             let reqs = [];
             const structEmail = (struct.email || struct.user_email || '').toLowerCase();
-            const keyReqs = `accredita360_reqs_${structEmail}`;
+            const keyReqs = `accredita360s_reqs_${structEmail}`;
             try {
                 const raw = localStorage.getItem(keyReqs);
                 if (raw) reqs = JSON.parse(raw);
@@ -3449,7 +3449,7 @@ const Backend = {
         };
 
         const targetEmail = (userEmail || '').toLowerCase().trim();
-        const keyReqs = `accredita360_reqs_${targetEmail}`;
+        const keyReqs = `accredita360s_reqs_${targetEmail}`;
         const nowIso = new Date().toISOString();
 
         // 1. Aggiorna stato requisito in localStorage e/o Supabase
@@ -3584,7 +3584,7 @@ const Backend = {
     // FASE 9: BIBLIOTECA POS SANITARIE, BUILDER & CENTRO NORMATIVO OTA
     // ============================================================
     _posCustomKey(userEmail) {
-        return `accredita360_pos_custom_${(userEmail || '').toLowerCase().trim()}`;
+        return `accredita360s_pos_custom_${(userEmail || '').toLowerCase().trim()}`;
     },
 
     async getPosLibrary(categoryKey = 'all', searchQuery = '') {
