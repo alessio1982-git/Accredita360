@@ -10,6 +10,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&family=Playfair+Display:wght@700;800;900&display=swap" rel="stylesheet">
     <!-- Boxicons -->
     <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+    <!-- QRCode JS for 2FA Google Authenticator -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
         :root {
             /* Design System Ufficiale Accredita 360S */
@@ -896,6 +898,35 @@
         #login-role-consulente.active {
             color: #059669;
         }
+        #login-role-admin.active {
+            color: #7c3aed;
+            box-shadow: 0 3px 10px rgba(124, 58, 237, 0.15);
+        }
+
+        .modal-otp-inputs {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin: 18px 0 24px;
+        }
+        .modal-otp-digit {
+            width: 46px;
+            height: 56px;
+            text-align: center;
+            font-size: 24px;
+            font-weight: 800;
+            border: 2px solid #cbd5e1;
+            border-radius: 12px;
+            background: #f8fafc;
+            color: #0c2340;
+            outline: none;
+            transition: all 0.2s;
+        }
+        .modal-otp-digit:focus {
+            border-color: var(--teal-primary);
+            background: #ffffff;
+            box-shadow: 0 0 0 3.5px rgba(0, 107, 94, 0.15);
+        }
 
         .error-box-login {
             display: none;
@@ -1568,58 +1599,121 @@
         </div>
     </div>
 
-    <!-- MODAL 2: LOGIN RAPIDO CON ACCESSO AL PANNELLO INTERNO -->
+    <!-- MODAL 2: LOGIN RAPIDO CON ACCESSO AL PANNELLO INTERNO & 2FA AUTHENTICATOR -->
     <div id="login-modal" class="modal-overlay">
-        <div class="modal-box" style="max-width: 480px;">
+        <div class="modal-box" style="max-width: 490px;">
             <button class="modal-close-icon" onclick="closeLoginModal()">&times;</button>
-            <h3 class="modal-title">Accedi alla Piattaforma</h3>
-            <p class="modal-subtitle">Inserisci le tue credenziali per accedere all'area riservata.</p>
             
-            <!-- Selector Utente / Consulente -->
-            <div class="login-role-selector">
-                <button type="button" id="login-role-utente" class="role-pill active" onclick="setLoginRole('utente')">
-                    <i class='bx bx-user'></i> Utente
-                </button>
-                <button type="button" id="login-role-consulente" class="role-pill" onclick="setLoginRole('consulente')">
-                    <i class='bx bx-briefcase'></i> Consulente
-                </button>
+            <!-- STEP 1: CREDENZIALI & SELEZIONE PROFILO -->
+            <div id="modal-login-step-credentials">
+                <h3 class="modal-title">Accedi alla Piattaforma</h3>
+                <p class="modal-subtitle">Seleziona il tuo profilo per accedere all'area riservata.</p>
+                
+                <!-- Selector 3 Ruoli: Utente / Consulente / Admin -->
+                <div class="login-role-selector">
+                    <button type="button" id="login-role-utente" class="role-pill active" onclick="setLoginRole('utente')">
+                        <i class='bx bx-user'></i> Utente
+                    </button>
+                    <button type="button" id="login-role-consulente" class="role-pill" onclick="setLoginRole('consulente')">
+                        <i class='bx bx-briefcase'></i> Consulente
+                    </button>
+                    <button type="button" id="login-role-admin" class="role-pill" onclick="setLoginRole('admin')">
+                        <i class='bx bx-shield-quarter'></i> Admin
+                    </button>
+                </div>
+
+                <!-- Error Box -->
+                <div id="modal-login-error" class="error-box-login">
+                    <i class='bx bx-error-circle' style="font-size: 18px; flex-shrink: 0;"></i>
+                    <span id="modal-login-error-text">Credenziali non valide.</span>
+                </div>
+
+                <form id="modal-login-form" onsubmit="handleLoginSubmit(event)">
+                    <div class="form-group-std">
+                        <label for="l-email" id="l-email-label">Email Istituzionale</label>
+                        <input type="email" id="l-email" required placeholder="struttura@esempio.it">
+                    </div>
+                    <div class="form-group-std" style="margin-bottom: 8px;">
+                        <label for="l-pwd">Password</label>
+                        <input type="password" id="l-pwd" required placeholder="Inserisci la password">
+                    </div>
+                    <div style="text-align: right; margin-bottom: 20px;">
+                        <a href="forgot-password.html" style="font-size: 12.5px; color: #64748b; text-decoration: none; font-weight: 600;">
+                            Hai dimenticato la password?
+                        </a>
+                    </div>
+                    <button type="submit" id="modal-login-submit-btn" class="btn-hero-start" style="width: 100%; justify-content: center; border-radius: 12px;">
+                        <span id="modal-login-btn-text" style="display: inline-flex; align-items: center; gap: 8px;">
+                            <i class='bx bx-log-in'></i> Accedi
+                        </span>
+                        <span id="modal-login-btn-loading" style="display: none; align-items: center; gap: 8px;">
+                            <i class='bx bx-loader-alt spin'></i> Verifica credenziali...
+                        </span>
+                    </button>
+                </form>
+                
+                <div class="modal-divider">oppure</div>
+
+                <div style="text-align: center; font-size: 13.5px; color: #64748b;">
+                    Non hai ancora un account?
+                    <a href="javascript:void(0)" onclick="closeLoginModal(); setTimeout(openRegisterModal, 200);" style="color: #006b5e; font-weight: 700; text-decoration: none;">Inizia ora</a>
+                </div>
             </div>
 
-            <!-- Error Box -->
-            <div id="modal-login-error" class="error-box-login">
-                <i class='bx bx-error-circle' style="font-size: 18px; flex-shrink: 0;"></i>
-                <span id="modal-login-error-text">Credenziali non valide.</span>
-            </div>
+            <!-- STEP 2: VERIFICA 2FA GOOGLE AUTHENTICATOR (TOTP) -->
+            <div id="modal-login-step-otp" style="display: none;">
+                <div style="text-align: center; margin-bottom: 18px;">
+                    <div style="width: 54px; height: 54px; border-radius: 16px; background: rgba(0, 107, 94, 0.12); color: var(--teal-primary); display: inline-flex; align-items: center; justify-content: center; font-size: 28px; margin-bottom: 10px;">
+                        <i class='bx bx-shield-quarter'></i>
+                    </div>
+                    <h3 class="modal-title" style="font-size: 22px;">Verifica in 2 Passaggi</h3>
+                    <p id="modal-otp-subtitle" class="modal-subtitle" style="margin-bottom: 8px;">Inserisci il codice di sicurezza</p>
+                </div>
 
-            <form id="modal-login-form" onsubmit="handleLoginSubmit(event)">
-                <div class="form-group-std">
-                    <label for="l-email">Email Istituzionale</label>
-                    <input type="email" id="l-email" required placeholder="struttura@esempio.it">
+                <!-- Error Box OTP -->
+                <div id="modal-otp-error" class="error-box-login">
+                    <i class='bx bx-error-circle' style="font-size: 18px; flex-shrink: 0;"></i>
+                    <span id="modal-otp-error-text">Codice OTP non valido.</span>
                 </div>
-                <div class="form-group-std" style="margin-bottom: 8px;">
-                    <label for="l-pwd">Password</label>
-                    <input type="password" id="l-pwd" required placeholder="Inserisci la password">
+
+                <!-- Setup 2FA TOTP (QR Code Google Authenticator) se primo accesso -->
+                <div id="modal-totp-setup-container" style="display: none; text-align: center; margin: 10px 0 16px;">
+                    <p style="font-size: 13px; color: #475569; margin-bottom: 10px; line-height: 1.5;">
+                        Scansiona questo QR Code con <strong>Google Authenticator</strong> o altra app TOTP:
+                    </p>
+                    <div style="background: #ffffff; padding: 10px; border-radius: 14px; display: inline-block; border: 1.5px solid #e2e8f0; margin-bottom: 8px; box-shadow: 0 4px 14px rgba(0,0,0,0.05);">
+                        <div id="modal-totp-qr" style="width: 160px; height: 160px; display: flex; align-items: center; justify-content: center; margin: 0 auto;"></div>
+                    </div>
+                    <div style="font-size: 12px; color: #64748b;">
+                        Chiave segreta in chiaro:<br>
+                        <strong id="modal-totp-secret-key" style="font-family: monospace; font-size: 13.5px; color: var(--teal-primary); letter-spacing: 1px;"></strong>
+                    </div>
                 </div>
-                <div style="text-align: right; margin-bottom: 20px;">
-                    <a href="forgot-password.html" style="font-size: 12.5px; color: #64748b; text-decoration: none; font-weight: 600;">
-                        Hai dimenticato la password?
+
+                <!-- 6 Caselle OTP -->
+                <div class="modal-otp-inputs">
+                    <input class="modal-otp-digit" maxlength="1" inputmode="numeric" pattern="[0-9]">
+                    <input class="modal-otp-digit" maxlength="1" inputmode="numeric" pattern="[0-9]">
+                    <input class="modal-otp-digit" maxlength="1" inputmode="numeric" pattern="[0-9]">
+                    <input class="modal-otp-digit" maxlength="1" inputmode="numeric" pattern="[0-9]">
+                    <input class="modal-otp-digit" maxlength="1" inputmode="numeric" pattern="[0-9]">
+                    <input class="modal-otp-digit" maxlength="1" inputmode="numeric" pattern="[0-9]">
+                </div>
+
+                <button type="button" id="modal-otp-submit-btn" class="btn-hero-start" style="width: 100%; justify-content: center; border-radius: 12px;" onclick="handleVerifyOtpSubmit()">
+                    <span id="modal-otp-btn-text" style="display: inline-flex; align-items: center; gap: 8px;">
+                        <i class='bx bx-check-shield'></i> Verifica Codice
+                    </span>
+                    <span id="modal-otp-btn-loading" style="display: none; align-items: center; gap: 8px;">
+                        <i class='bx bx-loader-alt spin'></i> Verifica in corso...
+                    </span>
+                </button>
+
+                <div style="text-align: center; margin-top: 16px; font-size: 13px;">
+                    <a href="javascript:void(0)" onclick="backToLoginCredentials()" style="color: #64748b; text-decoration: none; font-weight: 600;">
+                        ← Torna al login
                     </a>
                 </div>
-                <button type="submit" id="modal-login-submit-btn" class="btn-hero-start" style="width: 100%; justify-content: center; border-radius: 12px;">
-                    <span id="modal-login-btn-text" style="display: inline-flex; align-items: center; gap: 8px;">
-                        <i class='bx bx-log-in'></i> Accedi al Pannello
-                    </span>
-                    <span id="modal-login-btn-loading" style="display: none; align-items: center; gap: 8px;">
-                        <i class='bx bx-loader-alt spin'></i> Accesso in corso...
-                    </span>
-                </button>
-            </form>
-            
-            <div class="modal-divider">oppure</div>
-
-            <div style="text-align: center; font-size: 14px; color: #64748b;">
-                Non hai ancora un account?
-                <a href="javascript:void(0)" onclick="closeLoginModal(); setTimeout(openRegisterModal, 200);" style="color: #006b5e; font-weight: 700; text-decoration: none;">Inizia ora</a>
             </div>
         </div>
     </div>
@@ -1680,7 +1774,7 @@
         </div>
     </div>
 
-    <!-- SUPABASE CLIENT & SCRIPT INTERATTIVI -->
+    <!-- SUPABASE CLIENT & SCRIPT INTERATTIVI CON 2FA AUTHENTICATOR -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
         const SUPABASE_URL = 'https://kvthfnkgfbxtjgkqpbwj.supabase.co';
@@ -1688,6 +1782,7 @@
         const supaClient = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
 
         let currentLoginRole = 'utente';
+        let pendingLoginEmail = null;
 
         // 1. Apertura e Chiusura Modal Registrazione ("Inizia ora")
         function openRegisterModal() {
@@ -1704,7 +1799,7 @@
         function openLoginModal() {
             document.getElementById('login-modal').classList.add('active');
             document.body.style.overflow = 'hidden';
-            hideLoginError();
+            backToLoginCredentials();
         }
 
         function closeLoginModal() {
@@ -1716,16 +1811,22 @@
             currentLoginRole = role;
             const btnUtente = document.getElementById('login-role-utente');
             const btnConsulente = document.getElementById('login-role-consulente');
+            const btnAdmin = document.getElementById('login-role-admin');
             const emailInput = document.getElementById('l-email');
 
+            if (btnUtente) btnUtente.classList.remove('active');
+            if (btnConsulente) btnConsulente.classList.remove('active');
+            if (btnAdmin) btnAdmin.classList.remove('active');
+
             if (role === 'utente') {
-                btnUtente.classList.add('active');
-                btnConsulente.classList.remove('active');
-                emailInput.placeholder = "struttura@esempio.it";
-            } else {
-                btnConsulente.classList.add('active');
-                btnUtente.classList.remove('active');
-                emailInput.placeholder = "admin@accredita360s.com";
+                if (btnUtente) btnUtente.classList.add('active');
+                if (emailInput) emailInput.placeholder = "struttura@esempio.it";
+            } else if (role === 'consulente') {
+                if (btnConsulente) btnConsulente.classList.add('active');
+                if (emailInput) emailInput.placeholder = "consulente@accredita360s.com";
+            } else if (role === 'admin') {
+                if (btnAdmin) btnAdmin.classList.add('active');
+                if (emailInput) emailInput.placeholder = "admin@accredita360s.com";
             }
         }
 
@@ -1741,6 +1842,18 @@
             if (errorBox) errorBox.style.display = 'none';
         }
 
+        function showOtpError(msg) {
+            const errorBox = document.getElementById('modal-otp-error');
+            const errorText = document.getElementById('modal-otp-error-text');
+            if (errorText) errorText.textContent = msg;
+            if (errorBox) errorBox.style.display = 'flex';
+        }
+
+        function hideOtpError() {
+            const errorBox = document.getElementById('modal-otp-error');
+            if (errorBox) errorBox.style.display = 'none';
+        }
+
         function setLoginLoading(loading) {
             const btn = document.getElementById('modal-login-submit-btn');
             const txt = document.getElementById('modal-login-btn-text');
@@ -1750,7 +1863,16 @@
             if (ldg) ldg.style.display = loading ? 'inline-flex' : 'none';
         }
 
-        // 3. Esecuzione Login e Reindirizzamento al Pannello Interno
+        function setOtpLoading(loading) {
+            const btn = document.getElementById('modal-otp-submit-btn');
+            const txt = document.getElementById('modal-otp-btn-text');
+            const ldg = document.getElementById('modal-otp-btn-loading');
+            if (btn) btn.disabled = loading;
+            if (txt) txt.style.display = loading ? 'none' : 'inline-flex';
+            if (ldg) ldg.style.display = loading ? 'inline-flex' : 'none';
+        }
+
+        // 3. Esecuzione Login (Step 1: Credenziali con Edge Function login)
         async function handleLoginSubmit(e) {
             e.preventDefault();
             const email = document.getElementById('l-email').value.trim();
@@ -1765,56 +1887,204 @@
             hideLoginError();
 
             try {
-                if (!supaClient) throw new Error('Supabase client non inizializzato');
-
                 const emailClean = email.toLowerCase().trim();
-                const { data: users, error } = await supaClient
-                    .from('users')
-                    .select('id,email,name,role,registration_status')
-                    .eq('email', emailClean)
-                    .eq('password', pwd);
+                const res = await fetch(`${SUPABASE_URL}/functions/v1/login`, {
+                    method: 'POST',
+                    headers: {
+                        'apikey': SUPABASE_KEY,
+                        'Authorization': 'Bearer ' + SUPABASE_KEY,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email: emailClean, password: pwd, target_role: currentLoginRole })
+                });
 
-                if (error) throw error;
+                const data = await res.json();
 
-                if (!users || users.length === 0) {
+                if (!data.success) {
                     setLoginLoading(false);
-                    showLoginError('Email o password non corretti. Verifica le credenziali e riprova.');
+                    showLoginError(data.message || 'Email o password non corretti.');
                     return;
                 }
 
-                const user = users[0];
+                pendingLoginEmail = data.email || emailClean;
 
-                // Controllo stato approvazione registrazione
-                if (user.registration_status === 'pending') {
+                // Setup 2FA TOTP (Google Authenticator)
+                if (data.requires_totp_setup) {
                     setLoginLoading(false);
-                    showLoginError('Il tuo account è in attesa di approvazione. Riceverai un\'email quando sarà attivo.');
-                    return;
-                }
-                if (user.registration_status === 'rejected') {
-                    setLoginLoading(false);
-                    showLoginError('Il tuo account non è stato approvato. Contatta info@accredita360s.com.');
+                    showModalOtpStep(data.email || emailClean, true, data.secret);
                     return;
                 }
 
-                // Salva sessione in formato compatibile per il pannello interno
-                const SESSION_KEY = 'accredita360s_session_v2';
-                sessionStorage.setItem(SESSION_KEY, JSON.stringify(user));
-                localStorage.setItem(SESSION_KEY, JSON.stringify(user));
-
-                // Reindirizza al pannello interno corrispondente
-                if (user.role === 'admin') {
-                    window.location.href = 'admin.html';
-                } else if (user.role === 'consulente') {
-                    window.location.href = 'consulente.html';
-                } else {
-                    window.location.href = 'app.html';
+                // Verifica 2FA TOTP standard
+                if (data.requires_totp) {
+                    setLoginLoading(false);
+                    showModalOtpStep(data.email || emailClean, false);
+                    return;
                 }
+
+                // Accesso diretto se 2FA non richiesta
+                saveSessionAndRedirect(data);
 
             } catch (err) {
                 setLoginLoading(false);
                 console.error('[Login Modal Error]', err);
                 showLoginError('Errore di connessione. Riprova.');
             }
+        }
+
+        // Mostra lo Step 2: Verifica 2FA Google Authenticator
+        function showModalOtpStep(email, isSetup = false, secret = '') {
+            document.getElementById('modal-login-step-credentials').style.display = 'none';
+            document.getElementById('modal-login-step-otp').style.display = 'block';
+            hideOtpError();
+
+            const setupContainer = document.getElementById('modal-totp-setup-container');
+            const subtitle = document.getElementById('modal-otp-subtitle');
+
+            if (isSetup && secret) {
+                setupContainer.style.display = 'block';
+                subtitle.textContent = "Configura Google Authenticator e inserisci il codice";
+
+                const otpAuthUrl = `otpauth://totp/Accredita360s:${email}?secret=${secret}&issuer=Accredita360s`;
+                const qrContainer = document.getElementById('modal-totp-qr');
+                qrContainer.innerHTML = '';
+
+                if (typeof QRCode !== 'undefined') {
+                    try {
+                        new QRCode(qrContainer, {
+                            text: otpAuthUrl,
+                            width: 160,
+                            height: 160,
+                            colorDark : "#0c2340",
+                            colorLight : "#ffffff",
+                            correctLevel : QRCode.CorrectLevel.M
+                        });
+                    } catch (e) {
+                        const img = document.createElement('img');
+                        img.src = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(otpAuthUrl)}`;
+                        img.style.width = "160px";
+                        img.style.height = "160px";
+                        qrContainer.appendChild(img);
+                    }
+                } else {
+                    const img = document.createElement('img');
+                    img.src = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(otpAuthUrl)}`;
+                    img.style.width = "160px";
+                    img.style.height = "160px";
+                    qrContainer.appendChild(img);
+                }
+                document.getElementById('modal-totp-secret-key').textContent = secret;
+            } else {
+                setupContainer.style.display = 'none';
+                subtitle.textContent = "Inserisci il codice a 6 cifre generato dall'app Google Authenticator";
+            }
+
+            const digits = document.querySelectorAll('.modal-otp-digit');
+            digits.forEach(d => d.value = '');
+            setTimeout(() => {
+                if (digits[0]) digits[0].focus();
+            }, 150);
+        }
+
+        // Verifica Codice OTP 2FA
+        async function handleVerifyOtpSubmit() {
+            const digits = document.querySelectorAll('.modal-otp-digit');
+            const otp = [...digits].map(d => d.value).join('');
+
+            if (otp.length < 6) {
+                showOtpError('Inserisci tutte le 6 cifre del codice di sicurezza.');
+                return;
+            }
+
+            setOtpLoading(true);
+            hideOtpError();
+
+            try {
+                const res = await fetch(`${SUPABASE_URL}/functions/v1/verify-otp`, {
+                    method: 'POST',
+                    headers: {
+                        'apikey': SUPABASE_KEY,
+                        'Authorization': 'Bearer ' + SUPABASE_KEY,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email: pendingLoginEmail, otp })
+                });
+
+                const data = await res.json();
+
+                if (!data.success) {
+                    setOtpLoading(false);
+                    digits.forEach(d => d.value = '');
+                    if (digits[0]) digits[0].focus();
+                    showOtpError(data.message || 'Codice OTP non valido o scaduto.');
+                    return;
+                }
+
+                saveSessionAndRedirect(data);
+
+            } catch (err) {
+                setOtpLoading(false);
+                console.error('[Verify OTP Error]', err);
+                showOtpError('Errore durante la verifica del codice. Riprova.');
+            }
+        }
+
+        function backToLoginCredentials() {
+            document.getElementById('modal-login-step-otp').style.display = 'none';
+            document.getElementById('modal-login-step-credentials').style.display = 'block';
+            hideLoginError();
+            hideOtpError();
+        }
+
+        function saveSessionAndRedirect(user) {
+            const SESSION_KEY = 'accredita360s_session_v2';
+            const SESSION_TTL = 8 * 60 * 60 * 1000; // 8 ore in ms
+
+            const sessionData = {
+                expiresAt: Date.now() + SESSION_TTL,
+                createdAt: new Date().toISOString(),
+                user: {
+                    id:                  user.id,
+                    email:               user.email,
+                    name:                user.name,
+                    role:                user.role,
+                    registration_status: user.registration_status
+                }
+            };
+
+            sessionStorage.setItem(SESSION_KEY, JSON.stringify(sessionData));
+            localStorage.setItem(SESSION_KEY, JSON.stringify(sessionData));
+
+            // Reindirizza al pannello interno corrispondente
+            if (user.role === 'admin') {
+                window.location.href = 'admin.html';
+            } else if (user.role === 'consulente') {
+                window.location.href = 'consulente.html';
+            } else {
+                window.location.href = 'app.html';
+            }
+        }
+
+        // Inizializza navigazione caselle OTP
+        function initModalOtpInputs() {
+            const digits = document.querySelectorAll('.modal-otp-digit');
+            digits.forEach((inp, i) => {
+                inp.addEventListener('input', () => {
+                    inp.value = inp.value.replace(/\D/g, '').slice(-1);
+                    if (inp.value && i < digits.length - 1) {
+                        digits[i + 1].focus();
+                    }
+                    const code = [...digits].map(d => d.value).join('');
+                    if (code.length === 6) {
+                        handleVerifyOtpSubmit();
+                    }
+                });
+                inp.addEventListener('keydown', (e) => {
+                    if (e.key === 'Backspace' && !inp.value && i > 0) {
+                        digits[i - 1].focus();
+                    }
+                });
+            });
         }
 
         // 4. Apertura e Chiusura Modal Contatto
@@ -1889,6 +2159,10 @@
                 closeVideoModal();
             }
         };
+
+        document.addEventListener('DOMContentLoaded', () => {
+            initModalOtpInputs();
+        });
     </script>
 </body>
 </html>
