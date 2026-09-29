@@ -197,6 +197,7 @@
             display: inline-flex;
             align-items: center;
             gap: 6px;
+            cursor: pointer;
         }
         .btn-nav-login:hover {
             border-color: var(--teal-primary);
@@ -807,6 +808,7 @@
             height: 100vh;
             background: rgba(12, 35, 64, 0.65);
             backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
             z-index: 3000;
             display: flex;
             align-items: center;
@@ -821,7 +823,7 @@
         }
         .modal-box {
             width: 90%;
-            max-width: 560px;
+            max-width: 540px;
             background: #ffffff;
             border-radius: 24px;
             padding: 36px;
@@ -843,6 +845,7 @@
             color: #64748b;
             cursor: pointer;
             line-height: 1;
+            transition: color 0.2s;
         }
         .modal-close-icon:hover {
             color: var(--teal-primary);
@@ -857,6 +860,70 @@
             font-size: 14px;
             color: #64748b;
             margin-bottom: 24px;
+        }
+
+        /* Login Role Selector Pills */
+        .login-role-selector {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px;
+            background: #f1f5f9;
+            padding: 4px;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+        }
+        .role-pill {
+            flex: 1;
+            padding: 10px;
+            border-radius: 8px;
+            border: none;
+            font-size: 13.5px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            background: transparent;
+            color: #64748b;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+        .role-pill.active {
+            background: #ffffff;
+            color: var(--teal-primary);
+            box-shadow: 0 3px 10px rgba(0, 107, 94, 0.15);
+        }
+        #login-role-consulente.active {
+            color: #059669;
+        }
+
+        .error-box-login {
+            display: none;
+            align-items: center;
+            gap: 10px;
+            background: rgba(239, 68, 68, 0.08);
+            border: 1px solid rgba(239, 68, 68, 0.25);
+            border-radius: 10px;
+            padding: 10px 14px;
+            font-size: 13px;
+            color: #dc2626;
+            margin-bottom: 16px;
+            text-align: left;
+        }
+
+        .modal-divider {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin: 20px 0;
+            color: #94a3b8;
+            font-size: 13px;
+        }
+        .modal-divider::before, .modal-divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: #e2e8f0;
         }
 
         .form-row-2 {
@@ -890,6 +957,14 @@
             outline: none;
             border-color: #006b5e;
             box-shadow: 0 0 0 3.5px rgba(0, 107, 94, 0.15);
+        }
+
+        .spin {
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
         }
 
         /* 12. Site Footer */
@@ -1051,9 +1126,9 @@
 
             <!-- Header Actions: Login & Inizia Ora -->
             <div class="navbar-actions">
-                <a href="login.html" class="btn-nav-login">
+                <button class="btn-nav-login" onclick="openLoginModal()">
                     <i class='bx bx-log-in'></i> Login
-                </a>
+                </button>
                 <button class="btn-nav-start" onclick="openRegisterModal()">
                     <i class='bx bx-user-plus'></i> Inizia ora
                 </button>
@@ -1339,8 +1414,8 @@
                     <li><i class='bx bx-check'></i> Check-list e Gap Analysis digitali</li>
                     <li><i class='bx bx-check'></i> Helpdesk tecnico via ticket</li>
                 </ul>
-                <button class="btn-nav-login" style="width: 100%; justify-content: center;" onclick="openContactModal()">
-                    Richiedi Demo
+                <button class="btn-nav-login" style="width: 100%; justify-content: center;" onclick="openRegisterModal()">
+                    Inizia con SaaS
                 </button>
             </div>
 
@@ -1465,14 +1540,14 @@
         <div class="modal-box" style="text-align: center;">
             <button class="modal-close-icon" onclick="closeRegisterModal()">&times;</button>
             <h3 class="modal-title" style="margin-bottom: 8px;">Come vuoi registrarti?</h3>
-            <p class="modal-subtitle">Scegli il tuo profilo per iniziare il processo di registrazione sulla piattaforma.</p>
+            <p class="modal-subtitle">Scegli il tuo profilo per iniziare il percorso su Accredita 360S.</p>
             
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 20px;">
                 <a href="register.html?type=utente" style="text-decoration: none;">
                     <div style="background: rgba(0, 107, 94, 0.05); border: 1.5px solid rgba(0, 107, 94, 0.2); border-radius: 16px; padding: 24px; transition: all 0.3s; cursor: pointer;" onmouseover="this.style.background='rgba(0, 107, 94, 0.1)'; this.style.transform='translateY(-3px)'" onmouseout="this.style.background='rgba(0, 107, 94, 0.05)'; this.style.transform='translateY(0)'">
                         <i class='bx bx-user' style="font-size: 48px; color: #006b5e; margin-bottom: 12px; display: block;"></i>
                         <h4 style="font-size: 18px; color: #0c2340; margin-bottom: 8px; font-weight: 800;">Utente</h4>
-                        <p style="font-size: 13px; color: #64748b; line-height: 1.4;">Struttura Sanitaria. Invia i tuoi dati per la verifica e ottieni l'accesso.</p>
+                        <p style="font-size: 13px; color: #64748b; line-height: 1.4;">Struttura Sanitaria. Invia i tuoi dati per la verifica e accedi al pannello interno.</p>
                     </div>
                 </a>
                 <a href="register.html?type=consulente" style="text-decoration: none;">
@@ -1483,10 +1558,73 @@
                     </div>
                 </a>
             </div>
+
+            <div class="modal-divider">oppure</div>
+
+            <div style="font-size: 14px; color: #64748b;">
+                Hai già un account registrato?
+                <a href="javascript:void(0)" onclick="closeRegisterModal(); setTimeout(openLoginModal, 200);" style="color: #006b5e; font-weight: 700; text-decoration: none;">Accedi qui</a>
+            </div>
         </div>
     </div>
 
-    <!-- MODAL 2: CONTATTO DIRETTO (PARLA CON UN CONSULENTE) -->
+    <!-- MODAL 2: LOGIN RAPIDO CON ACCESSO AL PANNELLO INTERNO -->
+    <div id="login-modal" class="modal-overlay">
+        <div class="modal-box" style="max-width: 480px;">
+            <button class="modal-close-icon" onclick="closeLoginModal()">&times;</button>
+            <h3 class="modal-title">Accedi alla Piattaforma</h3>
+            <p class="modal-subtitle">Inserisci le tue credenziali per accedere all'area riservata.</p>
+            
+            <!-- Selector Utente / Consulente -->
+            <div class="login-role-selector">
+                <button type="button" id="login-role-utente" class="role-pill active" onclick="setLoginRole('utente')">
+                    <i class='bx bx-user'></i> Utente
+                </button>
+                <button type="button" id="login-role-consulente" class="role-pill" onclick="setLoginRole('consulente')">
+                    <i class='bx bx-briefcase'></i> Consulente
+                </button>
+            </div>
+
+            <!-- Error Box -->
+            <div id="modal-login-error" class="error-box-login">
+                <i class='bx bx-error-circle' style="font-size: 18px; flex-shrink: 0;"></i>
+                <span id="modal-login-error-text">Credenziali non valide.</span>
+            </div>
+
+            <form id="modal-login-form" onsubmit="handleLoginSubmit(event)">
+                <div class="form-group-std">
+                    <label for="l-email">Email Istituzionale</label>
+                    <input type="email" id="l-email" required placeholder="struttura@esempio.it">
+                </div>
+                <div class="form-group-std" style="margin-bottom: 8px;">
+                    <label for="l-pwd">Password</label>
+                    <input type="password" id="l-pwd" required placeholder="Inserisci la password">
+                </div>
+                <div style="text-align: right; margin-bottom: 20px;">
+                    <a href="forgot-password.html" style="font-size: 12.5px; color: #64748b; text-decoration: none; font-weight: 600;">
+                        Hai dimenticato la password?
+                    </a>
+                </div>
+                <button type="submit" id="modal-login-submit-btn" class="btn-hero-start" style="width: 100%; justify-content: center; border-radius: 12px;">
+                    <span id="modal-login-btn-text" style="display: inline-flex; align-items: center; gap: 8px;">
+                        <i class='bx bx-log-in'></i> Accedi al Pannello
+                    </span>
+                    <span id="modal-login-btn-loading" style="display: none; align-items: center; gap: 8px;">
+                        <i class='bx bx-loader-alt spin'></i> Accesso in corso...
+                    </span>
+                </button>
+            </form>
+            
+            <div class="modal-divider">oppure</div>
+
+            <div style="text-align: center; font-size: 14px; color: #64748b;">
+                Non hai ancora un account?
+                <a href="javascript:void(0)" onclick="closeLoginModal(); setTimeout(openRegisterModal, 200);" style="color: #006b5e; font-weight: 700; text-decoration: none;">Inizia ora</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 3: CONTATTO DIRETTO (PARLA CON UN CONSULENTE) -->
     <div id="contact-modal" class="modal-overlay">
         <div class="modal-box">
             <button class="modal-close-icon" onclick="closeContactModal()">&times;</button>
@@ -1531,7 +1669,7 @@
         </div>
     </div>
 
-    <!-- MODAL 3: VIDEO PLAYER -->
+    <!-- MODAL 4: VIDEO PLAYER -->
     <div id="video-modal" class="modal-overlay">
         <div class="modal-box" style="max-width: 900px; padding: 0; background: #000; overflow: hidden;">
             <button class="modal-close-icon" onclick="closeVideoModal()" style="color: #ffffff; z-index: 10; top: 14px; right: 18px;">&times;</button>
@@ -1547,8 +1685,11 @@
     <script>
         const SUPABASE_URL = 'https://kvthfnkgfbxtjgkqpbwj.supabase.co';
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt2dGhmbmtnZmJ4dGpna3FwYndqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NzkxNDQsImV4cCI6MjA5NDQ1NTE0NH0._2UzfUZqy7P7W_9S8xpFWcz0K_pAykl4D8sdXghvbLM';
-        const supabase = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
+        const supaClient = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
 
+        let currentLoginRole = 'utente';
+
+        // 1. Apertura e Chiusura Modal Registrazione ("Inizia ora")
         function openRegisterModal() {
             document.getElementById('register-modal').classList.add('active');
             document.body.style.overflow = 'hidden';
@@ -1559,6 +1700,124 @@
             document.body.style.overflow = '';
         }
 
+        // 2. Apertura e Chiusura Modal Login
+        function openLoginModal() {
+            document.getElementById('login-modal').classList.add('active');
+            document.body.style.overflow = 'hidden';
+            hideLoginError();
+        }
+
+        function closeLoginModal() {
+            document.getElementById('login-modal').classList.remove('active');
+            document.body.style.overflow = '';
+        }
+
+        function setLoginRole(role) {
+            currentLoginRole = role;
+            const btnUtente = document.getElementById('login-role-utente');
+            const btnConsulente = document.getElementById('login-role-consulente');
+            const emailInput = document.getElementById('l-email');
+
+            if (role === 'utente') {
+                btnUtente.classList.add('active');
+                btnConsulente.classList.remove('active');
+                emailInput.placeholder = "struttura@esempio.it";
+            } else {
+                btnConsulente.classList.add('active');
+                btnUtente.classList.remove('active');
+                emailInput.placeholder = "admin@accredita360s.com";
+            }
+        }
+
+        function showLoginError(msg) {
+            const errorBox = document.getElementById('modal-login-error');
+            const errorText = document.getElementById('modal-login-error-text');
+            if (errorText) errorText.textContent = msg;
+            if (errorBox) errorBox.style.display = 'flex';
+        }
+
+        function hideLoginError() {
+            const errorBox = document.getElementById('modal-login-error');
+            if (errorBox) errorBox.style.display = 'none';
+        }
+
+        function setLoginLoading(loading) {
+            const btn = document.getElementById('modal-login-submit-btn');
+            const txt = document.getElementById('modal-login-btn-text');
+            const ldg = document.getElementById('modal-login-btn-loading');
+            if (btn) btn.disabled = loading;
+            if (txt) txt.style.display = loading ? 'none' : 'inline-flex';
+            if (ldg) ldg.style.display = loading ? 'inline-flex' : 'none';
+        }
+
+        // 3. Esecuzione Login e Reindirizzamento al Pannello Interno
+        async function handleLoginSubmit(e) {
+            e.preventDefault();
+            const email = document.getElementById('l-email').value.trim();
+            const pwd = document.getElementById('l-pwd').value;
+
+            if (!email || !pwd) {
+                showLoginError('Inserisci email e password per continuare.');
+                return;
+            }
+
+            setLoginLoading(true);
+            hideLoginError();
+
+            try {
+                if (!supaClient) throw new Error('Supabase client non inizializzato');
+
+                const emailClean = email.toLowerCase().trim();
+                const { data: users, error } = await supaClient
+                    .from('users')
+                    .select('id,email,name,role,registration_status')
+                    .eq('email', emailClean)
+                    .eq('password', pwd);
+
+                if (error) throw error;
+
+                if (!users || users.length === 0) {
+                    setLoginLoading(false);
+                    showLoginError('Email o password non corretti. Verifica le credenziali e riprova.');
+                    return;
+                }
+
+                const user = users[0];
+
+                // Controllo stato approvazione registrazione
+                if (user.registration_status === 'pending') {
+                    setLoginLoading(false);
+                    showLoginError('Il tuo account è in attesa di approvazione. Riceverai un\'email quando sarà attivo.');
+                    return;
+                }
+                if (user.registration_status === 'rejected') {
+                    setLoginLoading(false);
+                    showLoginError('Il tuo account non è stato approvato. Contatta info@accredita360s.com.');
+                    return;
+                }
+
+                // Salva sessione in formato compatibile per il pannello interno
+                const SESSION_KEY = 'accredita360s_session_v2';
+                sessionStorage.setItem(SESSION_KEY, JSON.stringify(user));
+                localStorage.setItem(SESSION_KEY, JSON.stringify(user));
+
+                // Reindirizza al pannello interno corrispondente
+                if (user.role === 'admin') {
+                    window.location.href = 'admin.html';
+                } else if (user.role === 'consulente') {
+                    window.location.href = 'consulente.html';
+                } else {
+                    window.location.href = 'app.html';
+                }
+
+            } catch (err) {
+                setLoginLoading(false);
+                console.error('[Login Modal Error]', err);
+                showLoginError('Errore di connessione. Riprova.');
+            }
+        }
+
+        // 4. Apertura e Chiusura Modal Contatto
         function openContactModal() {
             document.getElementById('contact-modal').classList.add('active');
             document.body.style.overflow = 'hidden';
@@ -1574,6 +1833,7 @@
             }, 300);
         }
 
+        // 5. Apertura e Chiusura Video Player
         function openVideoModal() {
             const modal = document.getElementById('video-modal');
             const video = document.getElementById('demoVideoPlayer');
@@ -1593,6 +1853,7 @@
             if (video) video.pause();
         }
 
+        // 6. Invio Form di Contatto con Supabase
         async function handleContactSubmit(e) {
             e.preventDefault();
             const nome = document.getElementById('c-nome').value.trim();
@@ -1604,13 +1865,13 @@
             document.getElementById('contact-form').style.display = 'none';
             document.getElementById('contact-success').style.display = 'block';
 
-            if (supabase) {
+            if (supaClient) {
                 try {
-                    await supabase.from('contact_requests').insert([{
+                    await supaClient.from('contact_requests').insert([{
                         nome, cognome, email, telefono: tel, messaggio,
                         created_at: new Date().toISOString()
                     }]);
-                    await supabase.functions.invoke('send-contact-email', {
+                    await supaClient.functions.invoke('send-contact-email', {
                         body: { nome, cognome, email, telefono: tel, messaggio }
                     });
                 } catch(err) {
@@ -1619,10 +1880,11 @@
             }
         }
 
-        // Close modal on background click
+        // Chiusura al click sullo sfondo oscurato
         window.onclick = function(event) {
             if (event.target.classList.contains('modal-overlay')) {
                 closeRegisterModal();
+                closeLoginModal();
                 closeContactModal();
                 closeVideoModal();
             }
