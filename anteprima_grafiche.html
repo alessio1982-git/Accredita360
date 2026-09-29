@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Accredita360 - Showcase Grafiche & Proposte UI Sanità</title>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0b132b;
+      --card-bg: rgba(255, 255, 255, 0.05);
+      --border: rgba(255, 255, 255, 0.12);
+      --accent-cyan: #06b6d4;
+      --accent-emerald: #10b981;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+
+    body {
+      background: radial-gradient(circle at 50% 0%, #172554 0%, #0b132b 70%, #020617 100%);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 40px 24px;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 48px;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 16px;
+      background: rgba(6, 182, 212, 0.15);
+      border: 1px solid rgba(6, 182, 212, 0.4);
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--accent-cyan);
+      margin-bottom: 16px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    h1 {
+      font-size: 40px;
+      font-weight: 800;
+      line-height: 1.2;
+      margin-bottom: 16px;
+      background: linear-gradient(135deg, #ffffff 30%, #93c5fd 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    p.subtitle {
+      font-size: 18px;
+      color: var(--text-muted);
+      max-width: 750px;
+      margin: 0 auto;
+      line-height: 1.6;
+    }
+
+    .nav-tabs {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      margin: 36px 0 48px;
+      flex-wrap: wrap;
+    }
+
+    .tab-btn {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 12px 24px;
+      border-radius: 12px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .tab-btn:hover {
+      background: rgba(255, 255, 255, 0.12);
+      border-color: rgba(255, 255, 255, 0.3);
+      transform: translateY(-2px);
+    }
+
+    .tab-btn.active {
+      background: linear-gradient(135deg, #0284c7 0%, #0d9488 100%);
+      border-color: rgba(6, 182, 212, 0.8);
+      box-shadow: 0 0 20px rgba(6, 182, 212, 0.35);
+    }
+
+    .grid-view {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(600px, 1fr));
+      gap: 32px;
+    }
+
+    @media (max-width: 768px) {
+      .grid-view {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .proposal-card {
+      background: var(--card-bg);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      overflow: hidden;
+      transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .proposal-card:hover {
+      border-color: rgba(6, 182, 212, 0.5);
+      box-shadow: 0 16px 40px -10px rgba(0, 0, 0, 0.6), 0 0 20px rgba(6, 182, 212, 0.15);
+      transform: translateY(-4px);
+    }
+
+    .img-wrapper {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 16/9;
+      background: #000;
+      overflow: hidden;
+      cursor: pointer;
+    }
+
+    .img-wrapper img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .proposal-card:hover .img-wrapper img {
+      transform: scale(1.03);
+    }
+
+    .img-tag {
+      position: absolute;
+      top: 16px;
+      left: 16px;
+      background: rgba(11, 19, 43, 0.85);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      padding: 6px 14px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 700;
+      color: #38bdf8;
+      z-index: 2;
+    }
+
+    .card-body {
+      padding: 24px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .card-title {
+      font-size: 22px;
+      font-weight: 700;
+      margin-bottom: 10px;
+      color: #fff;
+    }
+
+    .card-desc {
+      font-size: 15px;
+      color: var(--text-muted);
+      line-height: 1.6;
+      margin-bottom: 20px;
+    }
+
+    .features-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 24px;
+    }
+
+    .features-list li {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 14px;
+      color: #e2e8f0;
+    }
+
+    .features-list li svg {
+      width: 18px;
+      height: 18px;
+      color: var(--accent-emerald);
+      flex-shrink: 0;
+    }
+
+    .card-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      padding-top: 18px;
+      margin-top: auto;
+    }
+
+    .target-badge {
+      font-size: 13px;
+      color: #38bdf8;
+      background: rgba(56, 189, 248, 0.1);
+      padding: 4px 12px;
+      border-radius: 6px;
+      font-weight: 500;
+    }
+
+    .btn-view {
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: #fff;
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+
+    .btn-view:hover {
+      background: #fff;
+      color: #0b132b;
+    }
+
+    /* Modal for HD preview */
+    .modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.9);
+      backdrop-filter: blur(12px);
+      z-index: 100;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .modal.open {
+      display: flex;
+    }
+
+    .modal img {
+      max-width: 95vw;
+      max-height: 90vh;
+      border-radius: 12px;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .close-modal {
+      position: absolute;
+      top: 24px;
+      right: 24px;
+      background: rgba(255, 255, 255, 0.2);
+      color: #fff;
+      border: none;
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      font-size: 24px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s;
+    }
+
+    .close-modal:hover {
+      background: rgba(255, 255, 255, 0.4);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <header>
+      <div class="badge">✦ Design Exploration Lab</div>
+      <h1>Proposte Grafiche Ambito Sanitario & OTA</h1>
+      <p class="subtitle">Confronto visivo delle direzioni artistiche per l'interfaccia e la landing page di Accredita360: dal MedTech high-tech alla chiarezza clinica istituzionale.</p>
+
+      <div class="nav-tabs">
+        <button class="tab-btn active" onclick="filterCategory('all', this)">Tutte le Proposte (4)</button>
+        <button class="tab-btn" onclick="filterCategory('dark', this)">1. Dark MedTech Glassmorphism</button>
+        <button class="tab-btn" onclick="filterCategory('swiss', this)">2. Clean Swiss Medical</button>
+        <button class="tab-btn" onclick="filterCategory('split', this)">3. B2B Split Isometric 3D</button>
+        <button class="tab-btn" onclick="filterCategory('human', this)">4. Human & Corporate Medical</button>
+      </div>
+    </header>
+
+    <div class="grid-view" id="galleryGrid">
+
+      <!-- CARD 1 -->
+      <div class="proposal-card" data-cat="dark">
+        <div class="img-wrapper" onclick="openModal('grafica_1_dark.jpg')">
+          <span class="img-tag">OPZIONE 1</span>
+          <img src="grafica_1_dark.jpg" alt="MedTech Dark Glassmorphism">
+        </div>
+        <div class="card-body">
+          <h3 class="card-title">MedTech Dark Glassmorphism</h3>
+          <p class="card-desc">Sfondo profondo navy con bagliori ciano ed emeraldo, cruscotto olografico 3D con KPI di accreditamento OTA in tempo reale e sigilli di conformità.</p>
+          <ul class="features-list">
+            <li>
+              <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+              Cruscotto olografico con indicatore conformità circolare (98%)
+            </li>
+            <li>
+              <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+              Look ultra-tecnologico per software sanitario di ultima generazione
+            </li>
+            <li>
+              <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+              Grafici di trend temporale e badge ministeriali integrati
+            </li>
+          </ul>
+          <div class="card-footer">
+            <span class="target-badge">Target: Grandi Poli Ospedalieri & Tech Clinic</span>
+            <button class="btn-view" onclick="openModal('grafica_1_dark.jpg')">Ingrandisci HD 🔍</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- CARD 2 -->
+      <div class="proposal-card" data-cat="swiss">
+        <div class="img-wrapper" onclick="openModal('grafica_2_swiss.jpg')">
+          <span class="img-tag">OPZIONE 2</span>
+          <img src="grafica_2_swiss.jpg" alt="Clean Swiss Medical">
+        </div>
+        <div class="card-body">
+          <h3 class="card-title">Clean Swiss Medical</h3>
+          <p class="card-desc">Design minimale in light mode, bianco clinico purissimo con sfumature azzurro ghiaccio e accenti petrolio/teal per massima chiarezza e rigore.</p>
+          <ul class="features-list">
+            <li>
+              <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+              Badge "Digital Certification" e sigillo di conformità in primo piano
+            </li>
+            <li>
+              <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+              Barra di avanzamento accreditamento (100% Fully Compliant)
+            </li>
+            <li>
+              <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+              Checklist di audit e KPI di gestione clinica strutturati
+            </li>
+          </ul>
+          <div class="card-footer">
+            <span class="target-badge">Target: Laboratori, Strutture SSN & Poliambulatori</span>
+            <button class="btn-view" onclick="openModal('grafica_2_swiss.jpg')">Ingrandisci HD 🔍</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- CARD 3 -->
+      <div class="proposal-card" data-cat="split">
+        <div class="img-wrapper" onclick="openModal('grafica_3_isometric.jpg')">
+          <span class="img-tag">OPZIONE 3</span>
+          <img src="grafica_3_isometric.jpg" alt="B2B Split Isometric 3D">
+        </div>
+        <div class="card-body">
+          <h3 class="card-title">B2B Split Layout con Glass Cards 3D</h3>
+          <p class="card-desc">Layout asimmetrico moderno: a sinistra proposta di valore immediata con vantaggi chiave e CTA verde smeraldo; a destra tablet con schede 3D fluttuanti in vetro.</p>
+          <ul class="features-list">
+            <li>
+              <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+              Schede 3D sospese: Indice di Rischio (88%), Requisiti Strutturali (100%)
+            </li>
+            <li>
+              <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+              Credentialing Medici (95%) e Misuratore di Audit Readiness (92%)
+            </li>
+            <li>
+              <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+              Struttura orientata alla massima conversione per Direttori Sanitari
+            </li>
+          </ul>
+          <div class="card-footer">
+            <span class="target-badge">Target: Consulenti, Direttori Sanitari & B2B SaaS</span>
+            <button class="btn-view" onclick="openModal('grafica_3_isometric.jpg')">Ingrandisci HD 🔍</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- CARD 4 -->
+      <div class="proposal-card" data-cat="human">
+        <div class="img-wrapper" onclick="openModal('grafica_4_human.jpg')">
+          <span class="img-tag">OPZIONE 4</span>
+          <img src="grafica_4_human.jpg" alt="Human-Centric & Corporate Medical">
+        </div>
+        <div class="card-body">
+          <h3 class="card-title">Human-Centric & Corporate Medical</h3>
+          <p class="card-desc">Unione armoniosa tra il fattore umano medico e l'efficienza digitale di Accredita360, con una Direttrice Sanitaria e contatori di fiducia istituzionali.</p>
+          <ul class="features-list">
+            <li>
+              <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+              Contatori in evidenza: 100% Normativa OTA, Zero Non-Conformità
+            </li>
+            <li>
+              <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+              Tablet interattivo in mano al professionista con icone fluttuanti
+            </li>
+            <li>
+              <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+              Grande rassicurazione ed empatia verso il management clinico
+            </li>
+          </ul>
+          <div class="card-footer">
+            <span class="target-badge">Target: Cliniche Private, RSA & Case di Cura</span>
+            <button class="btn-view" onclick="openModal('grafica_4_human.jpg')">Ingrandisci HD 🔍</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Modal -->
+  <div class="modal" id="imageModal" onclick="closeModal()">
+    <button class="close-modal" onclick="closeModal()">✕</button>
+    <img id="modalImg" src="" alt="HD Preview" onclick="event.stopPropagation()">
+  </div>
+
+  <script>
+    function filterCategory(cat, btn) {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      if (btn) btn.classList.add('active');
+
+      const cards = document.querySelectorAll('.proposal-card');
+      cards.forEach(card => {
+        if (cat === 'all' || card.dataset.cat === cat) {
+          card.style.display = 'flex';
+        } else {
+          card.style.display = 'none';
+        }
+      });
+    }
+
+    function openModal(src) {
+      document.getElementById('modalImg').src = src;
+      document.getElementById('imageModal').classList.add('open');
+    }
+
+    function closeModal() {
+      document.getElementById('imageModal').classList.remove('open');
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeModal();
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,64 @@
+const fs = require('fs');
+const path = require('path');
+
+// Generate the SVG for the new Accredita 360S logo based on the user's attachment
+const logoSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 540 120" width="540" height="120" fill="none">
+  <defs>
+    <linearGradient id="tealGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#008080" />
+      <stop offset="50%" stop-color="#006666" />
+      <stop offset="100%" stop-color="#004d4d" />
+    </linearGradient>
+    <linearGradient id="crossGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#26a69a" />
+      <stop offset="100%" stop-color="#00897b" />
+    </linearGradient>
+    <filter id="subtleGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="3" stdDeviation="4" flood-color="#004d4d" flood-opacity="0.25"/>
+    </filter>
+  </defs>
+
+  <!-- Stylized Emblem A with Medical Cross -->
+  <g transform="translate(10, 10)" filter="url(#subtleGlow)">
+    <!-- Outer 'A' geometry -->
+    <path d="M 50 5 
+             L 92 90 
+             L 70 90 
+             L 58 66 
+             L 42 66 
+             L 30 90 
+             L 8 90 
+             Z" 
+          fill="url(#tealGrad)" />
+    
+    <!-- Central triangular cutout -->
+    <polygon points="50,26 62,54 38,54" fill="#ffffff" />
+    
+    <!-- Medical Plus Symbol inside cutout / overlapping -->
+    <g transform="translate(50, 40)">
+      <rect x="-4.5" y="-12" width="9" height="24" rx="2" fill="#00897b" />
+      <rect x="-12" y="-4.5" width="24" height="9" rx="2" fill="#00897b" />
+      <circle cx="0" cy="0" r="2.5" fill="#ffffff" />
+    </g>
+    
+    <!-- Modern tech accent dot -->
+    <circle cx="50" cy="8" r="4" fill="#26a69a" />
+  </g>
+
+  <!-- Typography: Accredita 360S -->
+  <g transform="translate(125, 20)">
+    <!-- Main text -->
+    <text x="0" y="48" font-family="'Plus Jakarta Sans', 'Inter', 'Outfit', sans-serif" font-size="46" font-weight="800" fill="#0c2340" letter-spacing="-0.8">
+      Accredita <tspan fill="#006b5e" font-weight="900">360S</tspan>
+    </text>
+    
+    <!-- Subtitle / Tagline -->
+    <text x="3" y="76" font-family="'Plus Jakarta Sans', 'Inter', sans-serif" font-size="12" font-weight="800" fill="#007a78" letter-spacing="4.5">
+      PIATTAFORMA MEDICA +
+    </text>
+  </g>
+</svg>`;
+
+const outputPath = path.resolve(__dirname, 'logo_accredita360s_nuovo.svg');
+fs.writeFileSync(outputPath, logoSvg, 'utf8');
+console.log('Logo SVG creato con successo in:', outputPath);

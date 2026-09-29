@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Accredita 360S - L'Ecosistema Intelligente per l'Accreditamento Sanitario</title>
-    <!-- Modern Google Typography -->
+    <!-- Fonts Google Moderni -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&family=Playfair+Display:wght@700;800;900&display=swap" rel="stylesheet">
@@ -12,7 +12,7 @@
     <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
     <style>
         :root {
-            /* Design System Ufficiale Accredita 360S */
+            /* Design System Accredita 360S */
             --teal-primary: #006b5e;
             --teal-dark: #004d43;
             --teal-light: #0d9488;
@@ -61,11 +61,56 @@
             letter-spacing: -0.02em;
         }
 
+        /* Top Sticky Banner di Anteprima */
+        .preview-sticky-header {
+            background: linear-gradient(90deg, #0c2340 0%, #004d43 100%);
+            color: #ffffff;
+            padding: 9px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 13px;
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+            z-index: 2100;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+        }
+        .preview-badge-status {
+            background: #10b981;
+            color: #032328;
+            font-size: 11px;
+            font-weight: 800;
+            padding: 3px 10px;
+            border-radius: 20px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-right: 10px;
+        }
+        .btn-confirm-apply {
+            background: #10b981;
+            color: #032328;
+            border: none;
+            padding: 6px 16px;
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .btn-confirm-apply:hover {
+            background: #34d399;
+            transform: translateY(-1px);
+        }
+
         /* 1. Header & Menu di Navigazione in Frosted Glass */
         header.site-navbar {
             position: sticky;
-            top: 0;
-            background: rgba(255, 255, 255, 0.94);
+            top: 39px;
+            background: rgba(255, 255, 255, 0.92);
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
             border-bottom: 1px solid rgba(226, 232, 240, 0.85);
@@ -178,7 +223,7 @@
             color: var(--teal-light);
         }
 
-        /* Header CTA Actions: Login & Inizia Ora */
+        /* Header CTA Actions: Login & Inizia ora */
         .navbar-actions {
             display: flex;
             align-items: center;
@@ -372,7 +417,7 @@
             margin-top: 2px;
         }
 
-        /* Right Hero Visual con Dr.ssa Laura Rossi e Badge Flottanti */
+        /* Right Hero Visual */
         .hero-right-visual {
             position: relative;
             display: flex;
@@ -992,10 +1037,23 @@
 </head>
 <body>
 
+    <!-- PREVIEW TOP BAR -->
+    <div class="preview-sticky-header">
+        <div style="display: flex; align-items: center;">
+            <span class="preview-badge-status">Anteprima Attiva</span>
+            <span>Nuova Grafica Ufficiale <strong>Accredita 360S</strong> con Menu e Contenuti Integrali</span>
+        </div>
+        <div>
+            <button class="btn-confirm-apply" onclick="alert('Conferma pure nella chat di Antigravity per applicare questa versione su index.html!')">
+                <i class='bx bx-check-circle'></i> Applica ad index.html
+            </button>
+        </div>
+    </div>
+
     <!-- 1. HEADER & MENU DI NAVIGAZIONE IN FROSTED GLASS -->
     <header class="site-navbar">
         <div class="navbar-inner">
-            <!-- Nuovo Logo Ufficiale Accredita 360S -->
+            <!-- Nuovo Logo Accredita 360S -->
             <a href="index.html" class="brand-logo-link">
                 <img src="logo_accredita360s_2026.png" alt="Accredita 360S - Piattaforma Medica +" class="brand-logo-img">
             </a>
