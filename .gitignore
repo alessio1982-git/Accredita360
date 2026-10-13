@@ -31,4 +31,7 @@ desktop.ini
 # Playwright
 playwright-report/
 test-results/
+*_verified_*.png
+*_test_*.png
+qr_mobile_test.png
 

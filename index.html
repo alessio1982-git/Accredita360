@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Accredita 360S - L'Ecosistema Intelligente per l'Accreditamento Sanitario</title>
+    <title>Accredita 360S™ - L'Ecosistema Intelligente per l'Accreditamento Sanitario</title>
     <!-- Modern Google Typography -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -12,6 +12,8 @@
     <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
     <!-- QRCode JS for 2FA Google Authenticator -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <!-- Foglio di Stile Mobile Dedicato (Zero impatto su Desktop >= 992px) -->
+    <link rel="stylesheet" href="mobile.css">
     <style>
         :root {
             /* Design System Ufficiale Accredita 360S */
@@ -1101,9 +1103,9 @@
     <!-- 1. HEADER & MENU DI NAVIGAZIONE IN FROSTED GLASS -->
     <header class="site-navbar">
         <div class="navbar-inner">
-            <!-- Nuovo Logo Ufficiale Accredita 360S -->
+            <!-- Nuovo Logo Ufficiale Accredita 360S™ -->
             <a href="index.html" class="brand-logo-link">
-                <img src="logo_accredita360s_2026.png" alt="Accredita 360S - Piattaforma Medica +" class="brand-logo-img">
+                <img src="logo_accredita360s_2026.png" alt="Accredita 360S™ - Piattaforma Medica +" class="brand-logo-img">
             </a>
 
             <!-- Menu con Dropdown Interattivi con Contenuti Esistenti -->
@@ -1163,9 +1165,100 @@
                 <button class="btn-nav-start" onclick="openRegisterModal()">
                     <i class='bx bx-user-plus'></i> Inizia ora
                 </button>
+                <!-- Hamburger Button per Mobile/Tablet (nascosto su Desktop) -->
+                <button class="mobile-menu-toggle" id="mobileMenuToggle" onclick="toggleMobileMenu()" aria-label="Menu Mobile">
+                    <span class="hamburger-bar"></span>
+                    <span class="hamburger-bar"></span>
+                    <span class="hamburger-bar"></span>
+                </button>
             </div>
         </div>
     </header>
+
+    <!-- Mobile Navigation Drawer & Overlay (Attivi solo su Mobile/Tablet <= 991px) -->
+    <div class="mobile-nav-overlay" id="mobileNavOverlay" onclick="closeMobileMenu()"></div>
+    <aside class="mobile-nav-drawer" id="mobileNavDrawer" aria-label="Menu di Navigazione Mobile">
+        <div class="mobile-drawer-header">
+            <a href="index.html" class="mobile-drawer-logo" onclick="closeMobileMenu()">
+                <img src="logo_accredita360s_2026.png" alt="Accredita 360S™ Logo">
+            </a>
+            <button class="mobile-drawer-close" onclick="closeMobileMenu()" aria-label="Chiudi Menu">
+                <i class='bx bx-x'></i>
+            </button>
+        </div>
+        <div class="mobile-drawer-body">
+            <nav class="mobile-drawer-nav">
+                <!-- Chi Siamo Accordion -->
+                <div class="mobile-nav-group">
+                    <button class="mobile-nav-heading" onclick="toggleMobileSubmenu(this)">
+                        <span><i class='bx bx-buildings'></i> Chi Siamo</span>
+                        <i class='bx bx-chevron-down chevron-icon'></i>
+                    </button>
+                    <div class="mobile-submenu">
+                        <a href="#chi-siamo" onclick="closeMobileMenu()"><i class='bx bx-building'></i> La Nostra Storia & Mission</a>
+                        <a href="#chi-siamo" onclick="closeMobileMenu()"><i class='bx bx-group'></i> Team Multidisciplinare Integrato</a>
+                        <a href="#chi-siamo" onclick="closeMobileMenu()"><i class='bx bx-award'></i> Partnership Direzioni Sanitarie</a>
+                    </div>
+                </div>
+
+                <!-- Il Metodo Accordion -->
+                <div class="mobile-nav-group">
+                    <button class="mobile-nav-heading" onclick="toggleMobileSubmenu(this)">
+                        <span><i class='bx bx-git-repo-forked'></i> Il Metodo</span>
+                        <i class='bx bx-chevron-down chevron-icon'></i>
+                    </button>
+                    <div class="mobile-submenu">
+                        <a href="#metodo" onclick="closeMobileMenu()"><i class='bx bx-git-repo-forked'></i> L'Infrastruttura del Metodo</a>
+                        <a href="#metodo-fase1" onclick="closeMobileMenu()"><i class='bx bx-building-house'></i> 1. Autorizzazione Sanitaria (D.A. 890/2002)</a>
+                        <a href="#metodo-fase2" onclick="closeMobileMenu()"><i class='bx bx-medal'></i> 2. Accreditamento Istituzionale (D.A. 20/2024)</a>
+                        <a href="#metodo-fase3" onclick="closeMobileMenu()"><i class='bx bx-briefcase-alt-2'></i> 3. Convenzionamento con SSR</a>
+                    </div>
+                </div>
+
+                <!-- Sicurezza Accordion -->
+                <div class="mobile-nav-group">
+                    <button class="mobile-nav-heading" onclick="toggleMobileSubmenu(this)">
+                        <span><i class='bx bx-shield-quarter'></i> Sicurezza & Compliance</span>
+                        <i class='bx bx-chevron-down chevron-icon'></i>
+                    </button>
+                    <div class="mobile-submenu">
+                        <a href="#sicurezza" onclick="closeMobileMenu()"><i class='bx bx-shield-check'></i> Security by Design & GDPR Sanità</a>
+                        <a href="#sicurezza" onclick="closeMobileMenu()"><i class='bx bx-lock-alt'></i> Crittografia & Tracciabilità Totale</a>
+                        <a href="#sicurezza" onclick="closeMobileMenu()"><i class='bx bx-server'></i> Server UE & Backup Ridondato</a>
+                    </div>
+                </div>
+
+                <!-- Modelli B2B Accordion -->
+                <div class="mobile-nav-group">
+                    <button class="mobile-nav-heading" onclick="toggleMobileSubmenu(this)">
+                        <span><i class='bx bx-briefcase'></i> Modelli B2B</span>
+                        <i class='bx bx-chevron-down chevron-icon'></i>
+                    </button>
+                    <div class="mobile-submenu">
+                        <a href="#servizi" onclick="closeMobileMenu()"><i class='bx bx-laptop'></i> SaaS "Do It Yourself" (Licenza)</a>
+                        <a href="#servizi" onclick="closeMobileMenu()"><i class='bx bx-star'></i> Consulenza "Chiavi in Mano" (Custom)</a>
+                        <a href="#servizi" onclick="closeMobileMenu()"><i class='bx bx-refresh'></i> Mantenimento Compliance (Retainer)</a>
+                    </div>
+                </div>
+
+                <!-- Contatti Single -->
+                <a href="#contatti" class="mobile-nav-single" onclick="closeMobileMenu()">
+                    <span><i class='bx bx-envelope'></i> Contatti & Demo</span>
+                    <i class='bx bx-chevron-right'></i>
+                </a>
+            </nav>
+
+            <!-- Drawer Bottom CTAs -->
+            <div class="mobile-drawer-actions">
+                <button class="btn-drawer-start" onclick="closeMobileMenu(); openRegisterModal();">
+                    <i class='bx bx-rocket'></i> Inizia ora la Demo
+                </button>
+                <button class="btn-drawer-login" onclick="closeMobileMenu(); openLoginModal();">
+                    <i class='bx bx-log-in'></i> Accedi all'Area Riservata
+                </button>
+            </div>
+        </div>
+    </aside>
 
     <!-- 2. HERO SECTION -->
     <section class="hero-section-wrap">
@@ -1410,7 +1503,7 @@
                 <span class="section-eyebrow-tag">SECURITY BY DESIGN & GDPR SANITÀ</span>
                 <h2>Sicurezza & Normative</h2>
                 <p>
-                    La protezione del dato è l'architrave su cui poggia l'intera affidabilità di Accredita 360S. In un settore delicato come quello sanitario, la sicurezza non è un'opzione, ma un prerequisito fondamentale. La nostra infrastruttura è progettata secondo il principio della <strong>Security by Design</strong> per garantire l'integrità e la riservatezza di ogni informazione.
+                    La protezione del dato è l'architrave su cui poggia l'intera affidabilità di Accredita 360S™. In un settore delicato come quello sanitario, la sicurezza non è un'opzione, ma un prerequisito fondamentale. La nostra infrastruttura è progettata secondo il principio della <strong>Security by Design</strong> per garantire l'integrità e la riservatezza di ogni informazione.
                 </p>
                 <p>
                     Adottiamo protocolli di <strong>crittografia avanzata</strong> e sistemi di protezione del dato sanitario pienamente conformi al <strong>GDPR</strong>. Ogni fascicolo documentale e ogni Gap Analysis sono blindati e pronti per superare con successo i rigorosi audit delle commissioni ispettive ASP e OTA, garantendo al Management la massima serenità operativa.
@@ -1492,7 +1585,7 @@
             <span style="color: #2dd4bf; font-size: 12px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase;">CONTATTACI SUBITO</span>
             <h2>Pronto a Potenziare l'Accreditamento della Tua Struttura?</h2>
             <p>
-                Richiedi un Audit esplorativo gratuito o prenota una demo guidata del software Accredita 360S con uno dei nostri esperti sanitari.
+                Richiedi un Audit esplorativo gratuito o prenota una demo guidata del software Accredita 360S™ con uno dei nostri esperti sanitari.
             </p>
             <button class="btn-hero-start" style="background: #2dd4bf; color: #032328; font-weight: 800; font-size: 16px;" onclick="openContactModal()">
                 <i class='bx bx-envelope'></i> Parla con un Consulente
@@ -1510,7 +1603,7 @@
                     </div>
                     <div>
                         <div style="font-size: 22px; font-weight: 800; color: #ffffff; line-height: 1.1;">
-                            Accredita <span style="color: #2dd4bf;">360S</span>
+                            Accredita <span style="color: #2dd4bf;">360S</span><sup style="font-size: 12px; color: #2dd4bf; margin-left: 2px; vertical-align: super;">™</sup>
                         </div>
                         <div style="font-size: 10px; font-weight: 800; color: #2dd4bf; letter-spacing: 2px;">
                             PIATTAFORMA MEDICA +
@@ -1520,8 +1613,8 @@
                 <p>
                     La piattaforma digitale leader in Sicilia per la governance, la conformità e l'accreditamento istituzionale delle strutture sanitarie pubbliche e private.
                 </p>
-                <div style="font-size: 13px; color: #64748b;">
-                    Marchio e Software Depositati
+                <div style="font-size: 13px; color: #94a3b8; line-height: 1.6; margin-top: 8px;">
+                    <i class='bx bx-check-shield' style="color: #2dd4bf;"></i> <strong>Marchio™ Depositato UIBM</strong> • Software Depositato SIAE
                 </div>
             </div>
 
@@ -1557,7 +1650,7 @@
 
         <div class="footer-bottom-bar">
             <div>
-                © 2026 Accredita 360S • Tutti i diritti riservati.
+                © 2026 Accredita 360S™ • Marchio Depositato UIBM • Tutti i diritti riservati.
             </div>
             <div>
                 Sviluppato con standard di Sicurezza Sanitaria ISO 27001 & GDPR.
@@ -1570,7 +1663,7 @@
         <div class="modal-box" style="text-align: center;">
             <button class="modal-close-icon" onclick="closeRegisterModal()">&times;</button>
             <h3 class="modal-title" style="margin-bottom: 8px;">Come vuoi registrarti?</h3>
-            <p class="modal-subtitle">Scegli il tuo profilo per iniziare il percorso su Accredita 360S.</p>
+            <p class="modal-subtitle">Scegli il tuo profilo per iniziare il percorso su Accredita 360S™.</p>
             
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 20px;">
                 <a href="register.html?type=utente" style="text-decoration: none;">
@@ -2159,9 +2252,53 @@
             }
         };
 
+        // Gestione Menu e Drawer Mobile (<= 991px)
+        function toggleMobileMenu() {
+            const drawer = document.getElementById('mobileNavDrawer');
+            const overlay = document.getElementById('mobileNavOverlay');
+            const toggleBtn = document.getElementById('mobileMenuToggle');
+            if (!drawer) return;
+            const isOpen = drawer.classList.contains('open');
+            if (isOpen) {
+                closeMobileMenu();
+            } else {
+                drawer.classList.add('open');
+                if (overlay) overlay.classList.add('open');
+                if (toggleBtn) toggleBtn.classList.add('active');
+                document.body.style.overflow = 'hidden';
+            }
+        }
+
+        function closeMobileMenu() {
+            const drawer = document.getElementById('mobileNavDrawer');
+            const overlay = document.getElementById('mobileNavOverlay');
+            const toggleBtn = document.getElementById('mobileMenuToggle');
+            if (drawer) drawer.classList.remove('open');
+            if (overlay) overlay.classList.remove('open');
+            if (toggleBtn) toggleBtn.classList.remove('active');
+            document.body.style.overflow = '';
+        }
+
+        function toggleMobileSubmenu(btn) {
+            const group = btn.closest('.mobile-nav-group');
+            if (group) {
+                group.classList.toggle('expanded');
+            }
+        }
+
         document.addEventListener('DOMContentLoaded', () => {
             initModalOtpInputs();
         });
     </script>
+
+    <!-- Mobile Sticky Bottom Bar (Visibile solo su schermi <= 991px) -->
+    <div class="mobile-bottom-bar" id="mobileBottomBar">
+        <button class="btn-mobile-bottom-login" onclick="openLoginModal()">
+            <i class='bx bx-log-in'></i> Login
+        </button>
+        <button class="btn-mobile-bottom-start" onclick="openRegisterModal()">
+            <i class='bx bx-user-plus'></i> Inizia ora
+        </button>
+    </div>
 </body>
 </html>
