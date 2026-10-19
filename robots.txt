@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Disallow: /admin.html
+Disallow: /consulente.html
+Disallow: /app.html
+Disallow: /reset-password.html
+Disallow: /forgot-password.html

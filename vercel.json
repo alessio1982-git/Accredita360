@@ -1,6 +1,36 @@
 {
   "redirects": [
     {
+      "source": "/manuale_uso_accredita360(.*)",
+      "destination": "https://accredita360s.com/",
+      "permanent": true
+    },
+    {
+      "source": "/Manuale_Uso_Accredita360(.*)",
+      "destination": "https://accredita360s.com/",
+      "permanent": true
+    },
+    {
+      "source": "/manuale(.*)",
+      "destination": "https://accredita360s.com/",
+      "permanent": true
+    },
+    {
+      "source": "/Manuale(.*)",
+      "destination": "https://accredita360s.com/",
+      "permanent": true
+    },
+    {
+      "source": "/dossier(.*)",
+      "destination": "https://accredita360s.com/",
+      "permanent": true
+    },
+    {
+      "source": "/Dossier(.*)",
+      "destination": "https://accredita360s.com/",
+      "permanent": true
+    },
+    {
       "source": "/(.*)",
       "has": [{ "type": "host", "value": "accredita360s.vercel.app" }],
       "destination": "https://accredita360s.com/$1",
@@ -8,6 +38,42 @@
     }
   ],
   "headers": [
+    {
+      "source": "/manuale(.*)",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow, noarchive"
+        }
+      ]
+    },
+    {
+      "source": "/Manuale(.*)",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow, noarchive"
+        }
+      ]
+    },
+    {
+      "source": "/dossier(.*)",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow, noarchive"
+        }
+      ]
+    },
+    {
+      "source": "/Dossier(.*)",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow, noarchive"
+        }
+      ]
+    },
     {
       "source": "/(.*)\\.html",
       "headers": [
