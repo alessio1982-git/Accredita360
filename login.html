@@ -627,6 +627,7 @@
                 if (data.requires_totp_setup) {
                     setLoading(false);
                     this.pendingEmail = data.email;
+                    this.pendingTicket = data.ticket || null;
                     this._showOtpCard(data.email, true, data.secret);
                     return;
                 }
@@ -635,6 +636,7 @@
                 if (data.requires_totp) {
                     setLoading(false);
                     this.pendingEmail = data.email;
+                    this.pendingTicket = data.ticket || null;
                     this._showOtpCard(data.email, false);
                     return;
                 }
@@ -724,7 +726,7 @@
                 const res  = await fetch(`${SUPA_URL}/functions/v1/verify-otp`, {
                     method: 'POST',
                     headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY, 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email: this.pendingEmail, otp })
+                    body: JSON.stringify({ email: this.pendingEmail, otp, ticket: this.pendingTicket })
                 });
                 const data = await res.json();
 
@@ -736,9 +738,21 @@
                     return showOtpErr(data.message || 'Codice OTP non valido.');
                 }
 
+                // Configura sessione Supabase Auth firmata (JWT)
+                if (window.supabase && data.session) {
+                    try {
+                        await window.supabase.auth.setSession({
+                            access_token: data.session.access_token,
+                            refresh_token: data.session.refresh_token
+                        });
+                    } catch(authErr) {
+                        console.warn('[Auth] setSession warning:', authErr);
+                    }
+                }
+
                 // ── 2FA superata → salva sessione con scadenza ──
                 this._saveSession(data);
-                this._redirectByRole(data);
+                this._redirectByRole(data.user || data);
 
             } catch(e) {
                 setOtpLoading(false);
@@ -777,19 +791,22 @@
             hideOtpErr();
         },
 
-        _saveSession(user) {
+        _saveSession(data) {
             // Salva SOLO in sessionStorage (mai in localStorage)
             // → la sessione muore quando si chiude il tab/browser
+            const user = data.user || data;
             const session = {
                 expiresAt: Date.now() + SESSION_TTL,
                 createdAt: new Date().toISOString(),
                 user: {
                     id:                  user.id,
+                    auth_id:             user.auth_id || null,
                     email:               user.email,
                     name:                user.name,
                     role:                user.role,
                     registration_status: user.registration_status
-                }
+                },
+                session: data.session || null
             };
             sessionStorage.setItem(SESSION_KEY, JSON.stringify(session));
         },

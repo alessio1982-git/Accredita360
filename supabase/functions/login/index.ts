@@ -177,7 +177,23 @@ serve(async (req) => {
       method: "DELETE", headers: H(),
     });
 
-    // ── 7. 2FA TOTP (Google Authenticator) ───────────────────
+    // ── 7. Genera ticket monouso per 2FA (valido 5 minuti) ──
+    const ticket = crypto.randomUUID();
+    const expiresAt = new Date(Date.now() + 5 * 60_000).toISOString();
+
+    await safeFetch(r("login_tickets"), {
+      method: "POST",
+      headers: { ...H(), "Prefer": "return=minimal" },
+      body: JSON.stringify({
+        ticket,
+        email: user.email,
+        role: user.role,
+        expires_at: expiresAt,
+        attempts: 0
+      }),
+    }).catch(e => console.error("[login] Errore inserimento login_tickets:", e));
+
+    // ── 8. 2FA TOTP (Google Authenticator) ───────────────────
     // Genera un secret se è nullo (es. utenti storici attivati prima di v3)
     let secret = user.totp_secret || "";
     if (!secret) {
@@ -194,14 +210,16 @@ serve(async (req) => {
       return resOk({
         requires_totp_setup: true,
         email: user.email,
-        secret: secret
+        secret: secret,
+        ticket: ticket
       });
     }
 
     // Successivi accessi → Richiede codice OTP 2FA standard
     return resOk({
       requires_totp: true,
-      email: user.email
+      email: user.email,
+      ticket: ticket
     });
 
   } catch (err) {

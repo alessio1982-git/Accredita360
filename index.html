@@ -1875,6 +1875,7 @@
 
         let currentLoginRole = 'utente';
         let pendingLoginEmail = null;
+        let pendingLoginTicket = null;
 
         // 1. Apertura e Chiusura Modal Registrazione ("Inizia ora")
         function openRegisterModal() {
@@ -1999,6 +2000,7 @@
                 }
 
                 pendingLoginEmail = data.email || emailClean;
+                pendingLoginTicket = data.ticket || null;
 
                 // Setup 2FA TOTP (Google Authenticator)
                 if (data.requires_totp_setup) {
@@ -2099,7 +2101,7 @@
                         'Authorization': 'Bearer ' + SUPABASE_KEY,
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ email: pendingLoginEmail, otp })
+                    body: JSON.stringify({ email: pendingLoginEmail, otp, ticket: pendingLoginTicket })
                 });
 
                 const data = await res.json();
@@ -2110,6 +2112,18 @@
                     if (digits[0]) digits[0].focus();
                     showOtpError(data.message || 'Codice OTP non valido o scaduto.');
                     return;
+                }
+
+                // Configura sessione Supabase Auth firmata (JWT)
+                if (window.supabase && data.session) {
+                    try {
+                        await window.supabase.auth.setSession({
+                            access_token: data.session.access_token,
+                            refresh_token: data.session.refresh_token
+                        });
+                    } catch(authErr) {
+                        console.warn('[Auth] setSession warning:', authErr);
+                    }
                 }
 
                 saveSessionAndRedirect(data);
@@ -2128,20 +2142,23 @@
             hideOtpError();
         }
 
-        function saveSessionAndRedirect(user) {
+        function saveSessionAndRedirect(data) {
             const SESSION_KEY = 'accredita360s_session_v2';
             const SESSION_TTL = 8 * 60 * 60 * 1000; // 8 ore in ms
 
+            const user = data.user || data;
             const sessionData = {
                 expiresAt: Date.now() + SESSION_TTL,
                 createdAt: new Date().toISOString(),
                 user: {
                     id:                  user.id,
+                    auth_id:             user.auth_id || null,
                     email:               user.email,
                     name:                user.name,
                     role:                user.role,
                     registration_status: user.registration_status
-                }
+                },
+                session: data.session || null
             };
 
             sessionStorage.setItem(SESSION_KEY, JSON.stringify(sessionData));

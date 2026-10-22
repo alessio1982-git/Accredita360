@@ -108,6 +108,26 @@ const Backend = {
     async init() {
         console.log('%c[Accredita360s] Supabase Backend v2.0 inizializzato.', 'color:#3b82f6;font-weight:bold;');
         console.log(`%c  → Progetto: ${SUPABASE_URL}`, 'color:#64748b;');
+
+        // Ripristino sessione Supabase Auth (JWT firmato) se presente in sessionStorage
+        try {
+            const raw = sessionStorage.getItem(SESSION_KEY);
+            if (raw) {
+                const parsed = JSON.parse(raw);
+                if (parsed?.session?.access_token && supabase && supabase.auth) {
+                    const { data } = await supabase.auth.getSession();
+                    if (!data?.session) {
+                        await supabase.auth.setSession({
+                            access_token:  parsed.session.access_token,
+                            refresh_token: parsed.session.refresh_token
+                        });
+                        console.log('%c[Auth] ✅ Sessione Supabase Auth JWT ripristinata.', 'color:#10b981;');
+                    }
+                }
+            }
+        } catch (e) {
+            console.warn('[Auth] Avviso ripristino sessione:', e);
+        }
     },
 
 
@@ -510,8 +530,60 @@ const Backend = {
         }
     },
 
+    /**
+     * Verifica il codice 2FA via Edge Function /functions/v1/verify-otp.
+     * Salva la sessione Supabase Auth (JWT firmato) e l'oggetto utente.
+     */
+    async verifyOtp(email, otp, ticket = null) {
+        const resp = await fetch(`${SUPABASE_URL}/functions/v1/verify-otp`, {
+            method:  'POST',
+            headers: {
+                'apikey':        SUPABASE_KEY,
+                'Authorization': 'Bearer ' + SUPABASE_KEY,
+                'Content-Type':  'application/json'
+            },
+            body: JSON.stringify({ email: email.trim().toLowerCase(), otp, ticket })
+        });
+
+        const data = await resp.json();
+        if (!data.success) {
+            throw new Error(data.message || 'Codice OTP non valido o scaduto.');
+        }
+
+        if (data.session && supabase && supabase.auth) {
+            try {
+                await supabase.auth.setSession({
+                    access_token:  data.session.access_token,
+                    refresh_token: data.session.refresh_token
+                });
+            } catch (err) {
+                console.warn('[Auth] Errore setSession:', err);
+            }
+        }
+
+        const session = {
+            token:     'session_' + Date.now(),
+            createdAt: new Date().toISOString(),
+            expiresAt: Date.now() + (8 * 60 * 60 * 1000), // 8 ore
+            user:      {
+                id:                  data.id,
+                auth_id:             data.auth_id || null,
+                email:               data.email,
+                name:                data.name,
+                role:                data.role,
+                registration_status: data.registration_status
+            },
+            session:   data.session || null
+        };
+        sessionStorage.setItem(SESSION_KEY, JSON.stringify(session));
+        return session;
+    },
+
     logout() {
         sessionStorage.removeItem(SESSION_KEY);
+        if (supabase && supabase.auth) {
+            supabase.auth.signOut().catch(() => {});
+        }
         console.log('[Auth] Sessione terminata.');
     },
 
