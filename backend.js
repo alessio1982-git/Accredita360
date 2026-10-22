@@ -121,7 +121,7 @@ const Backend = {
     async getPendingUsers() {
         const { data, error } = await supabase
             .from('users')
-            .select('*')
+            .select('id, email, name, role, registration_status, created_at, tipo_registrazione, telefono, stato_assegnazione, consulente_email_fk')
             .neq('role', 'admin')
             .order('created_at', { ascending: false });
         if (error) {
@@ -1158,7 +1158,7 @@ const Backend = {
 
     async getAllStructuresWithRequirements() {
         const [{ data: users }, { data: structures }, { data: requirements }] = await Promise.all([
-            supabase.from('users').select('*').neq('role', 'admin'),
+            supabase.from('users').select('id, email, name, role, registration_status, created_at, tipo_registrazione, telefono, stato_assegnazione, consulente_email_fk').neq('role', 'admin'),
             supabase.from('structures').select('*'),
             supabase.from('requirements').select('*')
         ]);
@@ -1307,10 +1307,10 @@ const Backend = {
             { data: reqs },
             { count: newRegistrations }
         ] = await Promise.all([
-            supabase.from('structures').select('*', { count: 'exact', head: true }),
+            supabase.from('structures').select('id', { count: 'exact', head: true }),
             supabase.from('requirements').select('stato, validated_at, file_name'),
             supabase.from('users')
-                .select('*', { count: 'exact', head: true })
+                .select('id', { count: 'exact', head: true })
                 .neq('role', 'admin')
                 .gte('created_at', thirtyDaysAgo.toISOString())
         ]);
