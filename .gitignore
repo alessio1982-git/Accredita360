@@ -38,4 +38,5 @@ test-results/
 *_verified_*.png
 *_test_*.png
 qr_mobile_test.png
-
+# Scratch e script temporanei locali
+scratch/
