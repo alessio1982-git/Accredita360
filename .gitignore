@@ -28,6 +28,10 @@ test-connection.js
 Thumbs.db
 desktop.ini
 
+# Manuale d'uso riservato (non pubblicare sul repository pubblico)
+manuale_uso_accredita360*.html
+Manuale_Uso_Accredita360*.pdf
+
 # Playwright
 playwright-report/
 test-results/
