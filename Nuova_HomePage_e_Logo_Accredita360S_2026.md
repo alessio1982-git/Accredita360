@@ -3,7 +3,7 @@ titolo: Nuova Home Page & Brand Identity Accredita 360S (Release Ufficiale 2026)
 data: 2026-09-29
 autore: Avv. Alessio Arlotta & Antigravity AI
 stato: Rilasciato & Live Online
-progetto: [[Accredita360]] / Accredita 360S
+progetto: [[Accredita360s]] / Accredita 360S
 tags:
   - brand-identity
   - landing-page
@@ -101,5 +101,5 @@ tags:
 ## 🔗 4. Riferimenti Incrociati Obsidian
 * [[Landing Page Originaria Accredita360s]]
 * [[proposte_grafiche_sanitarie_2026]]
-* [[Accredita360]]
+* [[Accredita360s]]
 * [[Manuale_Uso_Accredita360_2026]]

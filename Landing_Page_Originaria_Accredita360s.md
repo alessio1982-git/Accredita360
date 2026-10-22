@@ -1,7 +1,7 @@
 # 🏛️ Landing Page Originaria - Accredita360s Sicilia
 
 **Data di Archiviazione:** 20 Settembre 2026  
-**Progetto:** [[Accredita360]] / Accredita360s  
+**Progetto:** [[Accredita360s]] / Accredita360s  
 **Tipologia:** Documentazione & Backup Home Page Ufficiale  
 **URL di Riferimento:** `accredita360s.com/index.html`  
 **Stato:** Versione Originaria Stabile  

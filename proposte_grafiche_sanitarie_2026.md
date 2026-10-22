@@ -1,7 +1,7 @@
 # Proposte Grafiche & Direzioni Visive Accredita360 (Ambito Sanitario & OTA)
 
 **Data:** 19 Settembre 2026  
-**Progetto:** [[Accredita360]] / Piattaforma Sanitaria All-in-One  
+**Progetto:** [[Accredita360s]] / Piattaforma Sanitaria All-in-One  
 **Ambito:** UI/UX Design, Landing Page, Cruscotto Sanitario, Normativa OTA Sicilia / SSN  
 
 ---
