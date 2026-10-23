@@ -92,6 +92,17 @@ serve(async (req) => {
       }
     );
 
+    // ── 5. Invalida ticket 2FA pendenti e resetta tentativi falliti ─
+    await fetch(`${SUPABASE_URL}/rest/v1/login_tickets?email=eq.${encodeURIComponent(user.email.toLowerCase().trim())}`, {
+      method: "DELETE",
+      headers: { "apikey": SERVICE_ROLE_KEY, "Authorization": `Bearer ${SERVICE_ROLE_KEY}` },
+    }).catch(() => {});
+
+    await fetch(`${SUPABASE_URL}/rest/v1/login_attempts?email=eq.${encodeURIComponent(user.email.toLowerCase().trim())}`, {
+      method: "DELETE",
+      headers: { "apikey": SERVICE_ROLE_KEY, "Authorization": `Bearer ${SERVICE_ROLE_KEY}` },
+    }).catch(() => {});
+
     console.log(`[apply-reset-password] Password aggiornata per ${user.email}`);
     return jsonOk("Password aggiornata con successo! Ora puoi accedere.");
 

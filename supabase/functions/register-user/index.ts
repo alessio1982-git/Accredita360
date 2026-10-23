@@ -22,6 +22,19 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
+async function generateHmacToken(secret: string, data: string): Promise<string> {
+  const enc = new TextEncoder();
+  const key = await crypto.subtle.importKey(
+    "raw",
+    enc.encode(secret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"]
+  );
+  const signature = await crypto.subtle.sign("HMAC", key, enc.encode(data));
+  return Array.from(new Uint8Array(signature)).map(b => b.toString(16).padStart(2, "0")).join("").slice(0, 32);
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
@@ -85,10 +98,12 @@ serve(async (req) => {
   // ── 3. Aggiorna nome e telefono (la RPC non li salva tutti) ──────
   // (la RPC inserisce tutto — skip)
 
-  // ── 4. Link approvazione admin ────────────────────────────────────
-  const approvalLink = userId
-    ? `${SUPABASE_URL}/functions/v1/approve-user?userId=${userId}`
-    : null;
+  // ── 4. Link approvazione admin firmato HMAC ──────────────────────
+  let approvalLink: string | null = null;
+  if (userId) {
+    const token = await generateHmacToken(SERVICE_ROLE_KEY, userId);
+    approvalLink = `${SUPABASE_URL}/functions/v1/approve-user?userId=${userId}&token=${token}`;
+  }
 
   // ── 5. Email notifica admin ───────────────────────────────────────
   if (approvalLink && RESEND_API_KEY) {

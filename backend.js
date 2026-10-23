@@ -131,6 +131,20 @@ const Backend = {
     },
 
 
+    /**
+     * Recupera il token JWT di autenticazione Supabase attivo dalla sessione corrente.
+     */
+    getAuthToken() {
+        try {
+            const raw = sessionStorage.getItem(SESSION_KEY);
+            if (raw) {
+                const parsed = JSON.parse(raw);
+                if (parsed?.session?.access_token) return parsed.session.access_token;
+            }
+        } catch (_) {}
+        return null;
+    },
+
     // =========================================================
     // AUTENTICAZIONE
     // =========================================================
@@ -167,12 +181,14 @@ const Backend = {
             throw new Error('Utente non trovato.');
         }
 
-        // 2. Richiama l'Edge Function di approvazione per eseguire l'update con privilegi di sistema
+        // 2. Richiama l'Edge Function di approvazione trasmettendo il JWT dell'admin
+        const authToken = this.getAuthToken() || SUPABASE_KEY;
         const res = await fetch(`${SUPABASE_URL}/functions/v1/approve-user?userId=${user.id}`, {
             method: 'GET',
             headers: {
                 'apikey': SUPABASE_KEY,
-                'Authorization': `Bearer ${SUPABASE_KEY}`
+                'Authorization': `Bearer ${authToken}`,
+                'Accept': 'application/json'
             }
         });
 
@@ -201,11 +217,13 @@ const Backend = {
             throw new Error('Utente non trovato.');
         }
 
+        const authToken = this.getAuthToken() || SUPABASE_KEY;
         const res = await fetch(`${SUPABASE_URL}/functions/v1/approve-user?userId=${user.id}&action=suspend`, {
             method: 'GET',
             headers: {
                 'apikey': SUPABASE_KEY,
-                'Authorization': `Bearer ${SUPABASE_KEY}`
+                'Authorization': `Bearer ${authToken}`,
+                'Accept': 'application/json'
             }
         });
 
@@ -233,11 +251,13 @@ const Backend = {
             throw new Error('Utente non trovato.');
         }
 
+        const authToken = this.getAuthToken() || SUPABASE_KEY;
         const res = await fetch(`${SUPABASE_URL}/functions/v1/approve-user?userId=${user.id}&action=delete`, {
             method: 'GET',
             headers: {
                 'apikey': SUPABASE_KEY,
-                'Authorization': `Bearer ${SUPABASE_KEY}`
+                'Authorization': `Bearer ${authToken}`,
+                'Accept': 'application/json'
             }
         });
 
@@ -718,9 +738,9 @@ const Backend = {
             const resp = await fetch(`${SUPABASE_URL}/functions/v1/save-profiling`, {
                 method:  'POST',
                 headers: {
-                    'apikey':       SUPABASE_KEY,
-                    'Authorization': 'Bearer ' + SUPABASE_KEY,
-                    'Content-Type': 'application/json'
+                    'apikey':        SUPABASE_KEY,
+                    'Authorization': 'Bearer ' + (this.getAuthToken() || SUPABASE_KEY),
+                    'Content-Type':  'application/json'
                 },
                 body: JSON.stringify({
                     email:         user.email,
