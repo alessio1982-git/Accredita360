@@ -15,6 +15,13 @@ const admin = {
     _realtimeChannel: null,
     _detRequirements: [],
     _detStructure: null,
+    _allStructures: [],
+    _consultants: [],
+    _pendingUsers: [],
+    _stats: null,
+    _chartPratiche: null,
+    _chartRequisiti: null,
+    _chartTipologie: null,
 
     async init() {
         // Guard: attende che Backend sia disponibile
@@ -225,12 +232,17 @@ const admin = {
             }
         }
 
-        // Salva riferimenti globali per il filtraggio
+        // Salva riferimenti globali per il filtraggio ed export
+        this._stats = stats || {};
+        this._pendingUsers = pendingUsers || [];
         this._allStructures = allStructures || [];
         this._consultants = consultants || [];
 
         // Aggiorna contatori e tabella smistamento
         this.renderDispatchTable();
+
+        // Renderizza e aggiorna i grafici interattivi della Dashboard
+        this.renderCharts(stats, pendingUsers, allStructures);
     },
 
     renderDispatchTable() {
@@ -755,6 +767,7 @@ const admin = {
                     filter: `user_email=eq.${email.toLowerCase().trim()}`
                 }, async (payload) => {
                     console.log('[Realtime Detail Sync] Variazione requisiti ricevuta:', payload);
+                    this.showRealtimeToast(`Requisito aggiornato per ${_s(email)}`, 'info', 'bx-check-shield');
                     await this.loadClientDetails();
                 })
                 .on('postgres_changes', {
@@ -764,6 +777,7 @@ const admin = {
                     filter: `user_email=eq.${email.toLowerCase().trim()}`
                 }, async (payload) => {
                     console.log('[Realtime Detail Sync] Variazione struttura ricevuta:', payload);
+                    this.showRealtimeToast(`Anagrafica struttura aggiornata per ${_s(email)}`, 'info', 'bx-building');
                     await this.loadClientDetails();
                 })
                 .subscribe();
@@ -771,13 +785,26 @@ const admin = {
             console.log('[Realtime Admin] Sottoscrizione globale dashboard');
             this._realtimeChannel = B.supabase
                 .channel('admin-dashboard-changes')
-                .on('postgres_changes', { event: '*', schema: 'public', table: 'users' }, async () => {
-                    console.log('[Realtime Dashboard Sync] Modifica utenti rilevata.');
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'users' }, async (payload) => {
+                    console.log('[Realtime Dashboard Sync] Modifica utenti rilevata:', payload);
+                    const userEmail = payload.new?.email || payload.old?.email || '';
+                    const evt = payload.eventType;
+                    let msg = 'Aggiornamento utenti registrato';
+                    if (evt === 'INSERT') msg = `Nuova iscrizione ricevuta: ${userEmail}`;
+                    else if (evt === 'UPDATE') msg = `Stato utente aggiornato: ${userEmail}`;
+                    this.showRealtimeToast(msg, 'info', 'bx-user');
                     await this.renderConsultantsData();
                     this.updateStatsCounters();
                 })
                 .on('postgres_changes', { event: '*', schema: 'public', table: 'structures' }, async () => {
                     console.log('[Realtime Dashboard Sync] Modifica strutture rilevata.');
+                    this.showRealtimeToast('Variazione anagrafica strutture rilevata', 'info', 'bx-building-house');
+                    await this.renderConsultantsData();
+                    this.updateStatsCounters();
+                })
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'requirements' }, async () => {
+                    console.log('[Realtime Dashboard Sync] Modifica requisiti sanitari rilevata.');
+                    this.showRealtimeToast('Aggiornamento conformità requisiti OTA', 'info', 'bx-file');
                     await this.renderConsultantsData();
                     this.updateStatsCounters();
                 })
@@ -807,10 +834,15 @@ const admin = {
 
     async updateStatsCounters() {
         try {
-            const [stats, pendingUsers] = await Promise.all([
+            const [stats, pendingUsers, allStructures] = await Promise.all([
                 Backend.getAdminStats(),
-                Backend.getPendingUsers()
+                Backend.getPendingUsers(),
+                Backend.getAllStructuresWithRequirements()
             ]);
+            this._stats = stats;
+            this._pendingUsers = pendingUsers || [];
+            this._allStructures = allStructures || [];
+
             const setEl = (id, val) => { const e = document.getElementById(id); if (e) e.textContent = val; };
             setEl('admin-stat-structures',  stats.activeStructures);
             setEl('admin-stat-new-reg',     pendingUsers.length);
@@ -823,6 +855,15 @@ const admin = {
             setEl('dash-stat-pending',    stats.pendingDocs);
             setEl('dash-stat-validated',  stats.validatedDocs);
             setEl('dash-stat-new-reg',    pendingUsers.length);
+
+            // Micro-pulsing visivo sulle card aggiornate
+            ['dash-stat-structures', 'dash-stat-pending', 'dash-stat-validated', 'dash-stat-new-reg',
+             'admin-stat-structures', 'admin-stat-new-reg', 'admin-stat-pending', 'admin-stat-validated'].forEach(id => {
+                this.triggerPulse(id);
+            });
+
+            // Aggiorna anche i grafici con animazione
+            this.renderCharts(stats, pendingUsers, allStructures);
         } catch (err) {
             console.warn('[Admin] Errore aggiornamento statistiche:', err);
         }
@@ -1273,8 +1314,605 @@ const admin = {
         } catch(err) {
             alert(err.message || 'Errore durante l\'invio del messaggio.');
         }
+    },
+
+    // ── DASHBOARD & ANALYTICS: CHARTS ────────────────────────────
+    renderCharts(stats, pendingUsers, allStructures) {
+        if (typeof Chart === 'undefined') {
+            console.warn('[Admin Analytics] Chart.js non è caricato.');
+            return;
+        }
+
+        const usersList = pendingUsers || this._pendingUsers || [];
+        const structList = allStructures || this._allStructures || [];
+        const currentStats = stats || this._stats || {};
+
+        // Impostazioni globali Chart.js per dark mode glassmorphic
+        Chart.defaults.color = '#94a3b8';
+        Chart.defaults.font.family = "'Outfit', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif";
+
+        // 1. GRAFICO: STATO PRATICHE & ISCRIZIONI (Doughnut)
+        const canvas1 = document.getElementById('chartPraticheCanvas');
+        if (canvas1) {
+            const attivi = usersList.filter(u => u.registration_status === 'active').length;
+            const inAttesa = usersList.filter(u => u.registration_status === 'pending').length;
+            const sospesi = usersList.filter(u => u.registration_status === 'rejected').length;
+            const totUsers = attivi + inAttesa + sospesi;
+
+            const badge1 = document.getElementById('chart-pratiche-badge');
+            if (badge1) {
+                const perc = totUsers > 0 ? Math.round((attivi / totUsers) * 100) : 0;
+                badge1.textContent = `${perc}% Attivi (${totUsers} tot)`;
+            }
+
+            const legend1 = document.getElementById('chart-pratiche-legend');
+            if (legend1) {
+                legend1.innerHTML = `
+                    <div style="display:flex; align-items:center; gap:6px;">
+                        <span style="width:10px; height:10px; border-radius:50%; background:#10b981; display:inline-block;"></span>
+                        <span style="color:var(--text-muted);">Attivi:</span> <strong style="color:var(--text-main);">${attivi}</strong>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:6px;">
+                        <span style="width:10px; height:10px; border-radius:50%; background:#f59e0b; display:inline-block;"></span>
+                        <span style="color:var(--text-muted);">In Attesa:</span> <strong style="color:var(--text-main);">${inAttesa}</strong>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:6px;">
+                        <span style="width:10px; height:10px; border-radius:50%; background:#ef4444; display:inline-block;"></span>
+                        <span style="color:var(--text-muted);">Sospesi:</span> <strong style="color:var(--text-main);">${sospesi}</strong>
+                    </div>
+                `;
+            }
+
+            const chartData1 = {
+                labels: ['Attivi / Approvati', 'In Attesa', 'Sospesi'],
+                datasets: [{
+                    data: [attivi || 0, inAttesa || 0, sospesi || 0],
+                    backgroundColor: [
+                        'rgba(16, 185, 129, 0.85)',
+                        'rgba(245, 158, 11, 0.85)',
+                        'rgba(239, 68, 68, 0.85)'
+                    ],
+                    borderColor: [
+                        '#10b981',
+                        '#f59e0b',
+                        '#ef4444'
+                    ],
+                    borderWidth: 2,
+                    hoverOffset: 6
+                }]
+            };
+
+            if (this._chartPratiche) {
+                this._chartPratiche.data = chartData1;
+                this._chartPratiche.update();
+            } else {
+                try {
+                    this._chartPratiche = new Chart(canvas1, {
+                        type: 'doughnut',
+                        data: chartData1,
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            cutout: '70%',
+                            plugins: {
+                                legend: { display: false },
+                                tooltip: {
+                                    backgroundColor: 'rgba(15, 23, 42, 0.95)',
+                                    borderColor: 'rgba(255, 255, 255, 0.1)',
+                                    borderWidth: 1,
+                                    padding: 10,
+                                    boxPadding: 4,
+                                    titleFont: { weight: 'bold' }
+                                }
+                            },
+                            animation: { duration: 800 }
+                        }
+                    });
+                } catch (e) {
+                    console.warn('[Admin] Errore creazione chartPratiche:', e);
+                }
+            }
+        }
+
+        // 2. GRAFICO: CONFORMITÀ REQUISITI SANITARI OTA (Bar)
+        const canvas2 = document.getElementById('chartRequisitiCanvas');
+        if (canvas2) {
+            let conformi = 0;
+            let inValutazione = 0;
+            let nonConformi = 0;
+            let nonAvviati = 0;
+
+            if (structList.length > 0) {
+                structList.forEach(s => {
+                    if (s.requirements && Array.isArray(s.requirements)) {
+                        s.requirements.forEach(r => {
+                            if (r.stato === 'green') conformi++;
+                            else if (r.stato === 'yellow') inValutazione++;
+                            else if (r.stato === 'red') nonConformi++;
+                            else nonAvviati++;
+                        });
+                    }
+                });
+            } else if (currentStats) {
+                conformi = currentStats.validatedDocs || 0;
+                inValutazione = currentStats.pendingDocs || 0;
+                nonConformi = currentStats.rejectedDocs || 0;
+            }
+
+            const totalAnalyzed = conformi + inValutazione + nonConformi;
+            const percConf = totalAnalyzed > 0 ? Math.round((conformi / totalAnalyzed) * 100) : 0;
+
+            const badge2 = document.getElementById('chart-reqs-badge');
+            if (badge2) {
+                badge2.textContent = totalAnalyzed > 0 ? `${percConf}% Conformi` : 'Nessun dato';
+            }
+
+            const legend2 = document.getElementById('chart-reqs-legend');
+            if (legend2) {
+                legend2.innerHTML = `
+                    <div style="display:flex; align-items:center; gap:6px;">
+                        <span style="width:10px; height:10px; border-radius:50%; background:#10b981; display:inline-block;"></span>
+                        <span style="color:var(--text-muted);">Conformi:</span> <strong style="color:var(--text-main);">${conformi}</strong>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:6px;">
+                        <span style="width:10px; height:10px; border-radius:50%; background:#f59e0b; display:inline-block;"></span>
+                        <span style="color:var(--text-muted);">Revisione:</span> <strong style="color:var(--text-main);">${inValutazione}</strong>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:6px;">
+                        <span style="width:10px; height:10px; border-radius:50%; background:#ef4444; display:inline-block;"></span>
+                        <span style="color:var(--text-muted);">Non Conformi:</span> <strong style="color:var(--text-main);">${nonConformi}</strong>
+                    </div>
+                `;
+            }
+
+            const chartData2 = {
+                labels: ['Conformi', 'In Revisione', 'Non Conformi', 'Da Avviare'],
+                datasets: [{
+                    label: 'Requisiti',
+                    data: [conformi, inValutazione, nonConformi, nonAvviati],
+                    backgroundColor: [
+                        'rgba(16, 185, 129, 0.85)',
+                        'rgba(245, 158, 11, 0.85)',
+                        'rgba(239, 68, 68, 0.85)',
+                        'rgba(100, 116, 139, 0.65)'
+                    ],
+                    borderColor: [
+                        '#10b981',
+                        '#f59e0b',
+                        '#ef4444',
+                        '#64748b'
+                    ],
+                    borderWidth: 1.5,
+                    borderRadius: 6
+                }]
+            };
+
+            if (this._chartRequisiti) {
+                this._chartRequisiti.data = chartData2;
+                this._chartRequisiti.update();
+            } else {
+                try {
+                    this._chartRequisiti = new Chart(canvas2, {
+                        type: 'bar',
+                        data: chartData2,
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: { display: false },
+                                tooltip: {
+                                    backgroundColor: 'rgba(15, 23, 42, 0.95)',
+                                    borderColor: 'rgba(255, 255, 255, 0.1)',
+                                    borderWidth: 1,
+                                    padding: 10
+                                }
+                            },
+                            scales: {
+                                x: {
+                                    grid: { display: false },
+                                    ticks: { font: { size: 11 } }
+                                },
+                                y: {
+                                    beginAtZero: true,
+                                    grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                                    ticks: { precision: 0, font: { size: 11 } }
+                                }
+                            },
+                            animation: { duration: 800 }
+                        }
+                    });
+                } catch (e) {
+                    console.warn('[Admin] Errore creazione chartRequisiti:', e);
+                }
+            }
+        }
+
+        // 3. GRAFICO: TIPOLOGIE STRUTTURE (Doughnut)
+        const canvas3 = document.getElementById('chartTipologieCanvas');
+        if (canvas3) {
+            const typeLabelsMap = {
+                'poliambulatorio': 'Poliambulatorio',
+                'rsa':             'RSA / Residenziale',
+                'lab':             'Laboratorio',
+                'domiciliare':     'Cure Domiciliari',
+                'odontoiatria':    'Odontoiatria',
+                'radiologia':      'Radiologia',
+                'riabilitazione':  'Riabilitazione',
+                'casa_cura':       'Casa di Cura'
+            };
+            const counts = {};
+            Object.keys(typeLabelsMap).forEach(k => counts[k] = 0);
+            let altri = 0;
+
+            structList.forEach(item => {
+                const t = item.structure?.type || item.structure?.data?.tipo_struttura;
+                if (t && counts[t] !== undefined) {
+                    counts[t]++;
+                } else if (item.structure) {
+                    altri++;
+                }
+            });
+
+            const activeEntries = Object.entries(counts).filter(([_, count]) => count > 0);
+            let finalLabels, finalData, finalColors;
+
+            const colorPalette = {
+                'poliambulatorio': '#3b82f6',
+                'rsa':             '#8b5cf6',
+                'lab':             '#06b6d4',
+                'domiciliare':     '#10b981',
+                'odontoiatria':    '#f59e0b',
+                'radiologia':      '#ec4899',
+                'riabilitazione':  '#14b8a6',
+                'casa_cura':       '#6366f1',
+                'altri':           '#64748b'
+            };
+
+            if (activeEntries.length > 0 || altri > 0) {
+                finalLabels = activeEntries.map(([k]) => typeLabelsMap[k]);
+                finalData   = activeEntries.map(([_, count]) => count);
+                finalColors = activeEntries.map(([k]) => colorPalette[k]);
+                if (altri > 0) {
+                    finalLabels.push('Altro');
+                    finalData.push(altri);
+                    finalColors.push(colorPalette['altri']);
+                }
+            } else {
+                finalLabels = ['Poliambulatorio', 'RSA', 'Laboratorio', 'Domiciliare'];
+                finalData   = [0, 0, 0, 0];
+                finalColors = ['#3b82f6', '#8b5cf6', '#06b6d4', '#10b981'];
+            }
+
+            const badge3 = document.getElementById('chart-types-badge');
+            if (badge3) {
+                badge3.textContent = `${structList.length} Strutture`;
+            }
+
+            const legend3 = document.getElementById('chart-types-legend');
+            if (legend3) {
+                if (activeEntries.length > 0) {
+                    legend3.innerHTML = activeEntries.slice(0, 3).map(([k, count]) => `
+                        <div style="display:flex; align-items:center; gap:6px;">
+                            <span style="width:10px; height:10px; border-radius:50%; background:${colorPalette[k]}; display:inline-block;"></span>
+                            <span style="color:var(--text-muted);">${typeLabelsMap[k]}:</span> <strong style="color:var(--text-main);">${count}</strong>
+                        </div>
+                    `).join('');
+                } else {
+                    legend3.innerHTML = `<span style="color:var(--text-muted); font-size:12px;">Nessuna struttura censita</span>`;
+                }
+            }
+
+            const chartData3 = {
+                labels: finalLabels,
+                datasets: [{
+                    data: finalData,
+                    backgroundColor: finalColors.map(c => c + 'd9'),
+                    borderColor: finalColors,
+                    borderWidth: 1.5,
+                    hoverOffset: 6
+                }]
+            };
+
+            if (this._chartTipologie) {
+                this._chartTipologie.data = chartData3;
+                this._chartTipologie.update();
+            } else {
+                try {
+                    this._chartTipologie = new Chart(canvas3, {
+                        type: 'doughnut',
+                        data: chartData3,
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            cutout: '62%',
+                            plugins: {
+                                legend: { display: false },
+                                tooltip: {
+                                    backgroundColor: 'rgba(15, 23, 42, 0.95)',
+                                    borderColor: 'rgba(255, 255, 255, 0.1)',
+                                    borderWidth: 1,
+                                    padding: 10
+                                }
+                            },
+                            animation: { duration: 800 }
+                        }
+                    });
+                } catch (e) {
+                    console.warn('[Admin] Errore creazione chartTipologie:', e);
+                }
+            }
+        }
+    },
+
+    async refreshCharts() {
+        this.showRealtimeToast('Aggiornamento statistiche e grafici in corso...', 'info', 'bx-refresh');
+        await this.renderConsultantsData();
+        this.triggerPulse('chart-pratiche-badge');
+        this.triggerPulse('chart-reqs-badge');
+        this.triggerPulse('chart-types-badge');
+    },
+
+    // ── DASHBOARD & ANALYTICS: EXPORT CSV ────────────────────────
+    downloadCSV(filename, headers, rows) {
+        if (!rows || !rows.length) {
+            this.showRealtimeToast('Nessun dato disponibile per l\'esportazione.', 'warning', 'bx-info-circle');
+            return;
+        }
+
+        const formatCell = (val) => {
+            if (val === null || val === undefined) return '""';
+            const str = String(val).replace(/"/g, '""').replace(/(\r\n|\n|\r)/gm, ' ');
+            return `"${str}"`;
+        };
+
+        const headerLine = headers.map(formatCell).join(';');
+        const rowLines = rows.map(r => r.map(formatCell).join(';'));
+        const csvContent = '\uFEFF' + [headerLine, ...rowLines].join('\r\n');
+
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.setAttribute('href', url);
+        link.setAttribute('download', filename);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+
+        this.showRealtimeToast(`File ${filename} scaricato con successo.`, 'success', 'bx-download');
+    },
+
+    exportStructuresCSV() {
+        const list = this._allStructures || [];
+        if (list.length === 0) {
+            this.showRealtimeToast('Nessuna struttura sanitaria censita da esportare.', 'warning', 'bx-info-circle');
+            return;
+        }
+
+        const headers = [
+            'Email Referente',
+            'Nome Referente',
+            'Nome Struttura',
+            'Ragione Sociale',
+            'Tipologia',
+            'Partita IVA',
+            'Codice Fiscale',
+            'Comune',
+            'Provincia',
+            'Indirizzo',
+            'Telefono',
+            'Consulente Assegnato',
+            'Stato Assegnazione',
+            'Requisiti Totali',
+            'Requisiti Conformi',
+            'Requisiti In Revisione',
+            'Requisiti Non Conformi'
+        ];
+
+        const rows = list.map(item => {
+            const u = item.user || {};
+            const s = item.structure || {};
+            const d = s.data || {};
+            const reqs = item.requirements || [];
+
+            const conformi = reqs.filter(r => r.stato === 'green').length;
+            const revisione = reqs.filter(r => r.stato === 'yellow').length;
+            const nonConformi = reqs.filter(r => r.stato === 'red').length;
+
+            return [
+                u.email || '',
+                u.name || '',
+                d.nome_struttura || d.ragione_sociale || s.type || 'N/D',
+                d.ragione_sociale || '',
+                s.type || d.tipo_struttura || 'N/D',
+                d.piva || '',
+                d.cf || '',
+                d.comune || '',
+                d.provincia || '',
+                d.indirizzo || '',
+                u.telefono || d.telefono || '',
+                u.consulente_email_fk || 'Non assegnato',
+                u.stato_assegnazione || (u.consulente_email_fk ? 'in_carico' : 'da_assegnare'),
+                reqs.length,
+                conformi,
+                revisione,
+                nonConformi
+            ];
+        });
+
+        const dateStr = new Date().toISOString().slice(0, 10);
+        this.downloadCSV(`accredita360_strutture_${dateStr}.csv`, headers, rows);
+    },
+
+    exportConsultantsCSV() {
+        const list = this._consultants || [];
+        const allStructures = this._allStructures || [];
+
+        if (list.length === 0) {
+            this.showRealtimeToast('Nessun consulente registrato da esportare.', 'warning', 'bx-info-circle');
+            return;
+        }
+
+        const headers = [
+            'Nome Consulente',
+            'Email Reale',
+            'Ruolo',
+            'Codice Privacy',
+            'Email Mascherata',
+            'Strutture Assegnate'
+        ];
+
+        const rows = list.map(c => {
+            const assignedCount = allStructures.filter(item => item.user && item.user.consulente_email_fk === c.email).length;
+            return [
+                c.name || '',
+                c.email || '',
+                c.role || '',
+                c.consulente_codice_privacy || '',
+                c.consulente_email_mascherata || '',
+                assignedCount
+            ];
+        });
+
+        const dateStr = new Date().toISOString().slice(0, 10);
+        this.downloadCSV(`accredita360_consulenti_${dateStr}.csv`, headers, rows);
+    },
+
+    exportRegistrationsCSV() {
+        const list = this._pendingUsers || [];
+        if (list.length === 0) {
+            this.showRealtimeToast('Nessun utente iscritto da esportare.', 'warning', 'bx-info-circle');
+            return;
+        }
+
+        const headers = [
+            'Nome',
+            'Email',
+            'Ruolo',
+            'Tipo Registrazione',
+            'Telefono',
+            'Stato Registrazione',
+            'Consulente Assegnato',
+            'Data Registrazione'
+        ];
+
+        const rows = list.map(u => {
+            const dateStr = u.created_at ? new Date(u.created_at).toLocaleString('it-IT') : '';
+            return [
+                u.name || '',
+                u.email || '',
+                u.role || '',
+                u.tipo_registrazione || '',
+                u.telefono || '',
+                u.registration_status || '',
+                u.consulente_email_fk || 'N/D',
+                dateStr
+            ];
+        });
+
+        const dateStr = new Date().toISOString().slice(0, 10);
+        this.downloadCSV(`accredita360_iscrizioni_${dateStr}.csv`, headers, rows);
+    },
+
+    exportDispatchCSV() {
+        const allStructures = this._allStructures || [];
+        const filterStatus = document.getElementById('dispatch-filter-status')?.value || 'all';
+        const filterType   = document.getElementById('dispatch-filter-type')?.value || 'all';
+        const searchQuery  = (document.getElementById('dispatch-search')?.value || '').toLowerCase().trim();
+
+        const filtered = allStructures.filter(item => {
+            const u = item.user;
+            const s = item.structure;
+            const hasConsultant = !!u.consulente_email_fk;
+
+            if (filterStatus === 'unassigned' && hasConsultant) return false;
+            if (filterStatus === 'assigned' && !hasConsultant) return false;
+            if (filterType !== 'all') {
+                if (!s || s.type !== filterType) return false;
+            }
+            if (searchQuery) {
+                const nameMatch = (u.name || '').toLowerCase().includes(searchQuery);
+                const emailMatch = (u.email || '').toLowerCase().includes(searchQuery);
+                const structMatch = (s?.data?.nome_struttura || s?.data?.ragione_sociale || '').toLowerCase().includes(searchQuery);
+                const consMatch = (u.consulente_email_fk || '').toLowerCase().includes(searchQuery);
+                if (!nameMatch && !emailMatch && !structMatch && !consMatch) return false;
+            }
+            return true;
+        });
+
+        if (filtered.length === 0) {
+            this.showRealtimeToast('Nessuna pratica corrispondente ai filtri attuali.', 'warning', 'bx-info-circle');
+            return;
+        }
+
+        const headers = [
+            'Email Referente',
+            'Nome Referente',
+            'Nome Struttura',
+            'Tipologia',
+            'Comune',
+            'Provincia',
+            'Consulente Assegnato',
+            'Stato Assegnazione'
+        ];
+
+        const rows = filtered.map(item => {
+            const u = item.user || {};
+            const s = item.structure || {};
+            const d = s.data || {};
+            return [
+                u.email || '',
+                u.name || '',
+                d.nome_struttura || d.ragione_sociale || s.type || 'N/D',
+                s.type || d.tipo_struttura || 'N/D',
+                d.comune || '',
+                d.provincia || '',
+                u.consulente_email_fk || 'Non assegnato',
+                u.stato_assegnazione || (u.consulente_email_fk ? 'in_carico' : 'da_assegnare')
+            ];
+        });
+
+        const dateStr = new Date().toISOString().slice(0, 10);
+        this.downloadCSV(`accredita360_smistamento_${dateStr}.csv`, headers, rows);
+    },
+
+    // ── DASHBOARD & ANALYTICS: REALTIME NOTIFICATIONS & TOAST ────
+    showRealtimeToast(message, type = 'info', icon = 'bx-bell') {
+        const container = document.getElementById('realtime-toast-container');
+        if (!container) return;
+        const toast = document.createElement('div');
+        toast.className = `realtime-toast ${type}`;
+        toast.innerHTML = `
+            <div class="realtime-toast-icon"><i class='bx ${icon}'></i></div>
+            <div style="flex:1; line-height:1.4;">${_s(message)}</div>
+        `;
+        container.appendChild(toast);
+
+        requestAnimationFrame(() => {
+            toast.classList.add('show');
+        });
+
+        setTimeout(() => {
+            toast.classList.remove('show');
+            setTimeout(() => {
+                if (toast.parentElement) toast.remove();
+            }, 400);
+        }, 4500);
+    },
+
+    triggerPulse(elementId) {
+        const el = document.getElementById(elementId);
+        if (!el) return;
+        el.classList.remove('realtime-updated');
+        void el.offsetWidth; // Trigger reflow per riavviare l'animazione CSS
+        el.classList.add('realtime-updated');
+        setTimeout(() => {
+            if (el) el.classList.remove('realtime-updated');
+        }, 1500);
     }
 };
+
+window.admin = admin;
 
 document.addEventListener('DOMContentLoaded', () => {
     admin.init();

@@ -8,7 +8,7 @@ module.exports = defineConfig({
   reporter: [['html', { open: 'never' }], ['list']],
 
   use: {
-    baseURL: 'https://accredita360s.com',
+    baseURL: process.env.BASE_URL || 'https://accredita360s.com',
     headless: true,
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',

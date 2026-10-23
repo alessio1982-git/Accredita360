@@ -155,6 +155,78 @@
                         <div class="stat-info"><h4>Nuove Iscrizioni</h4><span class="stat-value" style="color:#8b5cf6;" id="dash-stat-new-reg">—</span></div>
                     </div>
                 </div>
+
+                <!-- ANALYTICS & CHARTS SECTION -->
+                <div class="analytics-section" style="margin-bottom:32px;">
+                    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:18px; flex-wrap:wrap; gap:12px;">
+                        <div>
+                            <h3 style="margin:0; font-size:18px; font-weight:700; display:flex; align-items:center; gap:8px;">
+                                <i class='bx bx-pie-chart-alt-2' style="color:var(--primary); font-size:22px;"></i>
+                                Cruscotto Statistico &amp; Analisi Pratiche
+                            </h3>
+                            <p style="margin:4px 0 0; font-size:13px; color:var(--text-muted);">
+                                Monitoraggio dello stato delle pratiche sanitarie, conformità requisiti OTA e ripartizione strutture
+                            </p>
+                        </div>
+                        <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+                            <button class="btn btn-outline" onclick="admin.exportStructuresCSV()" style="padding:7px 14px; font-size:12px; display:inline-flex; align-items:center; gap:6px;">
+                                <i class='bx bx-download' style="color:var(--success);"></i> Esporta Strutture (CSV)
+                            </button>
+                            <button class="btn btn-outline" onclick="admin.exportConsultantsCSV()" style="padding:7px 14px; font-size:12px; display:inline-flex; align-items:center; gap:6px;">
+                                <i class='bx bx-download' style="color:#8b5cf6;"></i> Esporta Consulenti (CSV)
+                            </button>
+                            <button class="btn btn-outline" onclick="admin.refreshCharts()" style="padding:7px 12px; font-size:12px;" title="Aggiorna grafici">
+                                <i class='bx bx-refresh'></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Griglia dei Grafici -->
+                    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap:20px;">
+                        <!-- Card Grafico 1: Stato Iscrizioni e Pratiche -->
+                        <div class="glass-card" style="padding:22px; border-radius:16px; position:relative;">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+                                <h4 style="margin:0; font-size:15px; font-weight:700; display:flex; align-items:center; gap:8px;">
+                                    <i class='bx bx-doughnut-chart' style="color:#10b981;"></i> Stato Pratiche &amp; Iscrizioni
+                                </h4>
+                                <span id="chart-pratiche-badge" style="font-size:11px; padding:3px 8px; border-radius:10px; background:rgba(16,185,129,0.12); color:#10b981; font-weight:600;">Caricamento...</span>
+                            </div>
+                            <div style="position:relative; height:240px; width:100%; display:flex; justify-content:center; align-items:center;">
+                                <canvas id="chartPraticheCanvas"></canvas>
+                            </div>
+                            <div id="chart-pratiche-legend" style="display:flex; justify-content:space-around; margin-top:16px; font-size:12px; padding-top:12px; border-top:1px solid var(--glass-border);"></div>
+                        </div>
+
+                        <!-- Card Grafico 2: Conformità Requisiti Sanitari OTA -->
+                        <div class="glass-card" style="padding:22px; border-radius:16px; position:relative;">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+                                <h4 style="margin:0; font-size:15px; font-weight:700; display:flex; align-items:center; gap:8px;">
+                                    <i class='bx bx-bar-chart-alt-2' style="color:var(--primary);"></i> Conformità Requisiti OTA
+                                </h4>
+                                <span id="chart-reqs-badge" style="font-size:11px; padding:3px 8px; border-radius:10px; background:rgba(59,130,246,0.12); color:var(--primary); font-weight:600;">Checklist Totale</span>
+                            </div>
+                            <div style="position:relative; height:240px; width:100%;">
+                                <canvas id="chartRequisitiCanvas"></canvas>
+                            </div>
+                            <div id="chart-reqs-legend" style="display:flex; justify-content:space-around; margin-top:16px; font-size:12px; padding-top:12px; border-top:1px solid var(--glass-border);"></div>
+                        </div>
+
+                        <!-- Card Grafico 3: Tipologia Strutture Registrate -->
+                        <div class="glass-card" style="padding:22px; border-radius:16px; position:relative;">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+                                <h4 style="margin:0; font-size:15px; font-weight:700; display:flex; align-items:center; gap:8px;">
+                                    <i class='bx bx-building-house' style="color:#8b5cf6;"></i> Tipologie Strutture
+                                </h4>
+                                <span id="chart-types-badge" style="font-size:11px; padding:3px 8px; border-radius:10px; background:rgba(139,92,246,0.12); color:#8b5cf6; font-weight:600;">Ripartizione</span>
+                            </div>
+                            <div style="position:relative; height:240px; width:100%;">
+                                <canvas id="chartTipologieCanvas"></canvas>
+                            </div>
+                            <div id="chart-types-legend" style="display:flex; justify-content:space-around; margin-top:16px; font-size:12px; padding-top:12px; border-top:1px solid var(--glass-border);"></div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Quick Nav -->
                 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;">
                     <div class="glass-card" style="padding:20px;cursor:pointer;transition:all 0.3s;" onclick="admin.navigate('consultants')" onmouseover="this.style.transform='translateY(-3px)'" onmouseout="this.style.transform=''">
@@ -201,6 +273,9 @@
                         </label>
                         <button class="btn btn-danger" id="btn-bulk-delete-users" onclick="admin.bulkDeleteUsers()" style="padding:6px 12px; font-size:13px; display:flex; align-items:center; gap:6px;">
                             <i class='bx bx-trash'></i> Elimina Selezionati
+                        </button>
+                        <button class="btn btn-outline" onclick="admin.exportRegistrationsCSV()" style="padding:6px 12px; font-size:13px; display:flex; align-items:center; gap:6px; margin-left:auto;">
+                            <i class='bx bx-download' style="color:var(--success);"></i> Esporta Iscritti (CSV)
                         </button>
                     </div>
                     <div class="checklist-table-wrapper">
@@ -260,7 +335,10 @@
                             <option value="casa_cura">Casa di Cura</option>
                         </select>
                         <div style="margin-left:auto; display:flex; align-items:center; gap:8px;">
-                            <input type="text" id="dispatch-search" class="input-box" style="padding:6px 12px; font-size:12px; width:220px;" placeholder="Cerca struttura..." oninput="admin.renderDispatchTable()">
+                            <input type="text" id="dispatch-search" class="input-box" style="padding:6px 12px; font-size:12px; width:200px;" placeholder="Cerca struttura..." oninput="admin.renderDispatchTable()">
+                            <button class="btn btn-outline" onclick="admin.exportDispatchCSV()" style="padding:6px 12px; font-size:12px; display:inline-flex; align-items:center; gap:6px;">
+                                <i class='bx bx-download' style="color:var(--primary);"></i> Esporta (CSV)
+                            </button>
                         </div>
                     </div>
 
@@ -559,8 +637,12 @@
         </div>
     </div>
 
+    <!-- Toast container per notifiche e micro-animazioni realtime -->
+    <div id="realtime-toast-container" class="realtime-toast-container"></div>
+
     <script src="https://cdn.jsdelivr.net/npm/dompurify@3/dist/purify.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="normativa_db.js?v=10"></script>
     <script src="backend.js?v=10"></script>

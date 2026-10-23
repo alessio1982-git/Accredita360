@@ -2893,3 +2893,103 @@ body {
         flex-direction: column;
     }
 }
+
+/* ============================================================
+   REALTIME MICRO-ANIMATIONS & TOASTS (Dashboard & Analytics)
+   ============================================================ */
+@keyframes realtimePulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7);
+        border-color: rgba(59, 130, 246, 0.9);
+        transform: scale(1);
+    }
+    30% {
+        box-shadow: 0 0 20px 4px rgba(59, 130, 246, 0.45);
+        border-color: rgba(59, 130, 246, 1);
+        transform: scale(1.02);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(59, 130, 246, 0);
+        border-color: var(--glass-border);
+        transform: scale(1);
+    }
+}
+
+@keyframes requirementStateFlash {
+    0% {
+        background-color: rgba(16, 185, 129, 0.25);
+    }
+    100% {
+        background-color: transparent;
+    }
+}
+
+.realtime-updated {
+    animation: realtimePulse 1.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.realtime-row-flash {
+    animation: requirementStateFlash 1.8s ease-out;
+}
+
+/* Toast Notifica Realtime */
+.realtime-toast-container {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    z-index: 999999;
+    pointer-events: none;
+}
+
+.realtime-toast {
+    pointer-events: auto;
+    background: rgba(15, 23, 42, 0.94);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid rgba(59, 130, 246, 0.35);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+    border-radius: 12px;
+    padding: 12px 18px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: var(--text-main);
+    font-size: 13px;
+    transform: translateX(120%);
+    opacity: 0;
+    transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    max-width: 380px;
+}
+
+.realtime-toast.show {
+    transform: translateX(0);
+    opacity: 1;
+}
+
+.realtime-toast.success {
+    border-color: rgba(16, 185, 129, 0.4);
+}
+.realtime-toast.warning {
+    border-color: rgba(245, 158, 11, 0.4);
+}
+.realtime-toast.danger {
+    border-color: rgba(239, 68, 68, 0.4);
+}
+.realtime-toast.info {
+    border-color: rgba(59, 130, 246, 0.4);
+}
+
+.realtime-toast-icon {
+    font-size: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.realtime-toast.success .realtime-toast-icon { color: #10b981; }
+.realtime-toast.warning .realtime-toast-icon { color: #f59e0b; }
+.realtime-toast.danger .realtime-toast-icon { color: #ef4444; }
+.realtime-toast.info .realtime-toast-icon { color: #3b82f6; }
+
